@@ -49,21 +49,21 @@ Section Check_Flags_Comparison.
      | Error => Error
     end.
 
+
   (** ** Check Flags Comparison Function For Expression *)
 
   Function exp_check_flags_comparison (e1 e2: expression_x): return_message :=
     match e1, e2 with
-    | E_Literal_X ast_num l cks, E_Literal_X ast_num' l' cks' =>
-        beq_check_flags_msg ast_num cks cks'
-    | E_Name_X ast_num n cks, E_Name_X ast_num' n' cks' =>
-        conj_message (beq_check_flags_msg ast_num cks cks')
-                     (name_check_flags_comparison n n')
-    | E_Binary_Operation_X ast_num op e1 e2 cks, E_Binary_Operation_X ast_num' op' e1' e2' cks' =>
-        conj_message (beq_check_flags_msg ast_num cks cks')
+    | E_Literal_X ast_num l in_cks ex_cks, E_Literal_X ast_num' l' in_cks' ex_cks' =>
+        beq_check_flags_msg ast_num (in_cks ++ ex_cks) (in_cks' ++ ex_cks')
+    | E_Name_X ast_num n, E_Name_X ast_num' n' =>
+        name_check_flags_comparison n n'
+    | E_Binary_Operation_X ast_num op e1 e2 in_cks ex_cks, E_Binary_Operation_X ast_num' op' e1' e2' in_cks' ex_cks' =>
+        conj_message (beq_check_flags_msg ast_num (in_cks ++ ex_cks) (in_cks' ++ ex_cks'))
                      (conj_message (exp_check_flags_comparison e1 e1')
                                    (exp_check_flags_comparison e2 e2'))
-     | E_Unary_Operation_X ast_num op e cks, E_Unary_Operation_X ast_num' op' e' cks' =>
-        conj_message (beq_check_flags_msg ast_num cks cks')
+     | E_Unary_Operation_X ast_num op e in_cks ex_cks, E_Unary_Operation_X ast_num' op' e' in_cks' ex_cks' =>
+        conj_message (beq_check_flags_msg ast_num (in_cks ++ ex_cks) (in_cks' ++ ex_cks'))
                      (exp_check_flags_comparison e e')
      | _, _ => Error
      end
@@ -72,13 +72,16 @@ Section Check_Flags_Comparison.
 
   with name_check_flags_comparison (n1 n2: name_x): return_message :=
     match n1, n2 with
-    | E_Identifier_X ast_num x cks, E_Identifier_X ast_num' x' cks' =>
-        beq_check_flags_msg ast_num cks cks'
-    | E_Indexed_Component_X ast_num x_ast_num x e cks, E_Indexed_Component_X ast_num' x_ast_num' x' e' cks' =>
-        conj_message (beq_check_flags_msg ast_num cks cks')
-                     (exp_check_flags_comparison e e')
-    | E_Selected_Component_X ast_num x_ast_num x f cks, E_Selected_Component_X ast_num' x_ast_num' x' f' cks' =>
-        beq_check_flags_msg ast_num cks cks'
+    | E_Identifier_X ast_num x ex_cks, E_Identifier_X ast_num' x' ex_cks' =>
+        beq_check_flags_msg ast_num ex_cks ex_cks'
+    | E_Indexed_Component_X ast_num x e ex_cks, E_Indexed_Component_X ast_num' x' e' ex_cks' =>
+        conj_message (beq_check_flags_msg ast_num ex_cks ex_cks')
+                     (conj_message (name_check_flags_comparison x x')
+                                   (exp_check_flags_comparison e e')
+                     )
+    | E_Selected_Component_X ast_num x f ex_cks, E_Selected_Component_X ast_num' x' f' ex_cks' =>
+        conj_message (beq_check_flags_msg ast_num ex_cks ex_cks')
+                     (name_check_flags_comparison x x')
     | _, _ => Error
     end.
 

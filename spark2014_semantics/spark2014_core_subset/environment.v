@@ -95,6 +95,8 @@ Module STORE(V:ENTRY).
   
   Definition stack := list frame.
 
+
+
   Definition reside (x: idnum) (f: frame) := resides x (store_of f).
 
   Definition fetch (x: idnum) (f: frame) := fetches x (store_of f).
@@ -106,12 +108,10 @@ Module STORE(V:ENTRY).
     | Some s => Some (level_of f, s)
     | None => None 
     end.
-
+  
   Definition push (f: frame) (x: idnum) (v: V) := (level_of f, (x, v) :: (store_of f)).
-
+  
   Definition newFrame (n: scope_level): frame := (n, nil). 
-
-
 
 
   (** ** Stack Operations *)
@@ -132,7 +132,6 @@ Module STORE(V:ENTRY).
       end
     | nil => None
     end.
-
 
   Function updateG (s: stack) (x: idnum) (v: V): option stack := 
     match s with 
@@ -175,7 +174,6 @@ Module STORE(V:ENTRY).
       | Some (lvl,_) => Some lvl
       | None => None
     end.
-
 
   Inductive stack_eq_length : stack -> stack -> Prop :=
     | eqnil: stack_eq_length nil nil

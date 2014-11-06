@@ -19,20 +19,26 @@
 (* Chapter 4 *)
 
 Inductive expression_xx: Type := 
-    | E_Literal_XX: astnum -> literal (*checks*)-> expression_xx (* 4.2 *)
-    | E_Name_XX: astnum -> name_xx (*checks*)-> expression_xx (* 4.1 *)
-    | E_Binary_Operation_XX: astnum -> binary_operator -> expression_xx -> expression_xx (*checks*)-> expression_xx (* 4.5.3 and 4.5.5 *)
-    | E_Unary_Operation_XX: astnum -> unary_operator -> expression_xx (*checks*)-> expression_xx (* 4.5.4 *)  
+    | E_Literal_XX: astnum -> literal (*e_checks*)-> expression_xx (* 4.2 *)
+    | E_Name_XX: astnum -> name_xx -> expression_xx (* 4.1 *)
+    | E_Binary_Operation_XX: astnum -> binary_operator -> expression_xx -> expression_xx (*e_checks*)-> expression_xx (* 4.5.3 and 4.5.5 *)
+    | E_Unary_Operation_XX: astnum -> unary_operator -> expression_xx (*e_checks*)-> expression_xx (* 4.5.4 *)  
 
 (** in E_Indexed_Component_XX, the first astnum is the ast number for the indexed component, 
-    and the second astnum is the ast number for array represented by idnum;
+    and the second astnum is the ast number for array represented by name_xx;
     in E_Selected_Component_XX, the first astnum is the ast number for the record field,
-    and second astnum is the ast number for record represented by idnum;
+    and second astnum is the ast number for record represented by name_xx;
  *)
 with name_xx: Type := (* 4.1 *)
-    | E_Identifier_XX: astnum -> idnum (*checks*)-> name_xx (* 4.1 *)
-    | E_Indexed_Component_XX: astnum -> astnum -> idnum -> expression_xx (*checks*)-> name_xx (* 4.1.1 *)
-    | E_Selected_Component_XX: astnum -> astnum -> idnum -> idnum (*checks*)-> name_xx (* 4.1.3 *).
+    | E_Identifier_XX: astnum -> idnum (*n_checks*)-> name_xx (* 4.1 *)
+    | E_Indexed_Component_XX: astnum -> name_xx -> expression_xx (*n_checks*)-> name_xx (* 4.1.1 *)
+    | E_Selected_Component_XX: astnum -> name_xx -> idnum (*n_checks*)-> name_xx (* 4.1.3 *).
+
+(** Induction scheme for expression_xx and name_xx *)
+(**
+Scheme expression_xx_ind := Induction for expression_xx Sort Prop
+                         with name_xx_ind := Induction for name_xx Sort Prop.
+*)
 
 (** ** Statements *)
 (* Chapter 5 *)
@@ -128,11 +134,11 @@ Section AuxiliaryFunctions_XX.
 
   Definition type_name_xx td :=
     match td with
-    | Subtype_Declaration_XX _ tn _ _                => tn
-    | Derived_Type_Declaration_XX _ tn _ _           => tn
-    | Integer_Type_Declaration_XX _ tn _             => tn
-    | Array_Type_Declaration_XX _ tn _ _ => tn
-    | Record_Type_Declaration_XX _ tn _              => tn
+    | Subtype_Declaration_XX _ tn _ _        => tn
+    | Derived_Type_Declaration_XX _ tn _ _   => tn
+    | Integer_Type_Declaration_XX _ tn _     => tn
+    | Array_Type_Declaration_XX _ tn _ _     => tn
+    | Record_Type_Declaration_XX _ tn _      => tn
     end.
 
   Definition subtype_range_xx (t: type_declaration_xx): option range_xx :=
@@ -145,17 +151,17 @@ Section AuxiliaryFunctions_XX.
 
   Definition expression_astnum_xx e :=
     match e with
-    | E_Literal_XX ast_num l (*checkflags*)=> ast_num
-    | E_Name_XX ast_num n (*checkflags*)=> ast_num
-    | E_Binary_Operation_XX ast_num bop e1 e2 (*checkflags*)=> ast_num
-    | E_Unary_Operation_XX ast_num uop e (*checkflags*)=> ast_num
+    | E_Literal_XX ast_num l (*e_checkflags*)=> ast_num
+    | E_Name_XX ast_num n => ast_num
+    | E_Binary_Operation_XX ast_num bop e1 e2 (*e_checkflags*)=> ast_num
+    | E_Unary_Operation_XX ast_num uop e (*e_checkflags*)=> ast_num
     end.  
 
   Definition name_astnum_xx n :=
     match n with
-    | E_Identifier_XX ast_num x (*checkflags*)=> ast_num
-    | E_Indexed_Component_XX ast_num x_ast_num x e (*checkflags*)=> ast_num
-    | E_Selected_Component_XX ast_num x_ast_num x f (*checkflags*)=> ast_num
+    | E_Identifier_XX ast_num x (*n_checkflags*)=> ast_num
+    | E_Indexed_Component_XX ast_num x e (*n_checkflags*)=> ast_num
+    | E_Selected_Component_XX ast_num x f (*n_checkflags*)=> ast_num
     end.
 
 End AuxiliaryFunctions_XX.

@@ -23,14 +23,20 @@ Inductive expression: Type :=
     | E_Unary_Operation: astnum -> unary_operator -> expression -> expression (* 4.5.4 *)  
 
 (** in E_Indexed_Component, the first astnum is the ast number for the indexed component, 
-    and the second astnum is the ast number for array represented by idnum;
+    and the second astnum is the ast number for array represented by name;
     in E_Selected_Component, the first astnum is the ast number for the record field,
-    and second astnum is the ast number for record represented by idnum;
+    and second astnum is the ast number for record represented by name;
  *)
 with name: Type := (* 4.1 *)
     | E_Identifier: astnum -> idnum -> name (* 4.1 *)
-    | E_Indexed_Component: astnum -> astnum -> idnum -> expression -> name (* 4.1.1 *)
-    | E_Selected_Component: astnum -> astnum -> idnum -> idnum -> name (* 4.1.3 *).
+    | E_Indexed_Component: astnum -> name -> expression -> name (* 4.1.1 *)
+    | E_Selected_Component: astnum -> name -> idnum -> name (* 4.1.3 *).
+
+(** Induction scheme for expression and name *)
+(**
+Scheme expression_ind := Induction for expression Sort Prop
+                         with name_ind := Induction for name Sort Prop.
+*)
 
 (** ** Statements *)
 (* Chapter 5 *)
@@ -87,7 +93,7 @@ Record parameter_specification: Type := mkparameter_specification{
 Inductive declaration: Type :=  (* 3.1 *)
     | D_Null_Declaration: declaration
     | D_Type_Declaration: astnum -> type_declaration -> declaration (* 3.2.1 *)
-    | D_Object_Declaration: astnum -> object_declaration -> declaration (* 3.3.1 *) 
+    | D_Object_Declaration: astnum -> object_declaration -> declaration (* 3.3.1 *)
     | D_Procedure_Body: astnum -> procedure_body -> declaration (* 6.1 *)
     | D_Seq_Declaration: astnum -> declaration -> declaration -> declaration (* it's introduced for easy proof *)
 
@@ -126,11 +132,11 @@ Section AuxiliaryFunctions.
 
   Definition type_name td :=
     match td with
-    | Subtype_Declaration _ tn _ _                => tn
-    | Derived_Type_Declaration _ tn _ _           => tn
-    | Integer_Type_Declaration _ tn _             => tn
-    | Array_Type_Declaration _ tn _ _ => tn
-    | Record_Type_Declaration _ tn _              => tn
+    | Subtype_Declaration _ tn _ _        => tn
+    | Derived_Type_Declaration _ tn _ _   => tn
+    | Integer_Type_Declaration _ tn _     => tn
+    | Array_Type_Declaration _ tn _ _     => tn
+    | Record_Type_Declaration _ tn _      => tn
     end.
 
   Definition subtype_range (t: type_declaration): option range :=
@@ -152,8 +158,8 @@ Section AuxiliaryFunctions.
   Definition name_astnum n :=
     match n with
     | E_Identifier ast_num x => ast_num
-    | E_Indexed_Component ast_num x_ast_num x e => ast_num
-    | E_Selected_Component ast_num x_ast_num x f => ast_num
+    | E_Indexed_Component ast_num x e => ast_num
+    | E_Selected_Component ast_num x f => ast_num
     end.
 
 End AuxiliaryFunctions.

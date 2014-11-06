@@ -18,20 +18,26 @@ Require Export checks.
 (* Chapter 4 *)
 
 Inductive expression_x: Type := 
-    | E_Literal_X: astnum -> literal -> check_flags -> expression_x (* 4.2 *)
-    | E_Name_X: astnum -> name_x -> check_flags -> expression_x (* 4.1 *)
-    | E_Binary_Operation_X: astnum -> binary_operator -> expression_x -> expression_x -> check_flags -> expression_x (* 4.5.3 and 4.5.5 *)
-    | E_Unary_Operation_X: astnum -> unary_operator -> expression_x -> check_flags -> expression_x (* 4.5.4 *)  
+    | E_Literal_X: astnum -> literal -> interior_checks -> exterior_checks -> expression_x (* 4.2 *)
+    | E_Name_X: astnum -> name_x -> expression_x (* 4.1 *)
+    | E_Binary_Operation_X: astnum -> binary_operator -> expression_x -> expression_x -> interior_checks -> exterior_checks -> expression_x (* 4.5.3 and 4.5.5 *)
+    | E_Unary_Operation_X: astnum -> unary_operator -> expression_x -> interior_checks -> exterior_checks -> expression_x (* 4.5.4 *)  
 
 (** in E_Indexed_Component_X, the first astnum is the ast number for the indexed component, 
-    and the second astnum is the ast number for array represented by idnum;
+    and the second astnum is the ast number for array represented by name_x;
     in E_Selected_Component_X, the first astnum is the ast number for the record field,
-    and second astnum is the ast number for record represented by idnum;
+    and second astnum is the ast number for record represented by name_x;
  *)
 with name_x: Type := (* 4.1 *)
-    | E_Identifier_X: astnum -> idnum -> check_flags -> name_x (* 4.1 *)
-    | E_Indexed_Component_X: astnum -> astnum -> idnum -> expression_x -> check_flags -> name_x (* 4.1.1 *)
-    | E_Selected_Component_X: astnum -> astnum -> idnum -> idnum -> check_flags -> name_x (* 4.1.3 *).
+    | E_Identifier_X: astnum -> idnum -> exterior_checks -> name_x (* 4.1 *)
+    | E_Indexed_Component_X: astnum -> name_x -> expression_x -> exterior_checks -> name_x (* 4.1.1 *)
+    | E_Selected_Component_X: astnum -> name_x -> idnum -> exterior_checks -> name_x (* 4.1.3 *).
+
+(** Induction scheme for expression_x and name_x *)
+(**
+Scheme expression_x_ind := Induction for expression_x Sort Prop
+                         with name_x_ind := Induction for name_x Sort Prop.
+*)
 
 (** ** Statements *)
 (* Chapter 5 *)
@@ -88,7 +94,7 @@ Record parameter_specification_x: Type := mkparameter_specification_x{
 Inductive declaration_x: Type :=  (* 3.1 *)
     | D_Null_Declaration_X: declaration_x
     | D_Type_Declaration_X: astnum -> type_declaration_x -> declaration_x (* 3.2.1 *)
-    | D_Object_Declaration_X: astnum -> object_declaration_x -> declaration_x (* 3.3.1 *) 
+    | D_Object_Declaration_X: astnum -> object_declaration_x -> declaration_x (* 3.3.1 *)
     | D_Procedure_Body_X: astnum -> procedure_body_x -> declaration_x (* 6.1 *)
     | D_Seq_Declaration_X: astnum -> declaration_x -> declaration_x -> declaration_x (* it's introduced for easy proof *)
 
@@ -127,11 +133,11 @@ Section AuxiliaryFunctions_X.
 
   Definition type_name_x td :=
     match td with
-    | Subtype_Declaration_X _ tn _ _                => tn
-    | Derived_Type_Declaration_X _ tn _ _           => tn
-    | Integer_Type_Declaration_X _ tn _             => tn
-    | Array_Type_Declaration_X _ tn _ _ => tn
-    | Record_Type_Declaration_X _ tn _              => tn
+    | Subtype_Declaration_X _ tn _ _        => tn
+    | Derived_Type_Declaration_X _ tn _ _   => tn
+    | Integer_Type_Declaration_X _ tn _     => tn
+    | Array_Type_Declaration_X _ tn _ _     => tn
+    | Record_Type_Declaration_X _ tn _      => tn
     end.
 
   Definition subtype_range_x (t: type_declaration_x): option range_x :=
@@ -144,17 +150,17 @@ Section AuxiliaryFunctions_X.
 
   Definition expression_astnum_x e :=
     match e with
-    | E_Literal_X ast_num l checkflags => ast_num
-    | E_Name_X ast_num n checkflags => ast_num
-    | E_Binary_Operation_X ast_num bop e1 e2 checkflags => ast_num
-    | E_Unary_Operation_X ast_num uop e checkflags => ast_num
+    | E_Literal_X ast_num l in_checks ex_checks => ast_num
+    | E_Name_X ast_num n => ast_num
+    | E_Binary_Operation_X ast_num bop e1 e2 in_checks ex_checks => ast_num
+    | E_Unary_Operation_X ast_num uop e in_checks ex_checks => ast_num
     end.  
 
   Definition name_astnum_x n :=
     match n with
-    | E_Identifier_X ast_num x checkflags => ast_num
-    | E_Indexed_Component_X ast_num x_ast_num x e checkflags => ast_num
-    | E_Selected_Component_X ast_num x_ast_num x f checkflags => ast_num
+    | E_Identifier_X ast_num x ex_checks => ast_num
+    | E_Indexed_Component_X ast_num x e ex_checks => ast_num
+    | E_Selected_Component_X ast_num x f ex_checks => ast_num
     end.
 
 End AuxiliaryFunctions_X.

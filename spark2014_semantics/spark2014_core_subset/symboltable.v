@@ -41,6 +41,17 @@ Definition type_decl_x := Symbol_Table_Module_X.type_decl.
 
 Definition level := Symbol_Table_Module.level.
 
+(** name table and symbol table operations for unflagged program *)
+
+Definition reside_nametable_vars := Symbol_Table_Module.reside_nametable_vars.
+Definition reside_nametable_procs := Symbol_Table_Module.reside_nametable_procs.
+Definition reside_nametable_pkgs := Symbol_Table_Module.reside_nametable_pkgs.
+Definition reside_nametable_types := Symbol_Table_Module.reside_nametable_types.
+Definition fetch_var_name := Symbol_Table_Module.fetch_var_name.
+Definition fetch_proc_name := Symbol_Table_Module.fetch_proc_name.
+Definition fetch_pkg_name := Symbol_Table_Module.fetch_pkg_name.
+Definition fetch_type_name := Symbol_Table_Module.fetch_type_name.
+
 Definition reside_symtable_vars := Symbol_Table_Module.reside_symtable_vars.
 Definition reside_symtable_procs := Symbol_Table_Module.reside_symtable_procs.
 Definition reside_symtable_types := Symbol_Table_Module.reside_symtable_types.
@@ -56,6 +67,17 @@ Definition update_procs := Symbol_Table_Module.update_procs.
 Definition update_types := Symbol_Table_Module.update_types.
 Definition update_exps := Symbol_Table_Module.update_exps.
 Definition update_sloc := Symbol_Table_Module.update_sloc.
+
+(** name table and symbol table operations for run-time checks flagged program *)
+
+Definition reside_nametable_vars_x := Symbol_Table_Module_X.reside_nametable_vars.
+Definition reside_nametable_procs_x := Symbol_Table_Module_X.reside_nametable_procs.
+Definition reside_nametable_pkgs_x := Symbol_Table_Module_X.reside_nametable_pkgs.
+Definition reside_nametable_types_x := Symbol_Table_Module_X.reside_nametable_types.
+Definition fetch_var_name_x := Symbol_Table_Module_X.fetch_var_name.
+Definition fetch_proc_name_x := Symbol_Table_Module_X.fetch_proc_name.
+Definition fetch_pkg_name_x := Symbol_Table_Module_X.fetch_pkg_name.
+Definition fetch_type_name_x := Symbol_Table_Module_X.fetch_type_name.
 
 Definition reside_symtable_vars_x := Symbol_Table_Module_X.reside_symtable_vars.
 Definition reside_symtable_procs_x := Symbol_Table_Module_X.reside_symtable_procs.
@@ -73,6 +95,30 @@ Definition update_types_x := Symbol_Table_Module_X.update_types.
 Definition update_exps_x := Symbol_Table_Module_X.update_exps.
 Definition update_sloc_x := Symbol_Table_Module_X.update_sloc.
 
+
+
+Definition fetch_array_index_type (st: symboltable) (array_ast_num: astnum): option type :=
+  match fetch_exp_type array_ast_num st with
+  | Some (Array_Type t) =>
+      match fetch_type t st with
+      | Some (Array_Type_Declaration ast_num tn indexSubtypeMark componentType) =>
+          Some indexSubtypeMark
+      | _ => None
+      end
+  | _ => None
+  end.
+
+Definition fetch_array_index_type_x (st: symboltable_x) (array_ast_num: astnum): option type :=
+  match fetch_exp_type_x array_ast_num st with
+  | Some (Array_Type t) =>
+      match fetch_type_x t st with
+      | Some (Array_Type_Declaration_X ast_num tn indexSubtypeMark componentType) =>
+          Some indexSubtypeMark
+      | _ => None 
+      end
+  | _ => None
+  end.
+
 Inductive extract_subtype_range: symboltable -> type -> range -> Prop :=
   | Extract_Range: forall t tn st td l u,
       subtype_num t = Some tn ->
@@ -89,12 +135,14 @@ Inductive extract_array_index_range: symboltable -> typenum -> range -> Prop :=
       subtype_range td = Some (Range l u) ->
       extract_array_index_range st t (Range l u).
 
+
 Inductive extract_subtype_range_x: symboltable_x -> type -> range_x -> Prop :=
   | Extract_Range_X: forall t tn st td l u,
       subtype_num t = Some tn ->
       fetch_type_x tn st = Some td ->
       subtype_range_x td = Some (Range_X l u) ->
       extract_subtype_range_x st t (Range_X l u).
+
 
 (* tm is a subtype_mark *)
 Inductive extract_array_index_range_x: symboltable_x -> typenum -> range_x -> Prop :=

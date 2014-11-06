@@ -53,32 +53,13 @@ Definition min_signed : Z := Z.opp half_modulus.
     semantics for the language;
 *)
 
-Inductive basic_value : Type :=
-    | Int (n : Z)
-    | Bool (b : bool).
-
-Inductive aggregate_value : Type :=
-    | ArrayV (a: list (index * basic_value))
-    | RecordV (r: list (idnum * basic_value)).
-
 (** Type of stored values in the store *)
-Inductive value : Type :=
-    | BasicV (v: basic_value)
-    | AggregateV (v: aggregate_value)
-    | Undefined.
-
-(*
-Inductive value_stored(Procedure_Decl: Type) (Type_Decl: Type): Type := 
-    | Value (v:value)
-    | Procedure (pd: Procedure_Decl)
-    | TypeDef (td: Type_Decl)
-    | Undefined.
-
-Arguments Value [Procedure_Decl] [Type_Decl] _.
-Arguments Procedure [Procedure_Decl] [Type_Decl] _.
-Arguments TypeDef [Procedure_Decl] [Type_Decl] _.
-Arguments Undefined [Procedure_Decl] [Type_Decl].
-*)
+Inductive value: Type :=
+    | Undefined
+    | Int (n : Z)
+    | Bool (n : bool)
+    | ArrayV (a : list (arrindex * value)) (* in SPARK, array index may start from negative number *)
+    | RecordV (r : list (idnum * value)).
 
 Definition Division_Error: Return value := Run_Time_Error RTE_Division_By_Zero.
 Definition Overflow_Error: Return value := Run_Time_Error RTE_Overflow.
@@ -86,25 +67,25 @@ Definition Range_Error: Return value := Run_Time_Error RTE_Range.
 
 
 (** * Value Operations *)
-Module Val.
+Module Math.
 
 (** ** Arithmetic Operations *)
 
 Definition add (v1 v2: value): option value := 
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Int (v1' + v2')))
+    | Int v1', Int v2' => Some (Int (v1' + v2'))
     | _, _ => None
     end.
 
 Definition sub (v1 v2: value): option value := 
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Int (v1' - v2')))
+    | Int v1', Int v2' => Some (Int (v1' - v2'))
     | _, _ => None
     end.
 
 Definition mul (v1 v2: value): option value :=
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Int (v1' * v2')))
+    | Int v1', Int v2' => Some (Int (v1' * v2'))
     | _, _ => None
     end.
 
@@ -120,89 +101,89 @@ Definition mul (v1 v2: value): option value :=
 
 Definition div (v1 v2: value): option value := 
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Int (Z.quot v1' v2')))
+    | Int v1', Int v2' => Some (Int (Z.quot v1' v2'))
     | _, _ => None
     end.
 
 Definition rem (v1 v2: value): option value := 
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Int (Z.rem v1' v2')))
+    | Int v1', Int v2' => Some (Int (Z.rem v1' v2'))
     | _, _ => None
     end.
 
 (* the keyword "mod" cannot redefined here, so we use "mod'" *)
 Definition mod' (v1 v2: value): option value := 
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Int (Z.modulo v1' v2')))
+    | Int v1', Int v2' => Some (Int (Z.modulo v1' v2'))
     | _, _ => None
     end.
 
 (** ** Logic Operations  *)
 Definition and (v1 v2: value): option value :=
     match v1, v2 with
-    | BasicV (Bool v1'), BasicV (Bool v2') => Some (BasicV (Bool (andb v1' v2')))
+    | Bool v1', Bool v2' => Some (Bool (andb v1' v2'))
     | _, _ => None
     end.
 
 Definition or (v1 v2: value): option value :=
     match v1, v2 with
-    | BasicV (Bool v1'), BasicV (Bool v2') => Some (BasicV (Bool (orb v1' v2')))
+    | Bool v1', Bool v2' => Some (Bool (orb v1' v2'))
     | _, _ => None
     end.
 
 (** ** Relational Operations *)
 Definition eq (v1 v2: value): option value :=
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Bool (Zeq_bool v1' v2')))
+    | Int v1', Int v2' => Some (Bool (Zeq_bool v1' v2'))
     | _, _ => None
     end.
 
 Definition ne (v1 v2: value): option value :=
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Bool (Zneq_bool v1' v2')))
+    | Int v1', Int v2' => Some (Bool (Zneq_bool v1' v2'))
     | _, _ => None
     end.
 
 Definition gt (v1 v2: value): option value :=
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Bool (Zgt_bool v1' v2')))
+    | Int v1', Int v2' => Some (Bool (Zgt_bool v1' v2'))
     | _, _ => None
     end.
 
 Definition ge (v1 v2: value): option value :=
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Bool (Zge_bool v1' v2')))
+    | Int v1', Int v2' => Some (Bool (Zge_bool v1' v2'))
     | _, _ => None
     end.
 
 Definition lt (v1 v2: value): option value :=
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Bool (Zlt_bool v1' v2')))
+    | Int v1', Int v2' => Some (Bool (Zlt_bool v1' v2'))
     | _, _ => None
     end.
 
 Definition le (v1 v2: value): option value :=
     match v1, v2 with
-    | BasicV (Int v1'), BasicV (Int v2') => Some (BasicV (Bool (Zle_bool v1' v2')))
+    | Int v1', Int v2' => Some (Bool (Zle_bool v1' v2'))
     | _, _ => None
     end.
 
 (** Unary Operations *)
 Definition unary_not (v: value): option value :=
     match v with
-    | BasicV (Bool v') => Some (BasicV (Bool (negb v')))
+    | Bool v' => Some (Bool (negb v'))
     | _ => None
     end.
 
 Definition unary_plus (v: value): option value := 
     match v with
-    | BasicV (Int v') => Some v
+    | Int v' => Some v
     | _ => None
     end.
 
 Definition unary_minus (v: value): option value := 
     match v with
-    | BasicV (Int v') => Some (BasicV (Int (Z.opp v')))
+    | Int v' => Some (Int (Z.opp v'))
     | _ => None
     end.
 
@@ -232,6 +213,6 @@ Definition unary_operation (op: unary_operator) (v: value): option value :=
     | Unary_Minus => unary_minus v
     end. 
 
-End Val. 
+End Math. 
 
  

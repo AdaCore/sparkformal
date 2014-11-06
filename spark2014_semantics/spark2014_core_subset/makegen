@@ -4,6 +4,7 @@ LibTactics.v \
 more_list.v \
 language_basics.v \
 language.v \
+language_util.v \
 checks.v \
 language_flagged.v \
 checks_generator.v \

@@ -25,6 +25,7 @@ Definition astnum := nat.
     we take the same way to represent identifiers/names as natural numbers;
    - idnum:   represent declared variables;
    - procnum: represent declared procedure names;
+   - pkgnum: represent package names;
    - typenum: represent declared type names;
 *)
 
@@ -32,9 +33,11 @@ Definition idnum := nat.
 
 Definition procnum := nat.
 
+Definition pkgnum := nat.
+
 Definition typenum := nat.
 
-Definition index := Z. (* array index *)
+Definition arrindex := Z. (* array index *)
 
 (*
 Record type_table: Type := mktype_table{
@@ -155,5 +158,20 @@ Section LB_AuxiliaryFunctions.
     | In_Out => true
     | _      => false
     end.
+  
+  Lemma beq_type_refl: forall t,
+    true = beq_type t t.
+  Proof.
+    intros; destruct t; 
+    smack; apply beq_nat_refl.
+  Qed.
+  
+  Lemma beq_type_eq: forall t1 t2,
+    true = beq_type t1 t2 -> 
+      t1 = t2.
+  Proof.
+    intros; destruct t1, t2; smack;
+    specialize (beq_nat_eq _ _ H); smack.
+  Qed.
 
 End LB_AuxiliaryFunctions.

@@ -45,11 +45,11 @@ Inductive compile2_flagged_exp: symboltable -> expression -> expression_x -> Pro
         compile2_flagged_exp st (E_Literal ast_num (Boolean_Literal b)) 
                                 (E_Literal_X ast_num (Boolean_Literal b) nil nil)
     | C2_Flagged_Literal_Int_T: forall st v ast_num,
-        (Zge_bool v min_signed) && (Zle_bool v max_signed) = true -> (*simple optimization: if v is in the range of Integer, then no overflow check*)
+        (Zle_bool min_signed v) && (Zle_bool v max_signed) = true -> (*simple optimization: if v is in the range of Integer, then no overflow check*)
         compile2_flagged_exp st (E_Literal ast_num (Integer_Literal v)) 
                                 (E_Literal_X ast_num (Integer_Literal v) nil nil)
     | C2_Flagged_Literal_Int_F: forall st v ast_num,
-        (Zge_bool v min_signed) && (Zle_bool v max_signed) = false ->
+        (Zle_bool min_signed v) && (Zle_bool v max_signed) = false ->
         compile2_flagged_exp st (E_Literal ast_num (Integer_Literal v)) 
                                 (E_Literal_X ast_num (Integer_Literal v) (Do_Overflow_Check :: nil) nil)
     | C2_Flagged_Name: forall st n n_flagged ast_num,
@@ -345,7 +345,7 @@ Function compile2_flagged_exp_f (st: symboltable) (e: expression): expression_x 
   | E_Literal ast_num (Boolean_Literal b) => 
       E_Literal_X ast_num (Boolean_Literal b) nil nil
   | E_Literal ast_num (Integer_Literal v) =>
-      match (Zge_bool v min_signed) && (Zle_bool v max_signed) with
+      match (Zle_bool min_signed v) && (Zle_bool v max_signed) with
       | true  => E_Literal_X ast_num (Integer_Literal v) nil nil (* optimization *)
       | false => E_Literal_X ast_num (Integer_Literal v) (Do_Overflow_Check :: nil) nil
       end
@@ -598,7 +598,7 @@ Section Checks_Generator_Function_Correctness_Proof.
       ); smack;
     [ (*E_Literal*) 
       destruct l;
-      [ remember ((z >=? min_signed)%Z && (z <=? max_signed)%Z) as b; destruct b;
+      [ remember ((min_signed <=? z)%Z && (z <=? max_signed)%Z) as b; destruct b;
         smack; constructor; smack |
         smack; constructor
       ] | 

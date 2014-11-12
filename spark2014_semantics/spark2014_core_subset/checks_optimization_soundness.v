@@ -1,7 +1,9 @@
 Require Export checks_optimization.
 Require Export checks_generator.
 Require Export well_typed.
+(*
 Require Export well_check_flagged.
+*)
 
 Scheme expression_ind := Induction for expression Sort Prop 
                          with name_ind := Induction for name Sort Prop.
@@ -77,8 +79,385 @@ Proof.
 - specialize (Zge_cases v l); intros HZ;
   rewrite Heqb1 in HZ; smack.  
 Qed.
-  
+
+Lemma Zge_le_bool: forall u v,
+  Zge_bool u v = true -> Zle_bool v u = true.
+Proof.
+  intros;
+  unfold Zle_bool; unfold Zge_bool in H;
+  rewrite <- Zcompare_antisym;
+  destruct (u ?= v)%Z; auto. 
+Qed.
+
+Lemma Zle_ge_bool: forall u v,
+  Zle_bool u v = true -> Zge_bool v u = true.
+Proof.
+  intros;
+  unfold Zge_bool; unfold Zle_bool in H;
+  rewrite <- Zcompare_antisym;
+  destruct (u ?= v)%Z; auto. 
+Qed.
+
+
+Lemma In_Bound_Trans: forall v l u l' u',
+  (Zge_bool v l) && (Zle_bool v u) = true ->
+    (Zge_bool l l') && (Zle_bool l u') = true ->
+      (Zge_bool u l') && (Zle_bool u u') = true ->
+        (Zge_bool v l') && (Zle_bool v u') = true.
+Proof.
+  intros;
+  repeat progress match goal with
+  | [H: _ && _ = true |- _] => specialize (Zgele_Bool_Imp_GeLe_T _ _ _ H); clear H; smack
+  end;
+  apply andb_true_iff; split.
+- specialize (Zle_trans _ _ _ H1 H0); intros HZ1;
+  specialize (Zle_imp_le_bool _ _ HZ1); intros HZ2;
+  apply Zle_ge_bool; auto.
+- specialize (Zle_trans _ _ _ H5 H3); intros HZ1;
+  specialize (Zle_imp_le_bool _ _ HZ1); auto.
+Qed.
+ 
 End ZArith_Help_Lemmas.
+
+
+Lemma do_overflow_checks_preserve: forall cks v v',
+  do_overflow_checks cks v v' ->
+    sub_bound (Interval v v) int32_bound true ->
+      do_overflow_checks (remove_check_flag Do_Overflow_Check cks) v v'.
+Proof.
+  intros; inversion H; smack.
+  inversion H1; smack.
+  match goal with
+  | [H: sub_bound _ _ _ |- _] => inversion H; clear H; smack
+  end.
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
+  end.
+  constructor.
+Qed.
+
+
+Lemma eval_expr_value_preserve: forall st s e v eBound rBound e',
+  eval_expr_x st s e v ->
+    optimize_range_check e eBound rBound e' ->
+      eval_expr_x st s e' v.
+Proof.
+  intros; 
+  inversion H0; subst; auto;
+  apply eval_exp_with_any_exterior_checks; auto.
+Qed.
+
+
+Lemma eval_expr_value_in_bound: forall st s e v e' l u,
+  eval_expr_x st s e (Normal (Int v)) ->
+    optimize_expression_x st e (e', Interval l u) ->
+      in_bound v (Interval l u) true.
+Proof.
+  admit.
+Qed.
+
+Lemma optimize_exp_ex_cks_eq: forall st e e' eBound,
+  optimize_expression_x st e (e', eBound) ->
+    exp_exterior_checks e' = exp_exterior_checks e.
+Proof.
+  intros;
+  inversion H; smack;
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  end.
+Qed.
+
+Lemma optimize_range_check_reserve: forall v l u cks l' u' e e',
+  in_bound v (Interval l u) true ->
+    do_range_checks cks v l' u' (Run_Time_Error RTE_Range) ->
+      optimize_range_check e (Interval l u) (Interval l' u') e' ->
+        e' = e.
+Proof.
+  intros.
+  match goal with
+  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+  end.
+
+  match goal with
+  | [H: do_range_checks _ _ _ _ _ |- _] => inversion H; clear H; smack
+  end.
+  match goal with
+  | [H: do_range_check _ _ _ _ |- _] => inversion H; clear H; smack
+  end.
+  match goal with
+  | [H: sub_bound _ _ _ |- _] => inversion H; smack
+  end;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
+  end.
+  specialize (In_Bound_Trans _ _ _ _ _ H5 H6 H4).
+  
+Qed.
+
+
+
+optimize_range_check e eBound rBound e' ->
+do_range_checks (exp_exterior_checks e) v l u (Normal (Int v)) ->
+do_range_checks (exp_exterior_checks e') v l u (Normal (Int v)).
+
+
+
+
+
+
+
+Lemma optimize_name_ast_num_eq: forall st n n' nBound,
+  optimize_name_x st n (n', nBound) ->
+    fetch_exp_type_x (name_astnum_x n) st = fetch_exp_type_x (name_astnum_x n') st.
+Proof.
+  intros;
+  inversion H; smack.
+Qed.
+
+Lemma extract_array_index_range_x_unique: forall st a l u l' u',
+  extract_array_index_range_x st a (Range_X l u) ->
+  extract_array_index_range_x st a (Range_X l' u') ->
+  l = l' /\ u = u'.
+Proof.
+  intros.
+  inversion H; inversion H0; subst.
+  repeat progress match goal with
+  | [H1: ?x = _, 
+     H2: ?x = _ |- _] => rewrite H1 in H2; clear H1; inversion H2; subst
+  end; auto.
+Qed.
+
+Ltac apply_extract_array_index_range_x_unique := 
+  match goal with
+  | [H1: extract_array_index_range_x _ ?a (Range_X ?l ?u),
+     H2: extract_array_index_range_x _ ?a (Range_X ?l' ?u') |- _] => 
+      specialize (extract_array_index_range_x_unique _ _ _ _ _ _ H1 H2)
+  end.
+
+
+
+Lemma literal_checks_optimization_soundness: forall cks l v lBound cks',
+  eval_literal_x cks l v ->
+    optimize_literal_x l cks (lBound, cks') ->
+      eval_literal_x cks' l v.
+Proof.
+  intros.
+  inversion H; inversion H0; smack.
+  constructor.
+  match goal with
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; smack
+  end.
+  specialize (do_overflow_checks_preserve _ _ _ H1 H6); auto.
+Qed.
+
+Lemma expression_checks_optimization_soundness: forall e e' st s v eBound,
+  well_typed_stack st s ->
+    eval_expr_x st s e v ->
+      optimize_expression_x st e (e', eBound) ->
+        eval_expr_x st s e' v.
+Proof.
+  apply (expression_x_ind
+    (fun e: expression_x =>
+       forall (e' : expression_x) (st : symboltable_x) (s : STACK.stack) (v : Return value) 
+              (eBound : bound),
+      well_typed_stack st s ->
+      eval_expr_x st s e v ->
+      optimize_expression_x st e (e', eBound) ->
+      eval_expr_x st s e' v)
+    (fun n: name_x =>
+       forall (n' : name_x) (st : symboltable_x) (s : STACK.stack) (v : Return value) 
+              (nBound : bound),
+      well_typed_stack st s ->
+      eval_name_x st s n v ->
+      optimize_name_x st n (n', nBound) ->
+      eval_name_x st s n' v)
+    ); intros.
+  - (** E_Literal_X *)
+  match goal with
+  | [H: optimize_expression_x ?st ?e ?e' |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_expr_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  constructor; auto;
+  match goal with
+  | [H1: eval_literal_x _ ?c _,
+     H2: optimize_literal_x ?c _ _ |- _] => 
+      specialize (literal_checks_optimization_soundness _ _ _ _ _ H1 H2); auto
+  end.
+  - (** E_Name_X *)
+  match goal with
+  | [H: optimize_expression_x ?st ?e ?e' |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_expr_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end; constructor;
+  match goal with
+  | [H1: well_typed_stack _ _,
+     H2: eval_name_x _ _ ?n _,
+     H3: optimize_name_x _ ?n _ |- _] => specialize (H _ _ _ _ _ H1 H2 H3); auto
+  end.
+  - (** E_Binary_Operation_X *)
+  match goal with
+  | [H: optimize_expression_x ?st ?e ?e' |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_expr_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  repeat progress match goal with
+  | [H: forall (e' : expression_x) (st : symboltable_x) 
+               (s : STACK.stack) (v : Return value) (eBound : bound),
+      well_typed_stack _ _ ->
+      eval_expr_x _ _ ?e _ ->
+      optimize_expression_x _ ?e _ -> eval_expr_x _ _ _ _,
+     H1: well_typed_stack _ _,
+     H2: eval_expr_x _ _ ?e _,
+     H3: optimize_expression_x _ ?e _ |- _] => specialize (H _ _ _ _ _ H1 H2 H3)
+  end.
+  + apply Eval_E_Binary_Operation_e1RTE_X; auto.
+  + apply Eval_E_Binary_Operation_e2RTE_X with (v1:=v1); auto.
+  + apply Eval_E_Binary_Operation_X with (v1:=v1) (v2:=v2); auto.
+    admit.
+  - (** E_Unary_Operation_X *)
+  match goal with
+  | [H: optimize_expression_x ?st ?e ?e' |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_expr_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: forall (e' : expression_x) (st : symboltable_x) 
+               (s : STACK.stack) (v : Return value) (eBound : bound),
+      well_typed_stack _ _ ->
+      eval_expr_x _ _ ?e _ ->
+      optimize_expression_x _ ?e _ -> eval_expr_x _ _ _ _,
+     H1: well_typed_stack _ _,
+     H2: eval_expr_x _ _ ?e _,
+     H3: optimize_expression_x _ ?e _ |- _] => specialize (H _ _ _ _ _ H1 H2 H3)
+  end.
+  + apply Eval_E_Unary_Operation_eRTE_X; auto.
+  + apply Eval_E_Unary_Operation_X with (v:=v0); auto.
+    admit.
+  - (** E_Identifier_X *)
+  match goal with
+  | [H: optimize_name_x ?st ?n ?n' |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_name_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  constructor; auto.
+  - (** E_Indexed_Component_X *)
+  match goal with
+  | [H: optimize_name_x ?st ?n ?n' |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_name_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: forall (n' : name_x) (st : symboltable_x) 
+               (s : STACK.stack) (v : Return value) (eBound : bound),
+      well_typed_stack _ _ ->
+      eval_name_x _ _ ?n _ ->
+      optimize_name_x _ ?n _ -> eval_name_x _ _ _ _,
+     H1: well_typed_stack _ _,
+     H2: eval_name_x _ _ ?n _,
+     H3: optimize_name_x _ ?n _ |- _] => specialize (H _ _ _ _ _ H1 H2 H3)
+  end;
+  match goal with
+  | [H: forall (e' : expression_x) (st : symboltable_x) 
+               (s : STACK.stack) (v : Return value) (eBound : bound),
+      well_typed_stack _ _ ->
+      eval_expr_x _ _ ?e _ ->
+      optimize_expression_x _ ?e _ -> eval_expr_x _ _ _ _,
+     H1: well_typed_stack _ _,
+     H2: eval_expr_x _ _ ?e _,
+     H3: optimize_expression_x _ ?e _ |- _] => specialize (H _ _ _ _ _ H1 H2 H3)
+  | _ => idtac
+  end.
+  + apply Eval_E_Indexed_Component_xRTE_X; auto.
+  + apply Eval_E_Indexed_Component_eRTE_X with (a:=a0); auto.
+    match goal with
+    | [ H1: eval_expr_x _ _ ?e _,
+        H2: optimize_range_check ?e _ _ _ |- _ ] => 
+        specialize (eval_expr_value_preserve _ _ _ _ _ _ _ H1 H2); auto
+    end.
+  + apply Eval_E_Indexed_Component_Range_RTE_X with (a:=a0) (i:=i) (t:=t0) (l:=l) (u:=u0); auto.
+    match goal with
+    | [ H1: eval_expr_x _ _ ?e _,
+        H2: optimize_range_check ?e _ _ _ |- _ ] => 
+        specialize (eval_expr_value_preserve _ _ _ _ _ _ _ H1 H2); auto
+    end.
+    match goal with
+    | [H: optimize_name_x _ _ (?n', _) |- context[fetch_exp_type_x (name_astnum_x ?n') _ = _]] =>
+      rewrite <- (optimize_name_ast_num_eq _ _ _ _ H); auto
+    end.
+    match goal with
+    | [H1: fetch_exp_type_x _ _ = _ , H2: fetch_exp_type_x _ _ = _ |- _] => 
+        rewrite H1 in H2; inversion H2; subst
+    end;
+    apply_extract_array_index_range_x_unique; smack.
+    admit.
+  + apply Eval_E_Indexed_Component_X with (a:=a0) (i:=i) (t:=t0) (l:=l) (u:=u0); auto.
+    match goal with
+    | [ H1: eval_expr_x _ _ ?e _,
+        H2: optimize_range_check ?e _ _ _ |- _ ] => 
+        specialize (eval_expr_value_preserve _ _ _ _ _ _ _ H1 H2); auto
+    end.
+    match goal with
+    | [H: optimize_name_x _ _ (?n', _) |- context[fetch_exp_type_x (name_astnum_x ?n') _ = _]] =>
+      rewrite <- (optimize_name_ast_num_eq _ _ _ _ H); auto
+    end.
+    match goal with
+    | [H1: fetch_exp_type_x _ _ = _ , H2: fetch_exp_type_x _ _ = _ |- _] => 
+        rewrite H1 in H2; inversion H2; subst
+    end;
+    apply_extract_array_index_range_x_unique; smack.
+    admit.
+  - (** E_Selected_Component_X *)
+  match goal with
+  | [H: optimize_name_x ?st ?n ?n' |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_name_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: forall (n' : name_x) (st : symboltable_x) 
+               (s : STACK.stack) (v : Return value) (eBound : bound),
+      well_typed_stack _ _ ->
+      eval_name_x _ _ ?n _ ->
+      optimize_name_x _ ?n _ -> eval_name_x _ _ _ _,
+     H1: well_typed_stack _ _,
+     H2: eval_name_x _ _ ?n _,
+     H3: optimize_name_x _ ?n _ |- _] => specialize (H _ _ _ _ _ H1 H2 H3)
+  end.
+  + apply Eval_E_Selected_Component_xRTE_X; auto.
+  + apply Eval_E_Selected_Component_X with (r:=r); auto.
+Qed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 (** * Help Lemmas for Checks Optimizations *)

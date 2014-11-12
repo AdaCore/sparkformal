@@ -33,11 +33,11 @@ Inductive well_typed_stack: symboltable_x -> STACK.stack -> Prop :=
     
     TODO: to be proved !
 *)
-Axiom variable_value_in_type_domain: forall st s x_ast_num x v t l u,
+Axiom variable_value_in_type_domain: forall st s x_ast_num x ex_cks v t l u,
   well_typed_stack st s ->
-    eval_name_x st s (E_Identifier_X x_ast_num x nil) (Normal (BasicV (Int v))) ->
+    eval_name_x st s (E_Identifier_X x_ast_num x ex_cks) (Normal (Int v)) ->
       fetch_exp_type_x x_ast_num st = Some t ->
-        valueO_of_type st t (IntBetween l u) ->
+        bound_of_type st t (Interval l u) ->
           (Zge_bool v l) && (Zle_bool v u) = true.
 
 End Well_Typed_Stack_Sec.

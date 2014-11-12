@@ -7,48 +7,70 @@ Require Export semantics_flagged.
 (** * value types for run time checks optimization *)
 (** value is represented by a range, for a variable, if its initial value is undefined 
     or it's a parameter or its value is dynamically determined, then we use the range 
-    of its type as its value, e.g. x: Integer; it's value is: (IntBetween Integer'First Integer'Last),
-    x: Integer := 1; it's value is: (IntBetween 1 1);
-    for boolean value, it doesn't matter whether it's true or false, so we just use BoolValue to 
+    of its type as its value, e.g. x: Integer; it's value is: (Interval Integer'First Integer'Last),
+    x: Integer := 1; it's value is: (Interval 1 1);
+    for boolean value, it doesn't matter whether it's true or false, so we just use Bool to 
     represent boolean value;
  *)
-Inductive valueO : Type :=
-  | IntBetween (l : Z) (u: Z)
-  | BoolValue.
+Inductive bound : Type :=
+  | Interval (l : Z) (u: Z)
+  | Bool
+  | Aggregate.
 
-Inductive valueO_of_type: symboltable_x -> type -> valueO -> Prop :=
-  | ValueO_Of_Integer: forall st,
-      valueO_of_type st Integer (IntBetween min_signed max_signed)
-  | ValueO_Of_Subtype: forall st t l u,
+Definition int32_bound : bound := (Interval min_signed max_signed).
+
+Inductive bound_of_type: symboltable_x -> type -> bound -> Prop :=
+  | Bound_Of_Boolean: forall st,
+      bound_of_type st Boolean Bool
+  | Bound_Of_Integer: forall st,
+      bound_of_type st Integer int32_bound
+  | Bound_Of_Subtype: forall st t l u,
       extract_subtype_range_x st t (Range_X l u) ->
-      valueO_of_type st t (IntBetween l u).
+      bound_of_type st t (Interval l u)
+  | Bound_Of_Composite_Type: forall t t1 st,
+      t = Array_Type t1 \/ t = Record_Type t1 ->
+      bound_of_type st t Aggregate.
 
 (** t: type id of the array type; (l, u) is the domain of the array component type *)
-Inductive valueO_of_array_component_type : symboltable_x -> typenum -> valueO -> Prop :=
-  | Array_Component_Value : forall t st ast_num tn indexSubtypeMark componentType l u,
+Inductive bound_of_array_component_type : symboltable_x -> typenum -> bound -> Prop :=
+  | Array_Component_Value : forall t st ast_num tn indexSubtypeMark componentType boundValue,
       fetch_type_x t st = Some (Array_Type_Declaration_X ast_num tn indexSubtypeMark componentType) ->
-      valueO_of_type st componentType (IntBetween l u) ->
-      valueO_of_array_component_type st t (IntBetween l u).
+      bound_of_type st componentType boundValue ->
+      bound_of_array_component_type st t boundValue.
 
 Function record_field_type (r: list (idnum * type)) (f: idnum): option type :=
-    match r with 
-    | (f1, t1) :: r1 =>
-        if beq_nat f1 f then 
-          Some t1
-        else
-          record_field_type r1 f
-    | nil => None 
-    end.
+  match r with 
+  | (f1, t1) :: r1 =>
+      if beq_nat f1 f then 
+        Some t1
+      else
+        record_field_type r1 f
+  | nil => None 
+  end.
 
 (** t: type id of the record type; f: field id; ft: field type id *)
-Inductive valueO_of_record_field_type : symboltable_x -> typenum -> idnum -> valueO -> Prop :=
-  | Record_Field_Value : forall t st ast_num tn fields f ft l u,
+Inductive bound_of_record_field_type : symboltable_x -> typenum -> idnum -> bound -> Prop :=
+  | Record_Field_Value : forall t st ast_num tn fields f ft boundValue,
       fetch_type_x t st = Some (Record_Type_Declaration_X ast_num tn fields) ->
       record_field_type fields f = Some ft ->
-      valueO_of_type st ft (IntBetween l u) ->
-      valueO_of_record_field_type st t f (IntBetween l u).
+      bound_of_type st ft boundValue ->
+      bound_of_record_field_type st t f boundValue.
 
-(** remove a check flag "ck" from a set of check flags "(ck' :: cks)" *)
+(** during run-time check optimization, a check flag "ck" will be removed from a set of check
+    flags "(ck' :: cks)" once the check is unnecessary;
+*)
+Function remove_check_flag (ck: check_flag) (cks: check_flags): check_flags :=
+  match cks with
+  | (x :: cks') =>
+      let y := remove_check_flag ck cks' in
+      if beq_check_flag ck x then
+        y
+      else
+        x :: y
+  | nil => nil
+  end.
+
+(*
 Inductive remove_check_flag: check_flag -> check_flags -> check_flags -> Prop :=
   | R_Check_Flag_Nil: forall ck,
       remove_check_flag ck nil nil
@@ -60,131 +82,184 @@ Inductive remove_check_flag: check_flag -> check_flags -> check_flags -> Prop :=
       beq_check_flag ck ck' = false ->
       remove_check_flag ck cks cks' ->
       remove_check_flag ck (ck' :: cks) (ck' :: cks').
-
-Definition eval_literalO (l: literal): valueO :=
-  match l with
-  | Integer_Literal v => IntBetween v v
-  | Boolean_Literal v => BoolValue
-  end.
-
-(** * Run-Time Checks Optimization For Expression *)
-(** given an expression, optimize its run time checks, and return 
-    its possible range values, which will be used later to optimize
-    other checks;
 *)
 
-Inductive optimize_expression_x: symboltable_x -> expression_x -> (valueO * expression_x) -> Prop :=
-  | O_Literal_X: forall l v st ast_num checkflags,
-      eval_literalO l = v ->
-      optimize_expression_x st (E_Literal_X ast_num l checkflags) (v, (E_Literal_X ast_num l checkflags))
-  | O_Name_X: forall st n v n' ast_num checkflags,
-      optimize_name_x st n (v, n') ->
-      optimize_expression_x st (E_Name_X ast_num n checkflags) (v, (E_Name_X ast_num n' checkflags))
-  | O_Binary_Plus_Operation_Overflow_Pass_X: forall st e1 l1 u1 e1' e2 l2 u2 e2' checkflags checkflags' ast_num,
-      optimize_expression_x st e1 ((IntBetween l1 u1), e1') ->
-      optimize_expression_x st e2 ((IntBetween l2 u2), e2') ->
-      do_overflow_check_on_binop Plus (BasicV (Int l1)) (BasicV (Int l2)) Success ->
-      do_overflow_check_on_binop Plus (BasicV (Int u1)) (BasicV (Int u2)) Success ->
-      remove_check_flag Do_Overflow_Check checkflags checkflags' ->
-      optimize_expression_x st (E_Binary_Operation_X ast_num Plus e1 e2 checkflags) 
-                               (IntBetween (l1 + l2)%Z (u1 + u2)%Z, (E_Binary_Operation_X ast_num Plus e1' e2' checkflags'))
-  | O_Binary_Plus_Operation_Overflow_Fail_X: forall st e1 l1 u1 e1' e2 l2 u2 e2' ast_num checkflags,
-      optimize_expression_x st e1 ((IntBetween l1 u1), e1') ->
-      optimize_expression_x st e2 ((IntBetween l2 u2), e2') ->
-      do_overflow_check_on_binop Plus (BasicV (Int l1)) (BasicV (Int l2)) (Exception RTE_Overflow) \/ 
-      do_overflow_check_on_binop Plus (BasicV (Int u1)) (BasicV (Int u2)) (Exception RTE_Overflow) ->
-(*    fetch_exp_type_x ast_num st = Some t ->
-      valueO_of_type st t (IntBetween l u) -> *)
-      optimize_expression_x st (E_Binary_Operation_X ast_num Plus e1 e2 checkflags) 
-                               (IntBetween min_signed max_signed, (E_Binary_Operation_X ast_num Plus e1' e2' checkflags))
-  | O_Binary_Minus_Operation_Overflow_Pass_X: forall st e1 l1 u1 e1' e2 l2 u2 e2' checkflags checkflags' ast_num,
-      optimize_expression_x st e1 ((IntBetween l1 u1), e1') ->
-      optimize_expression_x st e2 ((IntBetween l2 u2), e2') ->
-      do_overflow_check_on_binop Minus (BasicV (Int l1)) (BasicV (Int u2)) Success ->
-      do_overflow_check_on_binop Minus (BasicV (Int u1)) (BasicV (Int l2)) Success ->
-      remove_check_flag Do_Overflow_Check checkflags checkflags' ->
-      optimize_expression_x st (E_Binary_Operation_X ast_num Minus e1 e2 checkflags) 
-                               (IntBetween (l1 - u2)%Z (u1 - l2)%Z, (E_Binary_Operation_X ast_num Minus e1' e2' checkflags'))
-  | O_Binary_Minus_Operation_Overflow_Fail_X: forall st e1 l1 u1 e1' e2 l2 u2 e2' ast_num checkflags,
-      optimize_expression_x st e1 ((IntBetween l1 u1), e1') ->
-      optimize_expression_x st e2 ((IntBetween l2 u2), e2') ->
-      do_overflow_check_on_binop Minus (BasicV (Int l1)) (BasicV (Int u2)) (Exception RTE_Overflow) \/ 
-      do_overflow_check_on_binop Minus (BasicV (Int u1)) (BasicV (Int l2)) (Exception RTE_Overflow) ->
-(*    fetch_exp_type_x ast_num st = Some t ->
-      valueO_of_type st t (IntBetween l u) -> *)
-      optimize_expression_x st (E_Binary_Operation_X ast_num Minus e1 e2 checkflags) 
-                               (IntBetween min_signed max_signed, (E_Binary_Operation_X ast_num Minus e1' e2' checkflags))
-  | O_Binary_Multiplying_Operation_X: forall op st e1 l1 u1 e1' e2 l2 u2 e2' ast_num checkflags,
-      op = Multiply \/ op = Divide ->
-      optimize_expression_x st e1 ((IntBetween l1 u1), e1') ->
-      optimize_expression_x st e2 ((IntBetween l2 u2), e2') ->
-(*    fetch_exp_type_x ast_num st = Some t ->
-      valueO_of_type st t (IntBetween l u) -> *)
-      optimize_expression_x st (E_Binary_Operation_X ast_num op e1 e2 checkflags) 
-                               (IntBetween min_signed max_signed, (E_Binary_Operation_X ast_num op e1' e2' checkflags))
-  | O_Binary_Logical_Operation_X: forall op st e1 e1' e2 e2' ast_num checkflags,
+(** check whether a value falls in a bound *)
+Inductive in_bound: Z -> bound -> bool -> Prop :=
+  | IB_True: forall v l u,
+      (Zge_bool v l) && (Zle_bool v u) = true ->
+      in_bound v (Interval l u) true
+  | IB_False: forall v l u,
+      (Zge_bool v l) && (Zle_bool v u) = false ->
+      in_bound v (Interval l u) false.
+
+
+(** check whether a bound is sub-bound of another one *)
+Inductive sub_bound: bound -> bound -> bool -> Prop :=
+  | SB_True: forall u u' v' v,
+      in_bound u (Interval u' v') true ->
+      in_bound v (Interval u' v') true ->
+      sub_bound (Interval u v) (Interval u' v') true
+  | SB_False: forall u u' v' v,
+      in_bound u (Interval u' v') false \/ in_bound v (Interval u' v') false ->
+      sub_bound (Interval u v) (Interval u' v') false.
+
+(** if the bound (Interval u v) is within the bound of the integer type,
+    then optimize away the overflow check from the check set "cks", return 
+    the optimized run-time check flags, and return the resulting bound 
+    (Interval u v) if it's within integer bound, otherwise, return int32_bound;
+*)
+Inductive optimize_overflow_check: bound -> check_flags -> (bound * check_flags) -> Prop :=
+  | OOC_True: forall u v cks' cks,
+      sub_bound (Interval u v) int32_bound true ->
+      cks' = remove_check_flag Do_Overflow_Check cks ->
+      optimize_overflow_check (Interval u v) cks ((Interval u v), cks')
+  | OOC_False: forall u v cks,
+      sub_bound (Interval u v) int32_bound false ->
+      optimize_overflow_check (Interval u v) cks (int32_bound, cks).
+
+(** given an expression and its possible value bound, if it's used in a context where
+    a range constraint is enforced, then check whether the value bound of the expression 
+    is within the range constraint required by the context, if it's so, the range check 
+    can be optimized away; 
+*)
+Inductive optimize_range_check: expression_x -> bound -> bound -> expression_x -> Prop :=
+  | ORC_True: forall u v u' v' cks e e',
+      sub_bound (Interval u v) (Interval u' v') true ->
+      cks = remove_check_flag Do_Range_Check (exp_exterior_checks e) ->
+      e' = update_exterior_checks_exp e cks ->
+      optimize_range_check e (Interval u v) (Interval u' v') e'
+  | ORC_False: forall u v u' v' e,
+      sub_bound (Interval u v) (Interval u' v') true ->
+      optimize_range_check e (Interval u v) (Interval u' v') e.
+
+Inductive optimize_range_check_on_copy_out: expression_x -> bound -> bound -> expression_x -> Prop :=
+  | ORCOCO_True: forall u v u' v' cks e e',
+      sub_bound (Interval u v) (Interval u' v') true ->
+      cks = remove_check_flag Do_Range_Check_On_CopyOut (exp_exterior_checks e) ->
+      e' = update_exterior_checks_exp e cks ->
+      optimize_range_check_on_copy_out e (Interval u v) (Interval u' v') e'
+  | ORCOCO_False: forall u v u' v' e,
+      sub_bound (Interval u v) (Interval u' v') true ->
+      optimize_range_check_on_copy_out e (Interval u v) (Interval u' v') e.
+
+(*
+(** if the bound (Interval u v) is within the bound (Interval u' v'), then optimize 
+    away the run-time check flag "ck" from the check set "cks", return the optimized
+    run-time check flags, and return the resulting bound (Interval u v) if it's within
+    the bound (Interval u' v'), otherwise, return bound (Interval u' v');
+*)
+Inductive optimize_run_time_check: check_flag -> check_flags -> bound -> bound -> (bound * check_flags) -> Prop :=
+  | O_RTC_True: forall u v u' v' cks' ck cks,
+      sub_bound (Interval u v) (Interval u' v') true ->
+      cks' = remove_check_flag ck cks ->
+      optimize_run_time_check ck cks (Interval u v) (Interval u' v') ((Interval u v), cks')
+  | O_RTC_False: forall u v u' v' ck cks,
+      sub_bound (Interval u v) (Interval u' v') false ->
+      optimize_run_time_check ck cks (Interval u v) (Interval u' v') ((Interval u' v'), cks).
+*)
+
+(** optimization for binary operation, in the following rule: 
+    optimize_rtc_binop op (Interval u v) (Interval u' v') ck (Interval x y, cks'),
+    op: the binary operator;
+    cks: the run-time checks enforced on the binary operation;
+    (Interval u v): the bound of possible values of the left hand side of binary operator;
+    (Interval u' v'): the bound of possible values of the right hand side of binary operator;
+    Interval x y: the result bound of binary operation;
+    cks': the result run-time check flags after the optimization;
+*)
+Inductive optimize_rtc_binop: binary_operator -> bound -> bound -> check_flags -> (bound * check_flags) -> Prop :=
+  | O_RTC_Plus: forall u u' x v v' y cks retBound cks',
+      Math.add (Int u) (Int u') = Some (Int x) -> 
+      Math.add (Int v) (Int v') = Some (Int y) ->
+      optimize_overflow_check (Interval x y) cks (retBound, cks') ->
+      optimize_rtc_binop Plus (Interval u v) (Interval u' v') cks (retBound, cks')
+  | O_RTC_Minus: forall u v' x v u' y cks retBound cks',
+      Math.sub (Int u) (Int v') = Some (Int x) -> 
+      Math.sub (Int v) (Int u') = Some (Int y) ->
+      optimize_overflow_check (Interval x y) cks (retBound, cks') ->
+      optimize_rtc_binop Minus (Interval u v) (Interval u' v') cks (retBound, cks')
+  | O_RTC_Multiply: forall u v u' v' cks, (* no optimization for multiplication now *)
+      optimize_rtc_binop Multiply (Interval u v) (Interval u' v') cks (int32_bound, cks)
+  | O_RTC_Divide_T: forall u' v' u v cks,  (* only division by zero optimization for division now *)
+      in_bound 0 (Interval u' v') true ->
+      optimize_rtc_binop Divide (Interval u v) (Interval u' v') cks (int32_bound, cks)
+  | O_RTC_Divide_F: forall u' v' u v cks' cks,  (* only division by zero optimization for division now *)
+      in_bound 0 (Interval u' v') false ->
+      cks' = remove_check_flag Do_Division_Check cks ->
+      optimize_rtc_binop Divide (Interval u v) (Interval u' v') cks (int32_bound, cks')
+  | O_RTC_Logic_Binop: forall op cks,
       op <> Plus /\ op <> Minus /\ op <> Multiply /\ op <> Divide ->
-      optimize_expression_x st e1 (BoolValue, e1') ->
-      optimize_expression_x st e2 (BoolValue, e2') ->
-      optimize_expression_x st (E_Binary_Operation_X ast_num op e1 e2 checkflags) 
-                               (BoolValue, (E_Binary_Operation_X ast_num op e1' e2' checkflags))
-  | O_Unary_Minus_Operation_X: forall st e l u e' l' u' checkflags checkflags' ast_num,
-      optimize_expression_x st e (IntBetween l u, e') ->
-      Z.opp u = l' ->
-      Z.opp l = u' ->
-      do_overflow_check_on_unop Unary_Minus (BasicV (Int l')) Success ->
-      do_overflow_check_on_unop Unary_Minus (BasicV (Int u')) Success ->
-      remove_check_flag Do_Overflow_Check checkflags checkflags' ->
-      optimize_expression_x st (E_Unary_Operation_X ast_num Unary_Minus e checkflags) 
-                               (IntBetween l' u', (E_Unary_Operation_X ast_num Unary_Minus e' checkflags'))
-  | O_Unary_Minus_Operation_Overflow_X: forall st e l u e' l' u' ast_num checkflags,
-      optimize_expression_x st e (IntBetween l u, e') ->
-      Z.opp u = l' ->
-      Z.opp l = u' ->
-      do_overflow_check_on_unop Unary_Minus (BasicV (Int l')) (Exception RTE_Overflow) \/
-      do_overflow_check_on_unop Unary_Minus (BasicV (Int u')) (Exception RTE_Overflow) ->
-(*    fetch_exp_type_x ast_num st = Some t ->
-      valueO_of_type st t (IntBetween l u) -> *)
-      optimize_expression_x st (E_Unary_Operation_X ast_num Unary_Minus e checkflags) 
-                               (IntBetween min_signed max_signed, (E_Unary_Operation_X ast_num Unary_Minus e' checkflags))
-  | O_Unary_Plus_Operation_X: forall st e l u e' ast_num checkflags,
-      optimize_expression_x st e (IntBetween l u, e') ->
-      optimize_expression_x st (E_Unary_Operation_X ast_num Unary_Plus e checkflags) 
-                               (IntBetween l u, (E_Unary_Operation_X ast_num Unary_Plus e' checkflags))
-  | O_Unary_Not_Operation_X: forall st e e' ast_num checkflags,
-      optimize_expression_x st e (BoolValue, e') ->
-      optimize_expression_x st (E_Unary_Operation_X ast_num Not e checkflags)
-                               (BoolValue, (E_Unary_Operation_X ast_num Not e' checkflags))
+      optimize_rtc_binop op Bool Bool cks (Bool, cks).
+
+
+(** optimization for unary operation *)
+Inductive optimize_rtc_unop: unary_operator -> bound -> check_flags -> (bound * check_flags) -> Prop :=
+  | O_RTC_Unary_Minus: forall v x u y cks retBound cks',
+      Math.unary_minus (Int v) = Some (Int x) ->
+      Math.unary_minus (Int u) = Some (Int y) ->
+      optimize_overflow_check (Interval x y) cks (retBound, cks') ->
+      optimize_rtc_unop Unary_Minus (Interval u v) cks (retBound, cks')
+  | O_RTC_Unop_Others: forall op boundVal cks,
+      op <> Unary_Minus ->
+      optimize_rtc_unop op boundVal cks (boundVal, cks).
+
+
+(** for a literal with run-time check flags, if it's an int literal and its value falls 
+    in the integer range, then optimize away the overflow check
+*)
+Inductive optimize_literal_x: literal -> check_flags -> (bound * check_flags) -> Prop :=
+  | O_Literal_Bool_X: forall cks v,
+      optimize_literal_x (Boolean_Literal v) cks (Bool, cks)
+  | O_Literal_Int_X: forall v cks retBound cks',
+      optimize_overflow_check (Interval v v) cks (retBound, cks') ->
+      optimize_literal_x (Integer_Literal v) cks (retBound, cks').
+
+
+(** * Run-Time Checks Optimization For Expression *)
+(** given an expression, optimize its run time checks, and return the optimized expression
+    and its possible value bound, which will be used later to optimize other checks;
+*)
+
+Inductive optimize_expression_x: symboltable_x -> expression_x -> (expression_x * bound) -> Prop :=
+  | O_Literal_X: forall l in_cks lBound in_cks' st ast_num ex_cks,
+      optimize_literal_x l in_cks (lBound, in_cks') -> 
+      optimize_expression_x st (E_Literal_X ast_num l in_cks ex_cks) ((E_Literal_X ast_num l in_cks' ex_cks), lBound)
+  | O_Name_X: forall st n n' nBound ast_num,
+      optimize_name_x st n (n', nBound) ->
+      optimize_expression_x st (E_Name_X ast_num n) ((E_Name_X ast_num n'), nBound)
+  | O_Binary_Operation_X: forall st e1 e1' e1Bound e2 e2' e2Bound in_cks retBound in_cks' ast_num op ex_cks,
+      optimize_expression_x st e1 (e1', e1Bound) ->
+      optimize_expression_x st e2 (e2', e2Bound) ->
+      optimize_rtc_binop op e1Bound e2Bound in_cks (retBound, in_cks') ->
+      optimize_expression_x st (E_Binary_Operation_X ast_num op e1 e2 in_cks ex_cks) 
+                               ((E_Binary_Operation_X ast_num op e1' e2' in_cks' ex_cks), retBound)
+  | O_Unary_Operation_X: forall st e e' eBound op in_cks retBound in_cks' ast_num ex_cks,
+      optimize_expression_x st e (e', eBound) ->
+      optimize_rtc_unop op eBound in_cks (retBound, in_cks') ->
+      optimize_expression_x st (E_Unary_Operation_X ast_num op e in_cks ex_cks) 
+                               ((E_Unary_Operation_X ast_num op e' in_cks' ex_cks), retBound)
       
-with optimize_name_x: symboltable_x -> name_x -> (valueO * name_x) -> Prop :=
-  | O_Identifier_X: forall ast_num st t l u x checkflags,
+with optimize_name_x: symboltable_x -> name_x -> (name_x * bound) -> Prop :=
+  | O_Identifier_X: forall ast_num st t xBound x ex_cks,
       fetch_exp_type_x ast_num st = Some t ->
-      valueO_of_type st t (IntBetween l u) ->
-      optimize_name_x st (E_Identifier_X ast_num x checkflags) (IntBetween l u, (E_Identifier_X ast_num x checkflags))
-  | O_Indexed_Component_Range_Pass_X: forall st e l u e' x_ast_num t l' u' l'' u'' checkflags' e'' ast_num x checkflags,
-      optimize_expression_x st e (IntBetween l u, e') ->
-      fetch_exp_type_x x_ast_num st = Some (Array_Type t) ->
-      extract_array_index_range_x st t (Range_X l' u') -> (* range value of array index type *)
-      valueO_of_array_component_type st t (IntBetween l'' u'') ->
-      do_range_check l l' u' Success ->
-      do_range_check u l' u' Success ->
-      remove_check_flag Do_Range_Check (exp_check_flags e') checkflags' ->
-      e'' = (update_exp_check_flags e' checkflags') ->
-      optimize_name_x st (E_Indexed_Component_X ast_num x_ast_num x e checkflags) 
-                         (IntBetween l'' u'', (E_Indexed_Component_X ast_num x_ast_num x e'' checkflags))
-  | O_Indexed_Component_Range_Fail_X: forall st e l u e' x_ast_num t l' u' l'' u'' ast_num x checkflags,
-      optimize_expression_x st e (IntBetween l u, e') ->
-      fetch_exp_type_x x_ast_num st = Some (Array_Type t) ->
-      extract_array_index_range_x st t (Range_X l' u') -> (* range value of array index type *)
-      valueO_of_array_component_type st t (IntBetween l'' u'') ->
-      do_range_check l l' u' (Exception RTE_Range) \/ do_range_check u l' u' (Exception RTE_Range) ->
-      optimize_name_x st (E_Indexed_Component_X ast_num x_ast_num x e checkflags) 
-                         (IntBetween l'' u'', (E_Indexed_Component_X ast_num x_ast_num x e' checkflags))
-  | O_Selected_Component_X: forall x_ast_num st t f l u ast_num x checkflags,
-      fetch_exp_type_x x_ast_num st = Some (Record_Type t) ->
-      valueO_of_record_field_type st t f (IntBetween l u) ->
-      optimize_name_x st (E_Selected_Component_X ast_num x_ast_num x f checkflags)
-                         (IntBetween l u, (E_Selected_Component_X ast_num x_ast_num x f checkflags)).
+      bound_of_type st t xBound ->
+      optimize_name_x st (E_Identifier_X ast_num x ex_cks) ((E_Identifier_X ast_num x ex_cks), xBound)
+  | O_Indexed_Component_X: forall st x x' xBound e e' u v t u' v' e'' componentBound ast_num ex_cks,
+      optimize_name_x st x (x', xBound) ->
+      optimize_expression_x st e (e', Interval u v) ->
+      fetch_exp_type_x (name_astnum_x x) st = Some (Array_Type t) ->
+      extract_array_index_range_x st t (Range_X u' v') -> (* range value of array index type *)
+      optimize_range_check e' (Interval u v) (Interval u' v') e'' ->
+      bound_of_array_component_type st t componentBound ->
+      optimize_name_x st (E_Indexed_Component_X ast_num x e ex_cks) 
+                         ((E_Indexed_Component_X ast_num x' e'' ex_cks), componentBound)
+  | O_Selected_Component_X: forall st x x' xBound t f fieldBound ast_num ex_cks,
+      optimize_name_x st x (x', xBound) ->
+      fetch_exp_type_x (name_astnum_x x) st = Some (Record_Type t) ->
+      bound_of_record_field_type st t f fieldBound ->
+      optimize_name_x st (E_Selected_Component_X ast_num x f ex_cks)
+                         ((E_Selected_Component_X ast_num x f ex_cks), fieldBound).
 
 
 (** optimize run-time checks for arguments during procedure call;
@@ -195,127 +270,57 @@ with optimize_name_x: symboltable_x -> name_x -> (valueO * name_x) -> Prop :=
 Inductive optimize_args_x: symboltable_x -> list parameter_specification_x -> list expression_x -> list expression_x -> Prop :=
   | O_Args_Nil: forall st,
       optimize_args_x st nil nil nil
-  | O_Args_Head_In: forall param st arg v arg' params args args',
+  | O_Args_Mode_In: forall param st arg arg' argBound params args args',
       param.(parameter_mode_x) = In -> 
-      optimize_expression_x st arg (v, arg') ->
       is_range_constrainted_type (param.(parameter_subtype_mark_x)) = false ->
+      optimize_expression_x st arg (arg', argBound) ->
       optimize_args_x st params args args' ->
       optimize_args_x st (param :: params) (arg :: args) (arg' :: args')
-  | O_Args_Head_In_Range_Pass: forall param st arg l u arg' l' u' checkflags' arg'' params args args',
+  | O_Args_Mode_In_RangeCheck: forall param st u v arg arg' u' v' arg'' params args args',
       param.(parameter_mode_x) = In -> 
-      optimize_expression_x st arg (IntBetween l u, arg') ->
-      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X l' u') ->
-      do_range_check l l' u' Success ->
-      do_range_check u l' u' Success ->
-      remove_check_flag Do_Range_Check (exp_check_flags arg') checkflags' ->
-      arg'' = (update_exp_check_flags arg' checkflags') ->
+      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X u v) ->
+      optimize_expression_x st arg (arg', Interval u' v') ->
+      optimize_range_check arg' (Interval u' v') (Interval u v) arg'' ->
       optimize_args_x st params args args' ->
       optimize_args_x st (param :: params) (arg :: args) (arg'' :: args')
-  | O_Args_Head_In_Range_Fail: forall param st arg l u arg' l' u' params args args',
-      param.(parameter_mode_x) = In ->
-      optimize_expression_x st arg (IntBetween l u, arg') ->
-      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X l' u') ->
-      do_range_check l l' u' (Exception RTE_Range) \/ do_range_check u l' u' (Exception RTE_Range) ->
-      optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) (arg :: args) (arg' :: args')
-  | O_Args_Head_Out_Arg: forall param ast_num st t params args args' x_ast_num x checkflags ckflags,
+  | O_Args_Mode_Out: forall param ast_num st t n n' nBound params args args',
       param.(parameter_mode_x) = Out ->
       fetch_exp_type_x ast_num st = Some t ->
       is_range_constrainted_type t = false ->
+      optimize_name_x st n (n', nBound) ->
       optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args')
-  | O_Args_Head_Out_Param: forall param ast_num st t params args args' x_ast_num x checkflags ckflags,
+      optimize_args_x st (param :: params) ((E_Name_X ast_num n) :: args) 
+                                           ((E_Name_X ast_num n') :: args')
+  | O_Args_Mode_Out_RangeCheck: forall param st u v ast_num t u' v' n n' nBound arg' params args args',
       param.(parameter_mode_x) = Out ->
-      is_range_constrainted_type (param.(parameter_subtype_mark_x)) = false ->
+      bound_of_type st (param.(parameter_subtype_mark_x)) (Interval u v) ->
       fetch_exp_type_x ast_num st = Some t ->
-      is_range_constrainted_type t = true ->
+      extract_subtype_range_x st t (Range_X u' v') ->
+      optimize_name_x st n (n', nBound) ->
+      optimize_range_check (E_Name_X ast_num n') (Interval u v) (Interval u' v') arg' ->
       optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args')
-  | O_Args_Head_Out_Range_Pass: forall param st l u ast_num t l' u' checkflags checkflags' params args args' x_ast_num x ckflags,
-      param.(parameter_mode_x) = Out -> 
-      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X l u) ->
-      fetch_exp_type_x ast_num st = Some t ->
-      extract_subtype_range_x st t (Range_X l' u') ->
-      do_range_check l l' u' Success ->
-      do_range_check u l' u' Success ->
-      remove_check_flag Do_Range_Check_On_CopyOut checkflags checkflags' ->
-      optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags') ckflags) :: args')
-  | O_Args_Head_Out_Range_Fail: forall param st l u ast_num t l' u' params args args' x_ast_num x checkflags ckflags,
-      param.(parameter_mode_x) = Out ->
-      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X l u) ->
-      fetch_exp_type_x ast_num st = Some t ->
-      extract_subtype_range_x st t (Range_X l' u') ->
-      do_range_check l l' u' (Exception RTE_Range) \/ do_range_check u l' u' (Exception RTE_Range) ->
-      optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args')
-  | O_Args_Head_InOut_Param: forall param st params args args' ast_num x_ast_num x checkflags ckflags, 
-      (* option: this constructor can be put together with O_Args_Head_In *)
-      param.(parameter_mode_x) = In_Out ->
-      is_range_constrainted_type (param.(parameter_subtype_mark_x)) = false ->
-      optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args')
-  | O_Args_Head_InOut_Arg: forall param ast_num st t params args args' x_ast_num x checkflags ckflags,
-      (* option: this constructor can be put together with O_Args_Head_Out *)
+      optimize_args_x st (param :: params) ((E_Name_X ast_num n) :: args) 
+                                           (arg' :: args')
+  | O_Args_Mode_InOut: forall param ast_num st t n n' nBound params args args', 
       param.(parameter_mode_x) = In_Out ->
       fetch_exp_type_x ast_num st = Some t ->
-      is_range_constrainted_type t = false ->
+      is_range_constrainted_type t = false \/ is_range_constrainted_type (param.(parameter_subtype_mark_x)) = false ->
+      optimize_name_x st n (n', nBound) ->
       optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args')
-  | O_Args_Head_InOut_Range_Pass: forall param st l u ast_num t l' u' checkflags checkflags' checkflags'' 
-                                               params args args' x_ast_num x ckflags,
+      optimize_args_x st (param :: params) ((E_Name_X ast_num n) :: args) 
+                                           ((E_Name_X ast_num n') :: args')
+  | O_Args_Mode_InOut_In_RangeCheck: forall param u v ast_num st t u' v' n n' nBound arg arg' params args args', 
       param.(parameter_mode_x) = In_Out ->
-      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X l u) ->
+      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X u v) ->
       fetch_exp_type_x ast_num st = Some t ->
-      extract_subtype_range_x st t (Range_X l' u') ->
-      do_range_check l l' u' Success /\ do_range_check u l' u' Success -> (* it's the same as: l=l' /\ u=u' *)
-      do_range_check l' l u Success /\ do_range_check u' l u Success ->
-      remove_check_flag Do_Range_Check checkflags checkflags' ->
-      remove_check_flag Do_Range_Check_On_CopyOut checkflags' checkflags'' ->
+      extract_subtype_range_x st t (Range_X u' v') ->
+      optimize_name_x st n (n', nBound) ->
+      optimize_range_check (E_Name_X ast_num n') (Interval u' v') (Interval u v) arg ->
+      optimize_range_check_on_copy_out arg (Interval u v) (Interval u' v') arg' ->
       optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags'') ckflags) :: args')
-  | O_Args_Head_InOut_In_Range_Pass: forall param st l u ast_num t l' u' checkflags checkflags' 
-                                               params args args' x_ast_num x ckflags,
-      param.(parameter_mode_x) = In_Out ->
-      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X l u) ->
-      fetch_exp_type_x ast_num st = Some t ->
-      extract_subtype_range_x st t (Range_X l' u') ->
-      do_range_check l' l u Success /\ do_range_check u' l u Success ->
-      do_range_check l l' u' (Exception RTE_Range) \/ do_range_check u l' u' (Exception RTE_Range) ->
-      remove_check_flag Do_Range_Check checkflags checkflags' ->
-      optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags') ckflags) :: args')
-  | O_Args_Head_InOut_Out_Range_Pass: forall param st l u ast_num t l' u' checkflags checkflags' 
-                                               params args args' x_ast_num x ckflags,
-      param.(parameter_mode_x) = In_Out ->
-      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X l u) ->
-      fetch_exp_type_x ast_num st = Some t ->
-      extract_subtype_range_x st t (Range_X l' u') ->
-      do_range_check l l' u' Success /\ do_range_check u l' u' Success ->
-      do_range_check l' l u (Exception RTE_Range) \/ do_range_check u' l u (Exception RTE_Range) ->
-      remove_check_flag Do_Range_Check_On_CopyOut checkflags checkflags' ->
-      optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags') ckflags) :: args')
-  | O_Args_Head_InOut_Range_Fail: forall param st l u ast_num t l' u' 
-                                               params args args' x_ast_num x checkflags ckflags,
-      param.(parameter_mode_x) = In_Out ->
-      extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X l u) ->
-      fetch_exp_type_x ast_num st = Some t ->
-      extract_subtype_range_x st t (Range_X l' u') ->
-      do_range_check l l' u' (Exception RTE_Range) \/ do_range_check u l' u' (Exception RTE_Range) ->
-      do_range_check l' l u (Exception RTE_Range) \/ do_range_check u' l u (Exception RTE_Range) ->
-      optimize_args_x st params args args' ->
-      optimize_args_x st (param :: params) ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args) 
-                                           ((E_Name_X ast_num (E_Identifier_X x_ast_num x checkflags) ckflags) :: args').
+      optimize_args_x st (param :: params) ((E_Name_X ast_num n) :: args) 
+                                           (arg' :: args').
+
 
 
 (** * Run-Time Checks Optimization For Statement *)
@@ -323,26 +328,26 @@ Inductive optimize_args_x: symboltable_x -> list parameter_specification_x -> li
 Inductive optimize_statement_x: symboltable_x -> statement_x -> statement_x -> Prop :=
   | O_Null_X: forall st, 
       optimize_statement_x st S_Null_X S_Null_X
-  | O_Assignment_Range_Pass_X: forall st e l u e' x l' u' x' checkflags' e'' ast_num,
-      optimize_expression_x st e (IntBetween l u, e') ->
-      optimize_name_x st x (IntBetween l' u', x') ->
-      do_range_check l l' u' Success ->
-      do_range_check u l' u' Success ->
-      remove_check_flag Do_Range_Check (exp_check_flags e') checkflags' ->
-      e'' = (update_exp_check_flags e' checkflags') ->
-      optimize_statement_x st (S_Assignment_X ast_num x e) (S_Assignment_X ast_num x' e'')
-  | O_Assignment_Range_Fail_X: forall st e l u e' x l' u' x' ast_num,
-      optimize_expression_x st e (IntBetween l u, e') ->
-      optimize_name_x st x (IntBetween l' u', x') ->
-      do_range_check l l' u' (Exception RTE_Range) \/ do_range_check u l' u' (Exception RTE_Range) ->
+  | O_Assignment_X: forall x st t x' xBound e e' eBound ast_num,
+      fetch_exp_type_x (name_astnum_x x) st = Some t ->
+      is_range_constrainted_type t = false -> 
+      optimize_name_x st x (x', xBound) ->
+      optimize_expression_x st e (e', eBound) ->
       optimize_statement_x st (S_Assignment_X ast_num x e) (S_Assignment_X ast_num x' e')
-  | O_If_X: forall st e v e' c1 c1' c2 c2' ast_num,
-      optimize_expression_x st e (v, e') ->
+  | O_Assignment_RangeCheck_X: forall x st t u v x' xBound e e' u' v' e'' ast_num,
+      fetch_exp_type_x (name_astnum_x x) st = Some t ->
+      extract_subtype_range_x st t (Range_X u v) ->
+      optimize_name_x st x (x', xBound) ->
+      optimize_expression_x st e (e', Interval u' v') ->
+      optimize_range_check e' (Interval u' v') (Interval u v) e'' ->
+      optimize_statement_x st (S_Assignment_X ast_num x e) (S_Assignment_X ast_num x' e'')
+  | O_If_X: forall st e e' eBound c1 c1' c2 c2' ast_num,
+      optimize_expression_x st e (e', eBound) ->
       optimize_statement_x st c1 c1' ->
       optimize_statement_x st c2 c2' ->
       optimize_statement_x st (S_If_X ast_num e c1 c2) (S_If_X ast_num e' c1' c2')
-  | O_While_Loop_X: forall st e v e' c c' ast_num,
-      optimize_expression_x st e (v, e') ->
+  | O_While_Loop_X: forall st e e' eBound c c' ast_num,
+      optimize_expression_x st e (e', eBound) ->
       optimize_statement_x st c c' ->
       optimize_statement_x st (S_While_Loop_X ast_num e c) (S_While_Loop_X ast_num e' c')
   | O_Procedure_Call_X: forall p st n pb args args' ast_num p_ast_num,
@@ -355,33 +360,32 @@ Inductive optimize_statement_x: symboltable_x -> statement_x -> statement_x -> P
       optimize_statement_x st (S_Sequence_X ast_num c1 c2) (S_Sequence_X ast_num c1' c2').
 
 (** * Run-Time Checks Optimization For Declaration *)
+
+Inductive optimize_object_declaration_x: symboltable_x -> object_declaration_x -> object_declaration_x -> Prop :=
+  | O_Object_Declaration_NoneInit_X: forall st ast_num x t,
+      optimize_object_declaration_x st (mkobject_declaration_x ast_num x t None) 
+                                       (mkobject_declaration_x ast_num x t None)
+  | O_Object_Declaration_NoRangeCheck_X: forall t st e e' eBound ast_num x,
+      is_range_constrainted_type t = false ->
+      optimize_expression_x st e (e', eBound) -> 
+      optimize_object_declaration_x st (mkobject_declaration_x ast_num x t (Some e)) 
+                                       (mkobject_declaration_x ast_num x t (Some e'))
+  | O_Object_Declaration_RangeCheck_X: forall st t u v e e' u' v' e'' ast_num x,
+      extract_subtype_range_x st t (Range_X u v) ->
+      optimize_expression_x st e (e', Interval u' v') ->
+      optimize_range_check e' (Interval u' v') (Interval u v) e'' ->
+      optimize_object_declaration_x st (mkobject_declaration_x ast_num x t (Some e)) 
+                                       (mkobject_declaration_x ast_num x t (Some e'')).
+
+
 Inductive optimize_declaration_x: symboltable_x -> declaration_x -> declaration_x -> Prop :=
   | O_Null_Declaration_X: forall st,
       optimize_declaration_x st D_Null_Declaration_X D_Null_Declaration_X
   | O_Type_Declaration_X: forall st ast_num t,
       optimize_declaration_x st (D_Type_Declaration_X ast_num t) (D_Type_Declaration_X ast_num t)
-  | O_Object_Declaration_No_Initialization_X: forall o st ast_num,
-      o.(initialization_expression_x) = None ->
-      optimize_declaration_x st (D_Object_Declaration_X ast_num o) (D_Object_Declaration_X ast_num o)
-  | O_Object_Declaration_Range_Pass_X: forall o e st l u e' l' u' checkflags' e'' o' ast_num,
-      o.(initialization_expression_x) = Some e ->
-      optimize_expression_x st e (IntBetween l u, e') -> 
-      extract_subtype_range_x st (o.(object_nominal_subtype_x)) (Range_X l' u') ->
-      do_range_check l l' u' Success ->
-      do_range_check u l' u' Success ->   
-      remove_check_flag Do_Range_Check (exp_check_flags e') checkflags' ->
-      e'' = (update_exp_check_flags e' checkflags') ->
-      o' = (mkobject_declaration_x o.(declaration_astnum_x) o.(object_name_x) o.(object_nominal_subtype_x) (Some e'')) ->
-      optimize_declaration_x st (D_Object_Declaration_X ast_num o) 
-                                (D_Object_Declaration_X ast_num o')
-  | O_Object_Declaration_Range_Fail_X: forall o e st l u e' l' u' o' ast_num,
-      o.(initialization_expression_x) = Some e ->
-      optimize_expression_x st e (IntBetween l u, e') -> 
-      extract_subtype_range_x st (o.(object_nominal_subtype_x)) (Range_X l' u') ->
-      do_range_check l l' u' (Exception RTE_Range) \/ do_range_check u l' u' (Exception RTE_Range) ->      
-      o' = (mkobject_declaration_x o.(declaration_astnum_x) o.(object_name_x) o.(object_nominal_subtype_x) (Some e')) ->
-      optimize_declaration_x st (D_Object_Declaration_X ast_num o) 
-                                (D_Object_Declaration_X ast_num o')
+  | O_Object_Declaration_X: forall st o o' ast_num,
+      optimize_object_declaration_x st o o' ->
+      optimize_declaration_x st (D_Object_Declaration_X ast_num o) (D_Object_Declaration_X ast_num o')
   | O_Procedure_Body_X: forall st p p' ast_num,
       optimize_procedure_body_x st p p' ->
       optimize_declaration_x st (D_Procedure_Body_X ast_num p) (D_Procedure_Body_X ast_num p')
@@ -398,79 +402,6 @@ with optimize_procedure_body_x: symboltable_x -> procedure_body_x -> procedure_b
                                    (mkprocedure_body_x ast_num p params decls' stmt').
 
 
-(*******************
-
-(** remove those checks whose run time checking are always successful *)
-Inductive optimize_checks_on_binop: check_flags -> binary_operator -> value -> value -> check_flags -> Prop :=
-  | O_No_Check_Binop: forall op v1 v2,
-      optimize_checks_on_binop nil op v1 v2 nil
-  | O_Checks_Pass_Binop: forall ck op v1 v2 cks cks',
-      ck = Do_Overflow_Check \/ ck = Do_Division_Check ->
-      do_flagged_check_on_binop ck op v1 v2 Success ->
-      optimize_checks_on_binop cks op v1 v2 cks' ->
-      optimize_checks_on_binop (ck :: cks) op v1 v2 cks'
-  | O_Checks_Fail_Binop: forall ck op v1 v2 msg cks cks',
-      ck = Do_Overflow_Check \/ ck = Do_Division_Check ->
-      do_flagged_check_on_binop ck op v1 v2 (Exception msg) ->
-      optimize_checks_on_binop cks op v1 v2 cks' ->
-      optimize_checks_on_binop (ck :: cks) op v1 v2 (ck :: cks')
-  | O_Checks_Other_Binop: forall op cks v1 v2 cks' ck,
-      ck <> Do_Overflow_Check /\ ck <> Do_Division_Check ->
-      optimize_checks_on_binop cks op v1 v2 cks' ->
-      optimize_checks_on_binop (ck :: cks) op v1 v2 (ck :: cks').
-
-Inductive optimize_checks_on_unop: check_flags -> unary_operator -> value -> check_flags -> Prop :=
-  | O_No_Check_Unop: forall op v,
-      optimize_checks_on_unop nil op v nil
-  | O_Checks_Pass_Unop: forall ck op v cks cks',
-      ck = Do_Overflow_Check ->
-      do_flagged_check_on_unop ck op v Success ->
-      optimize_checks_on_unop cks op v cks' ->
-      optimize_checks_on_unop (ck :: cks) op v cks'
-  | O_Checks_Fail_Unop: forall ck op v msg cks cks',
-      ck = Do_Overflow_Check ->
-      do_flagged_check_on_unop ck op v (Exception msg) ->
-      optimize_checks_on_unop cks op v cks' ->
-      optimize_checks_on_unop (ck :: cks) op v (ck :: cks')
-  | O_Checks_Other_Unop: forall ck cks op v cks',
-      ck <> Do_Overflow_Check ->
-      optimize_checks_on_unop cks op v cks' ->
-      optimize_checks_on_unop (ck :: cks) op v (ck :: cks').
-
-(** compute the union of two check flag sets *)
-Function union (cks1 cks2: check_flags): check_flags := 
-  match cks1 with
-  | nil => cks2 
-  | ck :: cks1' =>
-      if element_of ck cks2 then
-        union cks1' cks2 
-      else
-        ck :: (union cks1' cks2)
-  end. 
-
-(** for a value in range (l1, u1) and another value in range (l2, u2),
-    compute the value range for their binary operation result;
-*)
-Inductive eval_adding_lower_upper: binary_operator -> (Z * Z) -> (Z * Z) -> (Z * Z) -> Prop :=
-  | LU_Plus: forall l1 u1 l2 u2,
-      eval_adding_lower_upper Plus (l1, u1) (l2, u2) ((l1 + l2)%Z, (u1 + u2)%Z)
-  | LU_Minus: forall l1 u1 l2 u2,
-      eval_adding_lower_upper Minus (l1, u1) (l2, u2) ((l1 - u2)%Z, (u1 - l2)%Z).
-
-(*
-Lemma in_range: forall op v1 v2 l1 u1 l2 u2 v3 x1 x2 x3 x4,
-  op = Plus \/ op = Minus \/ op = Multiply ->
-  v1 >= l1 /\ v1 <= u1 ->
-  v2 >= l2 /\ v2 <= u2 ->
-  Val.binary_operation op (BasicV (Int v1)) (BasicV (Int v2)) = Some (BasicV (Int v3)) ->
-  Val.binary_operation op (BasicV (Int l1)) (BasicV (Int l2)) = Some (BasicV (Int x1)) ->
-  Val.binary_operation op (BasicV (Int l1)) (BasicV (Int u2)) = Some (BasicV (Int x2)) ->  
-  Val.binary_operation op (BasicV (Int u1)) (BasicV (Int l2)) = Some (BasicV (Int x3)) ->
-  Val.binary_operation op (BasicV (Int u1)) (BasicV (Int u2)) = Some (BasicV (Int x4)) ->
-  .
-*)
-
-********************)
 
 
 

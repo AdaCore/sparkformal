@@ -4,24 +4,9 @@ Require Export language_flagged.
 Require Export semantics_flagged.
 
 
-(** * value types for run time checks optimization *)
-(** value is represented by a range, for a variable, if its initial value is undefined 
-    or it's a parameter or its value is dynamically determined, then we use the range 
-    of its type as its value, e.g. x: Integer; it's value is: (Interval Integer'First Integer'Last),
-    x: Integer := 1; it's value is: (Interval 1 1);
-    for boolean value, it doesn't matter whether it's true or false, so we just use Bool to 
-    represent boolean value;
- *)
-Inductive bound : Type :=
-  | Interval (l : Z) (u: Z)
-  | Bool
-  | Aggregate.
-
-Definition int32_bound : bound := (Interval min_signed max_signed).
-
 Inductive bound_of_type: symboltable_x -> type -> bound -> Prop :=
   | Bound_Of_Boolean: forall st,
-      bound_of_type st Boolean Bool
+      bound_of_type st Boolean Boolval
   | Bound_Of_Integer: forall st,
       bound_of_type st Integer int32_bound
   | Bound_Of_Subtype: forall st t l u,
@@ -83,16 +68,6 @@ Inductive remove_check_flag: check_flag -> check_flags -> check_flags -> Prop :=
       remove_check_flag ck cks cks' ->
       remove_check_flag ck (ck' :: cks) (ck' :: cks').
 *)
-
-(** check whether a value falls in a bound *)
-Inductive in_bound: Z -> bound -> bool -> Prop :=
-  | IB_True: forall v l u,
-      (Zge_bool v l) && (Zle_bool v u) = true ->
-      in_bound v (Interval l u) true
-  | IB_False: forall v l u,
-      (Zge_bool v l) && (Zle_bool v u) = false ->
-      in_bound v (Interval l u) false.
-
 
 (** check whether a bound is sub-bound of another one *)
 Inductive sub_bound: bound -> bound -> bool -> Prop :=
@@ -190,7 +165,7 @@ Inductive optimize_rtc_binop: binary_operator -> bound -> bound -> check_flags -
       optimize_rtc_binop Divide (Interval u v) (Interval u' v') cks (int32_bound, cks')
   | O_RTC_Logic_Binop: forall op cks,
       op <> Plus /\ op <> Minus /\ op <> Multiply /\ op <> Divide ->
-      optimize_rtc_binop op Bool Bool cks (Bool, cks).
+      optimize_rtc_binop op Boolval Boolval cks (Boolval, cks).
 
 
 (** optimization for unary operation *)
@@ -210,7 +185,7 @@ Inductive optimize_rtc_unop: unary_operator -> bound -> check_flags -> (bound * 
 *)
 Inductive optimize_literal_x: literal -> check_flags -> (bound * check_flags) -> Prop :=
   | O_Literal_Bool_X: forall cks v,
-      optimize_literal_x (Boolean_Literal v) cks (Bool, cks)
+      optimize_literal_x (Boolean_Literal v) cks (Boolval, cks)
   | O_Literal_Int_X: forall v cks retBound cks',
       optimize_overflow_check (Interval v v) cks (retBound, cks') ->
       optimize_literal_x (Integer_Literal v) cks (retBound, cks').
@@ -309,13 +284,13 @@ Inductive optimize_args_x: symboltable_x -> list parameter_specification_x -> li
       optimize_args_x st params args args' ->
       optimize_args_x st (param :: params) ((E_Name_X ast_num n) :: args) 
                                            ((E_Name_X ast_num n') :: args')
-  | O_Args_Mode_InOut_In_RangeCheck: forall param u v ast_num st t u' v' n n' nBound arg arg' params args args', 
+  | O_Args_Mode_InOut_In_RangeCheck: forall param u v ast_num st t u' v' n n' v1 v2 arg arg' params args args', 
       param.(parameter_mode_x) = In_Out ->
       extract_subtype_range_x st (param.(parameter_subtype_mark_x)) (Range_X u v) ->
       fetch_exp_type_x ast_num st = Some t ->
       extract_subtype_range_x st t (Range_X u' v') ->
-      optimize_name_x st n (n', nBound) ->
-      optimize_range_check (E_Name_X ast_num n') (Interval u' v') (Interval u v) arg ->
+      optimize_expression_x st (E_Name_X ast_num n) ((E_Name_X ast_num n'), Interval v1 v2) ->
+      optimize_range_check (E_Name_X ast_num n') (Interval v1 v2) (Interval u v) arg ->
       optimize_range_check_on_copy_out arg (Interval u v) (Interval u' v') arg' ->
       optimize_args_x st params args args' ->
       optimize_args_x st (param :: params) ((E_Name_X ast_num n) :: args) 

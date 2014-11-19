@@ -128,7 +128,10 @@ Proof.
     | [|- eval_literal_x _ _ _] => constructor
     | [|- do_overflow_checks _ _ _] => constructor
     | [|- do_overflow_check _ _] => constructor; smack
-    end.
+    end;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
+  end.
   - (* 2 *)
   match goal with
   | [H: compile2_flagged_exp _ _ _ |- _] => inversion H; clear H; smack

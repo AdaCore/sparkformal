@@ -17,10 +17,10 @@ Import STACK.
 (** check whether a value falls into the bound of basic integer type *)
 Inductive do_overflow_check: Z -> Return value -> Prop :=
     | Do_Overflow_Check_Fail: forall v,
-        (Zle_bool min_signed v) && (Zle_bool v max_signed) = false ->
+        in_bound v int32_bound false ->
         do_overflow_check v (Run_Time_Error RTE_Overflow)
     | Do_Overflow_Check_OK: forall v,
-        (Zle_bool min_signed v) && (Zle_bool v max_signed) = true ->
+        in_bound v int32_bound true ->
         do_overflow_check v (Normal (Int v)).
 
 Inductive do_division_check: Z -> Z -> Return value -> Prop :=
@@ -34,10 +34,10 @@ Inductive do_division_check: Z -> Z -> Return value -> Prop :=
 
 Inductive do_range_check: Z -> Z -> Z -> Return value -> Prop :=
     | Do_Range_Check_Fail: forall v l u,
-        (Zle_bool l v) && (Zle_bool v u) = false ->
+        in_bound v (Interval l u) false ->
         do_range_check v l u (Run_Time_Error RTE_Range)
     | Do_Range_Check_OK: forall v l u,
-        (Zle_bool l v) && (Zle_bool v u) = true ->
+        in_bound v (Interval l u) true ->
         do_range_check v l u (Normal (Int v)).
 
 

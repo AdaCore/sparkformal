@@ -45,11 +45,11 @@ Inductive compile2_flagged_exp: symboltable -> expression -> expression_x -> Pro
         compile2_flagged_exp st (E_Literal ast_num (Boolean_Literal b)) 
                                 (E_Literal_X ast_num (Boolean_Literal b) nil nil)
     | C2_Flagged_Literal_Int_T: forall st v ast_num,
-        (Zle_bool min_signed v) && (Zle_bool v max_signed) = true -> (*simple optimization: if v is in the range of Integer, then no overflow check*)
+        in_bound v int32_bound true -> (*simple optimization: if v is in the range of Integer, then no overflow check*)
         compile2_flagged_exp st (E_Literal ast_num (Integer_Literal v)) 
                                 (E_Literal_X ast_num (Integer_Literal v) nil nil)
     | C2_Flagged_Literal_Int_F: forall st v ast_num,
-        (Zle_bool min_signed v) && (Zle_bool v max_signed) = false ->
+        in_bound v int32_bound false ->
         compile2_flagged_exp st (E_Literal ast_num (Integer_Literal v)) 
                                 (E_Literal_X ast_num (Integer_Literal v) (Do_Overflow_Check :: nil) nil)
     | C2_Flagged_Name: forall st n n_flagged ast_num,
@@ -608,8 +608,11 @@ Section Checks_Generator_Function_Correctness_Proof.
       (*E_Identifier a i*) |
       (*E_Indexed_Component a n e*) |
       (*E_Selected_Component a n i*)
-    ]; 
-    constructor; smack.
+    ];
+    match goal with
+    | [H: _ = ?b |- in_bound _ _ ?b] => rewrite <- H; constructor; smack
+    | _ => constructor; smack
+    end.
   Qed.
 
   Lemma compile2_flagged_name_f_correctness: forall st n n',
@@ -838,6 +841,10 @@ Section Checks_Generator_Function_Completeness_Proof.
           compile2_flagged_name _ ?n n' ->
           compile2_flagged_name_f _ ?n = n',
        H2:compile2_flagged_name _ ?n ?n_flagged |- _] => specialize (H1 _ _ H2); smack
+    end;
+    match goal with
+    | [H: in_bound _ _ _ |- _] => inversion H; smack
+    | _ => idtac
     end;
     [ destruct b | 
       destruct u 

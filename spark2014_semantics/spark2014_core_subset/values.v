@@ -66,6 +66,32 @@ Definition Overflow_Error: Return value := Run_Time_Error RTE_Overflow.
 Definition Range_Error: Return value := Run_Time_Error RTE_Range.
 
 
+(** * value types for run time checks optimization *)
+
+(** value is represented by a range, for a variable, if its initial value is undefined 
+    or it's a parameter or its value is dynamically determined, then we use the range 
+    of its type as its value, e.g. x: Integer; it's value is: (Interval Integer'First Integer'Last),
+    x: Integer := 1; it's value is: (Interval 1 1);
+    for boolean value, it doesn't matter whether it's true or false, so we just use Bool to 
+    represent boolean value;
+*)
+
+Inductive bound : Type :=
+  | Interval (l : Z) (u: Z)
+  | Boolval
+  | Aggregate.
+
+Definition int32_bound : bound := (Interval min_signed max_signed).
+
+(** check whether a value falls in a bound *)
+Inductive in_bound: Z -> bound -> bool -> Prop :=
+  | IB_True: forall v l u,
+      (Zle_bool l v) && (Zle_bool v u) = true ->
+      in_bound v (Interval l u) true
+  | IB_False: forall v l u,
+      (Zle_bool l v) && (Zle_bool v u) = false ->
+      in_bound v (Interval l u) false.
+
 (** * Value Operations *)
 Module Math.
 

@@ -18,34 +18,46 @@ Coq.ZArith.Zorder: http://coq.inria.fr/V8.1/stdlib/Coq.ZArith.Zorder.html#Zle_ge
                    http://coq.inria.fr/V8.1/stdlib/Coq.ZArith.Zbool.html
                    http://coq.inria.fr/V8.1/stdlib/Coq.ZArith.Zbool.html#Zle_bool
 *)
-Section ZArith_Help_Lemmas.
+
+Lemma Zge_le_bool: forall u v b,
+  Zge_bool u v = b -> Zle_bool v u = b.
+Proof.
+  intros;
+  unfold Zle_bool; unfold Zge_bool in H;
+  rewrite <- Zcompare_antisym;
+  destruct (u ?= v)%Z; auto. 
+Qed.
+
+Lemma Zle_ge_bool: forall u v b,
+  Zle_bool u v = b -> Zge_bool v u = b.
+Proof.
+  intros;
+  unfold Zge_bool; unfold Zle_bool in H;
+  rewrite <- Zcompare_antisym;
+  destruct (u ?= v)%Z; auto. 
+Qed.
 
 (** In run time check semantics, Zge_bool and Zle_bool is used to define overflow check,
     and in eval_expr_value_in_domain, <= and >= are used, the following lemmas are used
     to build their relationships;
 *)
-Lemma le_neg_ge: forall x y,  
+Lemma Le_Neg_Ge: forall x y,  
   (x <= y)%Z ->
     (-y <= -x)%Z.
 Proof.
-  admit.
-  (* Infix "?=" := Pcompare: http://coq.inria.fr/V8.1/stdlib/Coq.NArith.BinPos.html
-  functional induction Pcompare.
-  *)
-  
-  (*
-  intros.  
-  induction x;
-  intros; smack.
-  
-  destruct y; smack.
-  unfold Zle in *. smack.
-  apply H.
-  unfold CompOpp in H0.
-  remember (p0 ?= p)%positive as x.
-  destruct x; smack.
-  symmetry in Heqx.
-  *)
+  intros.
+  apply Zplus_le_reg_l with (p := y). 
+  smack. (*omega*)
+Qed.
+
+Lemma Lt_Le_Bool_False: forall u v,
+  (u < v)%Z ->
+    Zle_bool v u = false.
+Proof.
+  intros;
+  apply Zge_le_bool;
+  unfold Zge_bool; unfold Zlt in H;
+  smack.
 Qed.
 
 
@@ -80,144 +92,419 @@ Proof.
   rewrite Heqb1 in HZ; smack.  
 Qed.
 
-Lemma Zge_le_bool: forall u v,
-  Zge_bool u v = true -> Zle_bool v u = true.
-Proof.
-  intros;
-  unfold Zle_bool; unfold Zge_bool in H;
-  rewrite <- Zcompare_antisym;
-  destruct (u ?= v)%Z; auto. 
-Qed.
-
-Lemma Zle_ge_bool: forall u v,
-  Zle_bool u v = true -> Zge_bool v u = true.
-Proof.
-  intros;
-  unfold Zge_bool; unfold Zle_bool in H;
-  rewrite <- Zcompare_antisym;
-  destruct (u ?= v)%Z; auto. 
-Qed.
 
 
-Lemma In_Bound_Trans: forall v l u l' u',
-  (Zge_bool v l) && (Zle_bool v u) = true ->
-    (Zge_bool l l') && (Zle_bool l u') = true ->
-      (Zge_bool u l') && (Zle_bool u u') = true ->
-        (Zge_bool v l') && (Zle_bool v u') = true.
-Proof.
-  intros;
-  repeat progress match goal with
-  | [H: _ && _ = true |- _] => specialize (Zgele_Bool_Imp_GeLe_T _ _ _ H); clear H; smack
-  end;
-  apply andb_true_iff; split.
-- specialize (Zle_trans _ _ _ H1 H0); intros HZ1;
-  specialize (Zle_imp_le_bool _ _ HZ1); intros HZ2;
-  apply Zle_ge_bool; auto.
-- specialize (Zle_trans _ _ _ H5 H3); intros HZ1;
-  specialize (Zle_imp_le_bool _ _ HZ1); auto.
-Qed.
- 
-End ZArith_Help_Lemmas.
 
 
-Lemma do_overflow_checks_preserve: forall cks v v',
-  do_overflow_checks cks v v' ->
-    sub_bound (Interval v v) int32_bound true ->
-      do_overflow_checks (remove_check_flag Do_Overflow_Check cks) v v'.
-Proof.
-  intros; inversion H; smack.
-  inversion H1; smack.
-  match goal with
-  | [H: sub_bound _ _ _ |- _] => inversion H; clear H; smack
-  end.
-  repeat progress match goal with
-  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
-  end.
-  constructor.
-Qed.
 
 
-Lemma eval_expr_value_preserve: forall st s e v eBound rBound e',
-  eval_expr_x st s e v ->
-    optimize_range_check e eBound rBound e' ->
-      eval_expr_x st s e' v.
-Proof.
-  intros; 
-  inversion H0; subst; auto;
-  apply eval_exp_with_any_exterior_checks; auto.
-Qed.
 
 
-Lemma eval_expr_value_in_bound: forall st s e v e' l u,
-  eval_expr_x st s e (Normal (Int v)) ->
-    optimize_expression_x st e (e', Interval l u) ->
-      in_bound v (Interval l u) true.
-Proof.
-  admit.
-Qed.
-
-Lemma optimize_exp_ex_cks_eq: forall st e e' eBound,
-  optimize_expression_x st e (e', eBound) ->
-    exp_exterior_checks e' = exp_exterior_checks e.
-Proof.
-  intros;
-  inversion H; smack;
-  match goal with
-  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
-  end.
-Qed.
-
-Lemma optimize_range_check_reserve: forall v l u cks l' u' e e',
-  in_bound v (Interval l u) true ->
-    do_range_checks cks v l' u' (Run_Time_Error RTE_Range) ->
-      optimize_range_check e (Interval l u) (Interval l' u') e' ->
-        e' = e.
+Lemma Zlele_Bool_Imp_LeLe_T: forall v l u,
+  (Zle_bool l v) && (Zle_bool v u) = true ->
+    (l <= v)%Z /\ (v <= u)%Z.
 Proof.
   intros.
-  match goal with
-  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
-  end.
-
-  match goal with
-  | [H: do_range_checks _ _ _ _ _ |- _] => inversion H; clear H; smack
-  end.
-  match goal with
-  | [H: do_range_check _ _ _ _ |- _] => inversion H; clear H; smack
-  end.
-  match goal with
-  | [H: sub_bound _ _ _ |- _] => inversion H; smack
-  end;
-  repeat progress match goal with
-  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
-  end.
-  specialize (In_Bound_Trans _ _ _ _ _ H5 H6 H4).
-  
+  specialize (andb_prop _ _ H); clear H; intros HZ.
+  destruct HZ as [HZ1 HZ2].
+  split.
+- specialize (Zle_cases l v); intros HZ.
+  rewrite HZ1 in HZ; smack.
+- apply Zle_bool_imp_le; auto.  
 Qed.
 
+Lemma Zlele_Bool_Imp_LeLe_F: forall v l u,
+  (Zle_bool l v) && (Zle_bool v u) = false ->
+    (v < l)%Z \/ (u < v)%Z.
+Proof.
+  intros.
+  unfold andb in H.
+  remember (Zle_bool l v) as b1; 
+  remember (Zle_bool v u) as b2.
+  symmetry in Heqb1, Heqb2.
+  destruct b1, b2; inversion H.
+- specialize (Zle_cases v u); intros HZ;
+  rewrite Heqb2 in HZ; smack.
+- specialize (Zle_cases l v); intros HZ;
+  rewrite Heqb1 in HZ; smack.
+- specialize (Zle_cases l v); intros HZ;
+  rewrite Heqb1 in HZ; smack.  
+Qed.
 
-
-optimize_range_check e eBound rBound e' ->
-do_range_checks (exp_exterior_checks e) v l u (Normal (Int v)) ->
-do_range_checks (exp_exterior_checks e') v l u (Normal (Int v)).
-
-
-
-
-
-
-
-Lemma optimize_name_ast_num_eq: forall st n n' nBound,
-  optimize_name_x st n (n', nBound) ->
-    fetch_exp_type_x (name_astnum_x n) st = fetch_exp_type_x (name_astnum_x n') st.
+(** l <= v <= u, l' <= l <= u', l' <= u <= u' => l' <= v <= u' *)
+Lemma In_Bound_Trans: forall v l u l' u',
+  in_bound v (Interval l u) true ->
+    in_bound l (Interval l' u') true ->
+      in_bound u (Interval l' u') true ->
+        in_bound v (Interval l' u') true.
 Proof.
   intros;
-  inversion H; smack.
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  repeat progress match goal with
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  end;
+  constructor; apply andb_true_iff; split.
+- specialize (Zle_trans _ _ _ H2 H0); intros HZ1;
+  specialize (Zle_imp_le_bool _ _ HZ1); auto.
+- specialize (Zle_trans _ _ _ H1 H5); intros HZ1;
+  specialize (Zle_imp_le_bool _ _ HZ1); auto.
 Qed.
+
+Ltac apply_In_Bound_Trans :=
+  match goal with
+  | [H1: in_bound ?v (Interval ?l ?u) true,
+     H2: in_bound ?l _ true,
+     H3: in_bound ?u _ true |- _ ] =>
+      specialize (In_Bound_Trans _ _ _ _ _ H1 H2 H3);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma In_Bound_SubBound_Trans: forall v l u l' u',
+  in_bound v (Interval l u) true ->
+    sub_bound (Interval l u) (Interval l' u') true ->
+      in_bound v (Interval l' u') true.
+Proof.
+  intros;
+  inversion H0; subst;
+  apply_In_Bound_Trans; auto.
+Qed.
+
+Ltac apply_In_Bound_SubBound_Trans :=
+  match goal with
+  | [H1: in_bound _ ?b true,
+     H2: sub_bound ?b _ true |- _] =>
+      specialize (In_Bound_SubBound_Trans _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+(** l1 <= v1 <= u1, l2 <= v2 <= u2 => (l1+l2) <= (v1+v2) <= (u1+u2) *)
+Lemma In_Bound_Plus_Compat: forall v1 l1 u1 v2 l2 u2,
+  in_bound v1 (Interval l1 u1) true ->
+    in_bound v2 (Interval l2 u2) true ->
+      in_bound (v1+v2) (Interval (l1+l2) (u1+u2)) true.
+Proof.
+  intros;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  repeat progress match goal with
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  end;
+  constructor; apply andb_true_iff; split.
+- specialize (Zplus_le_compat _ _ _ _ H0 H2); intros HZ1;
+  specialize (Zle_imp_le_bool _ _ HZ1); auto.
+- specialize (Zplus_le_compat _ _ _ _ H1 H3); intros HZ1;
+  specialize (Zle_imp_le_bool _ _ HZ1); auto.
+Qed.
+
+Ltac apply_In_Bound_Plus_Compat :=
+  match goal with
+  | [H1: in_bound ?v1 _ true,
+     H2: in_bound ?v2 _ true |- _] => 
+      specialize (In_Bound_Plus_Compat _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+(** l1 <= v1 <= u1, l2 <= v2 <= u2 => (l1-u2) <= (v1-v2) <= (u1-l2) *)
+Lemma In_Bound_Minus_Compat: forall v1 l1 u1 v2 l2 u2,
+  in_bound v1 (Interval l1 u1) true ->
+    in_bound v2 (Interval l2 u2) true ->
+      in_bound (v1-v2) (Interval (l1-u2) (u1-l2)) true.
+Proof.
+  intros;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  repeat progress match goal with
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  end;
+  constructor; apply andb_true_iff; split.
+- specialize (Le_Neg_Ge _ _ H3); intros HZ1;
+  specialize (Zplus_le_compat _ _ _ _ H0 HZ1); intros HZ2;
+  specialize (Zle_imp_le_bool _ _ HZ2); auto.
+- specialize (Le_Neg_Ge _ _ H2); intros HZ1;
+  specialize (Zplus_le_compat _ _ _ _ H1 HZ1); intros HZ2;
+  specialize (Zle_imp_le_bool _ _ HZ2); auto.
+Qed.
+
+Ltac apply_In_Bound_Minus_Compat :=
+  match goal with
+  | [H1: in_bound ?v1 _ true,
+     H2: in_bound ?v2 _ true |- _] => 
+      specialize (In_Bound_Minus_Compat _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma Sub_Bound_Plus_Compat: forall v1 l1 u1 v2 l2 u2 l u,
+  in_bound v1 (Interval l1 u1) true ->
+    in_bound v2 (Interval l2 u2) true ->
+      in_bound (v1+v2) (Interval l u) false ->
+        sub_bound (Interval (l1 + l2) (u1 + u2)) (Interval l u) false.
+Proof.
+  intros;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  repeat progress match goal with
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  end;
+  match goal with
+  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; smack
+  end;
+  constructor.
+- specialize (Zplus_le_compat _ _ _ _ H0 H2); intros HZ1.
+  specialize (Zle_lt_trans _ _ _ HZ1 H4); intros HZ2.
+  left. constructor.
+  apply andb_false_iff; left.
+  apply Lt_Le_Bool_False; auto.
+- specialize (Zplus_le_compat _ _ _ _ H1 H3); intros HZ1.
+  specialize (Zlt_le_trans  _ _ _ H4 HZ1); intros HZ2.
+  right; constructor.
+  apply andb_false_iff; right.
+  apply Lt_Le_Bool_False; auto.
+Qed.
+
+Ltac apply_Sub_Bound_Plus_Compat :=
+  match goal with
+  | [H1: in_bound ?v1 _ true,
+     H2: in_bound ?v2 _ true,
+     H3: in_bound (?v1+?v2) _ false |- _] => 
+      specialize (Sub_Bound_Plus_Compat _ _ _ _ _ _ _ _ H1 H2 H3);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma Sub_Bound_Minus_Compat: forall v1 l1 u1 v2 l2 u2 l u,
+  in_bound v1 (Interval l1 u1) true ->
+    in_bound v2 (Interval l2 u2) true ->
+      in_bound (v1-v2) (Interval l u) false ->
+        sub_bound (Interval (l1 - u2) (u1 - l2)) (Interval l u) false.
+Proof.
+  intros;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  repeat progress match goal with
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  end;
+  match goal with
+  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; smack
+  end;
+  constructor.
+- specialize (Le_Neg_Ge _ _ H3); intros HZ1;
+  specialize (Zplus_le_compat _ _ _ _ H0 HZ1); intros HZ2;
+  specialize (Zle_lt_trans _ _ _ HZ2 H4); intros HZ3;
+  left; constructor;
+  apply andb_false_iff; left;
+  apply Lt_Le_Bool_False; auto.
+- specialize (Le_Neg_Ge _ _ H2); intros HZ1;
+  specialize (Zplus_le_compat _ _ _ _ H1 HZ1); intros HZ2;
+  specialize (Zlt_le_trans  _ _ _ H4 HZ2); intros HZ3;
+  right; constructor;
+  apply andb_false_iff; right;
+  apply Lt_Le_Bool_False; auto.
+Qed.
+
+Ltac apply_Sub_Bound_Minus_Compat :=
+  match goal with
+  | [H1: in_bound ?v1 _ true,
+     H2: in_bound ?v2 _ true,
+     H3: in_bound (?v1-?v2) _ false |- _] => 
+      specialize (Sub_Bound_Minus_Compat _ _ _ _ _ _ _ _ H1 H2 H3);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma Sub_Bound_Unary_Minus_Compat: forall v l u l' u',
+  in_bound v (Interval l u) true ->
+    in_bound (- v) (Interval l' u') false ->
+      sub_bound (Interval (- u) (- l)) (Interval l' u') false.
+Proof.
+  intros;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
+  end;
+ match goal with
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  end;
+  match goal with
+  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; smack
+  end;
+  constructor;
+  [left | right];
+  constructor.
+- apply andb_false_iff; left;
+  specialize (Le_Neg_Ge _ _ H1); intros HZ1;
+  specialize (Zle_lt_trans _ _ _ HZ1 H2); intros HZ2;
+  apply Lt_Le_Bool_False; auto.
+- apply andb_false_iff; right;
+  specialize (Le_Neg_Ge _ _ H0); intros HZ1;
+  specialize (Zlt_le_trans _ _ _ H2 HZ1); intros HZ2;
+  apply Lt_Le_Bool_False; auto.
+Qed.
+
+Ltac apply_Sub_Bound_Unary_Minus_Compat :=
+  match goal with
+  | [H1: in_bound ?v _ true,
+     H2: in_bound (- ?v) _ false |- _] =>
+      specialize (Sub_Bound_Unary_Minus_Compat _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma in_bound_value_neq_zero: forall v l u,
+  in_bound v (Interval l u) true ->
+    in_bound 0 (Interval l u) false ->
+      Zeq_bool v 0 = false.
+Proof.
+  intros;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  end;
+  match goal with
+  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; smack
+  end;
+  [ specialize (Zlt_le_trans _ _ _ H2 H0); intros HZ1 |
+    specialize (Zle_lt_trans _ _ _ H1 H2); intros HZ1
+  ];
+  unfold Zeq_bool; 
+  destruct v; smack.
+Qed.
+
+Ltac apply_in_bound_value_neq_zero :=
+  match goal with
+  | [H1: in_bound ?v ?b true,
+     H2: in_bound 0 ?b false |- _] => 
+      specialize (in_bound_value_neq_zero _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+(*******************************************************************)
+
+Lemma removed_check_flag_notin: forall ck cks cks',
+ remove_check_flag ck cks = cks' ->
+   ~(List.In ck cks').
+Proof.
+  induction cks; smack.
+  remember (beq_check_flag ck a) as b;
+  destruct b; smack.
+  destruct ck; smack.
+Qed.
+
+Ltac apply_removed_check_flag_notin :=
+  match goal with
+  | [H: remove_check_flag _ _ = _ |- _] => 
+      specialize (removed_check_flag_notin _ _ _ H);
+      let HZ := fresh "HZ" in intros HZ
+  | [H: _ = remove_check_flag _ _ |- _] => 
+      symmetry in H; specialize (removed_check_flag_notin _ _ _ H);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma remove_notin_check_flag: forall ck cks,
+  ~(List.In ck cks) ->
+    remove_check_flag ck cks = cks.
+Proof.
+  induction cks; smack.
+  remember (beq_check_flag ck a) as b;
+  destruct b; smack.
+  destruct a; destruct ck; smack.
+Qed.
+
+Ltac apply_remove_notin_check_flag :=
+  match goal with
+  | [H: ~(List.In _ _) |- _] => 
+      specialize (remove_notin_check_flag _ _ H); let HZ := fresh "HZ" in intros HZ
+  | [H: List.In _ _ -> False |- _] => 
+      specialize (remove_notin_check_flag _ _ H); let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma check_flag_in_reserve: forall ck ck' cks,
+  beq_check_flag ck ck' = false ->
+    List.In ck (remove_check_flag ck' cks) ->
+      List.In ck cks.
+Proof.
+  induction cks; smack.
+  remember (beq_check_flag ck' a) as b;
+  destruct b; smack.  
+Qed.
+
+Ltac apply_check_flag_in_reserve :=
+  match goal with
+  | [H1: beq_check_flag ?ck ?ck' = false,
+     H2: List.In ?ck (remove_check_flag ?ck' _) |- _] =>
+      specialize (check_flag_in_reserve _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma check_flag_in_reserve2: forall ck ck' cks,
+  beq_check_flag ck ck' = false ->
+    List.In ck cks ->
+      List.In ck (remove_check_flag ck' cks).      
+Proof.
+  induction cks; smack.
+  remember (beq_check_flag ck' ck) as b; destruct b; smack.
+  destruct ck; destruct ck'; smack.
+  remember (beq_check_flag ck' a) as b; destruct b; smack.
+Qed.
+
+Ltac apply_check_flag_in_reserve2 :=
+  match goal with
+  | [ H1: beq_check_flag ?ck _ = false,
+      H2: List.In ?ck _ |- _] =>
+      specialize (check_flag_in_reserve2 _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+(*******************************************************************)
+
+
+Lemma in_bound_unique: forall v l u b1 b2,
+  in_bound v (Interval l u) b1 ->
+    in_bound v (Interval l u) b2 ->
+      b1 = b2.
+Proof.
+  intros;
+  inversion H; inversion H0; smack.
+Qed. 
+
+Ltac apply_in_bound_unique :=
+  match goal with
+  | [H1: in_bound ?v _ _,
+     H2: in_bound ?v _ _ |- _] =>
+      specialize (in_bound_unique _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ; inversion HZ
+  end.
+
+Lemma sub_bound_unique: forall bound1 bound2 b1 b2,
+  sub_bound bound1 bound2 b1 ->
+    sub_bound bound1 bound2 b2 ->
+      b1 = b2.
+Proof.
+  intros;
+  inversion H; inversion H0; smack;
+  match goal with
+  | [H1: in_bound ?v _ _,
+     H2: in_bound ?v _ _ |- _] => 
+      specialize (in_bound_unique _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ; inversion HZ
+  end.
+Qed.
+
+Ltac apply_sub_bound_unique :=
+  match goal with
+  | [H1: sub_bound ?bound1 _ _,
+     H2: sub_bound ?bound1 _ _ |- _] =>
+      specialize (sub_bound_unique _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ; inversion HZ
+  end.
 
 Lemma extract_array_index_range_x_unique: forall st a l u l' u',
   extract_array_index_range_x st a (Range_X l u) ->
-  extract_array_index_range_x st a (Range_X l' u') ->
-  l = l' /\ u = u'.
+    extract_array_index_range_x st a (Range_X l' u') ->
+      l = l' /\ u = u'.
 Proof.
   intros.
   inversion H; inversion H0; subst.
@@ -231,24 +518,519 @@ Ltac apply_extract_array_index_range_x_unique :=
   match goal with
   | [H1: extract_array_index_range_x _ ?a (Range_X ?l ?u),
      H2: extract_array_index_range_x _ ?a (Range_X ?l' ?u') |- _] => 
-      specialize (extract_array_index_range_x_unique _ _ _ _ _ _ H1 H2)
+      specialize (extract_array_index_range_x_unique _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ; inversion HZ
+  end.
+
+Lemma extract_subtype_range_unique: forall st t l u l' u',
+  extract_subtype_range_x st t (Range_X l u) ->
+    extract_subtype_range_x st t (Range_X l' u') ->
+      l = l' /\ u = u'.
+Proof.
+  intros;
+  inversion H; inversion H0; smack.
+Qed.
+
+Ltac apply_extract_subtype_range_unique :=
+  match goal with
+  | [H1: extract_subtype_range_x _ ?t _, 
+     H2: extract_subtype_range_x _ ?t _ |- _] => specialize (extract_subtype_range_unique _ _ _ _ _ _ H1 H2)
+  end.
+
+(*******************************************************************)
+
+Lemma optimize_name_ast_num_eq: forall st n n' nBound,
+  optimize_name_x st n (n', nBound) ->
+    fetch_exp_type_x (name_astnum_x n) st = fetch_exp_type_x (name_astnum_x n') st.
+Proof.
+  intros;
+  inversion H; smack.
+Qed.
+
+Ltac apply_optimize_name_ast_num_eq :=
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] =>
+      specialize (optimize_name_ast_num_eq _ _ _ _ H);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma optimize_exp_ex_cks_eq: forall st e e' eBound,
+  optimize_expression_x st e (e', eBound) ->
+    exp_exterior_checks e' = exp_exterior_checks e.
+Proof.
+  intros;
+  inversion H; smack;
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  end.
+Qed.
+
+Ltac apply_optimize_exp_ex_cks_eq :=
+  match goal with
+  | [H: optimize_expression_x _ _ _ |- _] => 
+      specialize (optimize_exp_ex_cks_eq _ _ _ _ H);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma optimize_name_ex_cks_eq: forall st n n' nBound,
+  optimize_name_x st n (n', nBound) ->
+    name_exterior_checks n' = name_exterior_checks n.
+Proof.
+  intros;
+  inversion H; smack.
+Qed.
+
+Ltac apply_optimize_name_ex_cks_eq :=
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => 
+      specialize (optimize_name_ex_cks_eq _ _ _ _ H);
+      let HZ := fresh "HZ" in intros HZ
   end.
 
 
+Lemma eval_expr_value_reserve: forall e eBound rBound e' st s v,
+  optimize_range_check e eBound rBound e' ->
+    eval_expr_x st s e v ->
+      eval_expr_x st s e' v.
+Proof.
+  intros;
+  inversion H; subst; auto;
+  apply eval_exp_with_any_exterior_checks; auto.
+Qed.
+
+Ltac apply_eval_expr_value_reserve :=
+  match goal with
+  | [H1: optimize_range_check ?e _ _ _,
+     H2: eval_expr_x _ _ ?e _ |- _] =>
+      specialize (eval_expr_value_reserve _ _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ; inversion HZ
+  end.
+
+(*******************************************************************)
+
+Lemma remove_check_on_binop_reserve: forall cks op v1 v2 v ck,
+  do_flagged_checks_on_binop cks op v1 v2 (Normal v) ->
+    do_flagged_checks_on_binop (remove_check_flag ck cks) op v1 v2 (Normal v).
+Proof.
+  intros;
+  induction cks; smack;
+  match goal with
+  | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [|- context[beq_check_flag _ Do_Overflow_Check]] => destruct (beq_check_flag ck Do_Overflow_Check); auto
+  | [|- context[beq_check_flag _ Do_Division_Check]] => destruct (beq_check_flag ck Do_Division_Check); auto
+  end;
+  apply Do_Checks_Binop with (v:=v4); smack.
+Qed.
+
+Lemma safe_remove_binop_check: forall cks op v1 v2 v ck v',
+  do_flagged_checks_on_binop cks op v1 v2 v ->
+    do_flagged_check_on_binop ck op v1 v2 (Normal v') ->
+      do_flagged_checks_on_binop (remove_check_flag ck cks) op v1 v2 v.
+Proof.
+  induction cks; smack;
+  match goal with
+  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: do_flagged_check_on_binop ?a _ _ _ _ |- context[?a]] => destruct a; inversion H; smack
+  end;
+  match goal with
+  | [H1: _ = _, H2: _ = _ |- _] => rewrite H1 in H2; inversion H2; smack
+  | _ => idtac
+  end;
+  match goal with
+  | [H1: do_overflow_check _ _, 
+     H2: do_overflow_check _ _ |- _] => inversion H1; inversion H2; clear H1 H2; subst; apply_in_bound_unique
+  | [H1: do_division_check _ _ _,
+     H2: do_division_check _ _ _ |- _] => inversion H1; inversion H2; clear H1 H2; smack
+  | _ => idtac
+  end;
+  solve
+  [ apply Do_Checks_Binop_RTE; auto |
+    apply Do_Checks_Binop with (v:=v5); smack |
+    apply Do_Checks_Binop with (v:=v4); smack
+  ].
+Qed.
+
+Ltac apply_safe_remove_binop_check :=
+  match goal with
+  | [H1: do_flagged_checks_on_binop _ ?op ?v1 ?v2 _,
+     H2: do_flagged_check_on_binop _ ?op ?v1 ?v2 (Normal _) |- _] =>
+      specialize (safe_remove_binop_check _ _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ; inversion HZ
+  end.
+
+Lemma remove_check_on_unop_reserve: forall cks op v v' ck,
+  do_flagged_checks_on_unop cks op v (Normal v') ->
+    do_flagged_checks_on_unop (remove_check_flag ck cks) op v (Normal v').
+Proof.
+  intros;
+  induction cks; smack;
+  match goal with
+  | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [|- context[beq_check_flag _ Do_Overflow_Check]] => destruct (beq_check_flag ck Do_Overflow_Check); auto
+  end;
+  apply Do_Checks_Unop with (v':=v'0); smack.
+Qed.
+
+Lemma safe_remove_unop_check: forall cks op v v' ck v'',
+  do_flagged_checks_on_unop cks op v v' ->
+    do_flagged_check_on_unop ck op v (Normal v'') ->
+      do_flagged_checks_on_unop (remove_check_flag ck cks) op v v'.
+Proof.
+  induction cks; smack;
+  match goal with
+  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: do_flagged_check_on_unop ?a _ _ _ |- context[?a]] => destruct a; inversion H; smack
+  end. 
+  match goal with
+  | [H1: Math.unary_minus _ = _, H2: Math.unary_minus _ = _ |- _] => rewrite H1 in H2; inversion H2; subst
+  end;
+  match goal with
+  | [H1: do_overflow_check _ _, 
+     H2: do_overflow_check _ _ |- _] => inversion H1; inversion H2; clear H1 H2; subst; apply_in_bound_unique
+  end.
+Qed .
+
+Ltac apply_safe_remove_unop_check :=
+  match goal with
+  | [H1: do_flagged_checks_on_unop _ ?op ?v _,
+     H2: do_flagged_check_on_unop _ ?op ?v (Normal _) |- _] => 
+      specialize (safe_remove_unop_check _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ; inversion HZ
+  end.
+
+
+
+Lemma do_overflow_checks_reserve: forall v cks v' ck,
+  in_bound v int32_bound true ->
+    do_overflow_checks cks v v' ->  
+      do_overflow_checks (remove_check_flag ck cks) v v'.
+Proof.
+  intros; inversion H0; smack;
+  inversion H1; smack.
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
+  end.
+  match goal with
+  | [|- context[beq_check_flag _ Do_Overflow_Check]] => destruct (beq_check_flag ck Do_Overflow_Check); auto
+  end;
+  constructor.
+Qed.
+
+Lemma do_range_checks_reserve: forall cks v l u ck,
+  do_range_checks cks v l u (Normal (Int v)) ->
+    do_range_checks (remove_check_flag ck cks) v l u (Normal (Int v)).
+Proof.
+  intros; 
+  inversion H; smack;
+  match goal with
+  | [|- context[beq_check_flag _ Do_Range_Check]] => destruct (beq_check_flag ck Do_Range_Check); auto
+  end;
+  constructor.
+Qed.
+
+Lemma do_range_check_same_result: forall e eBound rBound e' v l u,
+  optimize_range_check e eBound rBound e' ->
+    do_range_checks (exp_exterior_checks e) v l u (Normal (Int v)) ->
+      do_range_checks (exp_exterior_checks e') v l u (Normal (Int v)).
+Proof.
+  intros;
+  inversion H; smack;
+  rewrite exp_updated_exterior_checks;
+  apply do_range_checks_reserve; auto.
+Qed.
+
+Ltac apply_do_range_check_same_result :=
+  match goal with
+  | [H1: optimize_range_check ?e _ _ ?e',
+     H2: do_range_checks (exp_exterior_checks ?e) _ _ _ (Normal _) |- _] =>
+      specialize (do_range_check_same_result _ _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+
+(*******************************************************************)
+
+Lemma optimize_overflow_check_reserve: forall l u cks retBound cks',
+  sub_bound (Interval l u) int32_bound false ->
+    optimize_overflow_check (Interval l u) cks (retBound, cks') ->
+      cks = cks'.
+Proof.
+  intros;
+  inversion H0; smack;
+  specialize (sub_bound_unique _ _ _ _ H H5); smack.
+Qed.
+
+Ltac apply_optimize_overflow_check_reserve :=
+  match goal with
+  | [H1: sub_bound ?b _ false,
+     H2: optimize_overflow_check ?b _ _ |- _] =>
+      specialize ( optimize_overflow_check_reserve _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma optimize_range_check_reserve: forall v l u l' u' e e',
+  in_bound v (Interval l u) true ->
+    in_bound v (Interval l' u') false ->
+      optimize_range_check e (Interval l u) (Interval l' u') e' ->
+        e' = e.
+Proof.
+  intros;
+  match goal with
+  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: sub_bound _ _ _ |- _] => inversion H; smack
+  end;
+  specialize (In_Bound_Trans _ _ _ _ _ H H5 H8); smack;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
+  end.
+Qed.
+
+Ltac apply_optimize_range_check_reserve :=
+  match goal with
+  | [H1: in_bound ?v (Interval ?l ?u) true,
+     H2: in_bound ?v (Interval ?l' ?u') false,
+     H3: optimize_range_check _ (Interval ?l ?u) (Interval ?l' ?u') _ |- _] =>
+      specialize (optimize_range_check_reserve _ _ _ _ _ _ _ H1 H2 H3);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma optimize_range_check_on_copy_out_reserve: forall v l u l' u' e e',
+  in_bound v (Interval l u) true ->
+    in_bound v (Interval l' u') false ->
+      optimize_range_check_on_copy_out e (Interval l u) (Interval l' u') e' ->
+        e' = e.
+Proof.
+  intros;
+  match goal with
+  | [H: optimize_range_check_on_copy_out _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: sub_bound _ _ _ |- _] => inversion H; smack
+  end;
+  specialize (In_Bound_Trans _ _ _ _ _ H H5 H8); smack;
+  repeat progress match goal with
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
+  end.
+Qed.
+
+Ltac apply_optimize_range_check_on_copy_out_reserve :=
+  match goal with
+  | [H1: in_bound ?v (Interval ?l ?u) true,
+     H2: in_bound ?v (Interval ?l' ?u') false,
+     H3: optimize_range_check_on_copy_out _ (Interval ?l ?u) (Interval ?l' ?u') _ |- _] =>
+      specialize (optimize_range_check_on_copy_out_reserve _ _ _ _ _ _ _ H1 H2 H3);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+
+(*******************************************************************)
+
+Lemma do_flagged_checks_on_binop_reserve: forall v1 l1 u1 v2 l2 u2 cks bound1 cks' op v,
+  in_bound v1 (Interval l1 u1) true ->
+    in_bound v2 (Interval l2 u2) true ->
+      optimize_rtc_binop op (Interval l1 u1) (Interval l2 u2) cks (bound1, cks') ->
+        do_flagged_checks_on_binop cks op (Int v1) (Int v2) v ->
+          do_flagged_checks_on_binop cks' op (Int v1) (Int v2) v.
+Proof.
+  intros;
+  match goal with
+  | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  end.
+- match goal with 
+  | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; clear H; smack
+  end;
+  match goal with
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; smack
+  | _ => idtac
+  end; constructor; auto.
+- match goal with
+  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with 
+  | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; clear H; smack
+  end;
+  try (constructor; auto);
+  match goal with
+  | [H: do_overflow_check _ _ |- _] => inversion H; subst
+  | [H: do_division_check _ _ _ |- _] => inversion H; subst 
+  end;
+  [ apply_Sub_Bound_Plus_Compat |
+    apply_Sub_Bound_Minus_Compat |
+    apply_in_bound_value_neq_zero; smack
+  ];
+  apply_optimize_overflow_check_reserve; smack;
+  constructor; auto.
+- match goal with 
+  | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; clear H; smack
+  end;
+  match goal with
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; smack
+  | _ => idtac
+  end;
+  try (apply Do_Checks_Binop with (v:=v); auto);
+  destruct ck;
+  match goal with
+  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  end;
+  try (apply_safe_remove_binop_check; smack);
+  match goal with
+  | [H: do_overflow_check _ _ |- _] => inversion H; smack
+  end.
+  (*1*)
+  apply Do_Checks_Binop with (v:=(Int (v1 ÷ v2))); smack.
+  apply safe_remove_binop_check with (v':=(Int (v1 ÷ v2))); smack.
+  constructor. constructor; auto.
+  apply in_bound_value_neq_zero with (l:=l2) (u:=u2); smack.
+  (*2*)
+  match goal with
+  | [H: do_flagged_check_on_binop _ Divide _ _ (Run_Time_Error _) |- _] => inversion H; subst
+  end.
+  match goal with
+  | [H: Math.binary_operation Divide _ _ = _ |- _] =>  unfold Math.binary_operation in H; smack
+  end.
+  match goal with
+  | [H1: do_overflow_check _ _, 
+     H2: do_overflow_check _ _ |- _] => inversion H1; inversion H2; clear H1 H2; subst; apply_in_bound_unique
+  end.
+  match goal with
+  | [H: do_division_check _ _ _ |- _] => inversion H; smack
+  end.
+  apply_in_bound_value_neq_zero; smack.
+  (*3*)
+  apply Do_Checks_Binop with (v:=(Int (v1 ÷ v2))); smack.
+  apply safe_remove_binop_check with (v':=(Int (v1 ÷ v2))); smack.
+  constructor. constructor; auto.
+  apply in_bound_value_neq_zero with (l:=l2) (u:=u2); smack.
+Qed.
+
+Ltac apply_do_flagged_checks_on_binop_reserve :=
+  match goal with
+  | [H1: in_bound ?v1 ?bound1 true,
+     H2: in_bound ?v2 ?bound2 true,
+     H3: optimize_rtc_binop _ ?bound1 ?bound2 _ _,
+     H4: do_flagged_checks_on_binop _ _ (Int ?v1) (Int ?v2) _ |- _] =>
+      specialize (do_flagged_checks_on_binop_reserve _ _ _ _ _ _ _ _ _ _ _ H1 H2 H3 H4);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+Lemma do_flagged_checks_on_unop_reserve: forall v l u op cks bound1 cks' v',
+  in_bound v (Interval l u) true ->
+    optimize_rtc_unop op (Interval l u) cks (bound1, cks') ->
+      do_flagged_checks_on_unop cks op (Int v) v' ->
+        do_flagged_checks_on_unop cks' op (Int v) v'.
+Proof.
+  intros;
+  match goal with
+  | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; smack
+  end.
+- match goal with 
+  | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; clear H; smack
+  end;
+  match goal with
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; smack
+  | _ => idtac
+  end; constructor; auto.
+- match goal with
+  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with 
+  | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; clear H; smack
+  end;
+  match goal with
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H: do_overflow_check _ _ |- _] => inversion H; subst
+  end;
+  [ apply_Sub_Bound_Unary_Minus_Compat; apply_sub_bound_unique |
+    apply Do_Checks_Unop_RTE; auto
+  ].
+- match goal with 
+  | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; clear H; smack
+  end;
+  match goal with
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; smack
+  end;
+  destruct ck;
+  match goal with
+  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; smack
+  end;
+  apply_safe_remove_unop_check; smack.
+Qed.
+
+Ltac apply_do_flagged_checks_on_unop_reserve :=
+  match goal with
+  | [H1: in_bound ?v ?bound1 true,
+     H2: optimize_rtc_unop _ ?bound1 _ _,
+     H3: do_flagged_checks_on_unop _ _ (Int ?v) _ |- _] =>
+      specialize (do_flagged_checks_on_unop_reserve _ _ _ _ _ _ _ _ H1 H2 H3);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+
+(*******************************************************************)
+
+(** * Expression Value In Bound *)
+
+Lemma eval_expr_value_in_bound: forall st s e v e' l u,
+  eval_expr_x st s e (Normal (Int v)) ->
+    optimize_expression_x st e (e', Interval l u) ->
+      in_bound v (Interval l u) true.
+Proof.
+  admit.
+Qed.
+
+Ltac apply_eval_expr_value_in_bound :=
+  match goal with
+  | [H1: eval_expr_x _ _ ?e (Normal (Int ?v)),
+     H2: optimize_expression_x _ ?e (?e', Interval ?l ?u) |- _] =>
+      specialize (eval_expr_value_in_bound _ _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+
+(** * Checks Optimization for Literal *)
 
 Lemma literal_checks_optimization_soundness: forall cks l v lBound cks',
   eval_literal_x cks l v ->
     optimize_literal_x l cks (lBound, cks') ->
       eval_literal_x cks' l v.
 Proof.
-  intros.
-  inversion H; inversion H0; smack.
-  constructor.
+  intros;
+  inversion H; inversion H0; smack;
+  constructor;
   match goal with
   | [H: optimize_overflow_check _ _ _ |- _] => inversion H; smack
-  end.
-  specialize (do_overflow_checks_preserve _ _ _ H1 H6); auto.
+  end;
+  match goal with
+  | [H: sub_bound _ _ _ |- _] => inversion H; clear H; smack
+  end;
+  specialize (do_overflow_checks_reserve _ _ _ Do_Overflow_Check H5 H1); auto.
 Qed.
+
+(** * Checks Optimization for Expression *)
 
 Lemma expression_checks_optimization_soundness: forall e e' st s v eBound,
   well_typed_stack st s ->
@@ -317,7 +1099,34 @@ Proof.
   + apply Eval_E_Binary_Operation_e1RTE_X; auto.
   + apply Eval_E_Binary_Operation_e2RTE_X with (v1:=v1); auto.
   + apply Eval_E_Binary_Operation_X with (v1:=v1) (v2:=v2); auto.
-    admit.
+    match goal with
+    | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; smack
+    end;
+    (** Plus | Minus | Divide *)
+    match goal with
+    | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; smack
+    end;
+    match goal with
+    | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; smack
+    | _ => idtac
+    end;
+    match goal with
+    | [H: optimize_overflow_check _ _ _ |- _] => inversion H; smack
+    | _ => idtac
+    end;
+    match goal with
+    | [H: Math.add ?v1 ?v2 = _ |- _] => destruct v1, v2; smack
+    | [H: Math.sub ?v1 ?v2 = _ |- _] => destruct v1, v2; smack
+    | [H: Math.div ?v1 ?v2 = _ |- _] => destruct v1, v2; smack
+    | _ => idtac
+    end;
+    repeat progress match goal with
+    | [H1: eval_expr_x _ _ ?e _, 
+       H2: optimize_expression_x _ ?e _ |- _] => 
+        specialize (eval_expr_value_in_bound _ _ _ _ _ _ _ H1 H2); clear H1 H2; 
+        let HZ := fresh "HZ" in intros HZ 
+    end;
+    apply_do_flagged_checks_on_binop_reserve; auto. 
   - (** E_Unary_Operation_X *)
   match goal with
   | [H: optimize_expression_x ?st ?e ?e' |- _] => inversion H; clear H; subst
@@ -337,7 +1146,30 @@ Proof.
   end.
   + apply Eval_E_Unary_Operation_eRTE_X; auto.
   + apply Eval_E_Unary_Operation_X with (v:=v0); auto.
-    admit.
+    match goal with
+    | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; smack
+    end;
+    match goal with
+    | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; smack
+    end;
+    match goal with
+    | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; smack
+    | _ => idtac
+    end;
+    match goal with
+    | [H: optimize_overflow_check _ _ _ |- _] => inversion H; smack
+    end;
+    match goal with
+    | [H: Math.unary_minus ?v = _ |- _] =>  destruct v; smack
+    | _ => idtac
+    end;
+    repeat progress match goal with
+    | [H1: eval_expr_x _ _ ?e _, 
+       H2: optimize_expression_x _ ?e _ |- _] => 
+        specialize (eval_expr_value_in_bound _ _ _ _ _ _ _ H1 H2); clear H1 H2; 
+        let HZ := fresh "HZ" in intros HZ 
+    end;
+    apply_do_flagged_checks_on_unop_reserve; auto.     
   - (** E_Identifier_X *)
   match goal with
   | [H: optimize_name_x ?st ?n ?n' |- _] => inversion H; clear H; subst
@@ -376,43 +1208,34 @@ Proof.
   end.
   + apply Eval_E_Indexed_Component_xRTE_X; auto.
   + apply Eval_E_Indexed_Component_eRTE_X with (a:=a0); auto.
-    match goal with
-    | [ H1: eval_expr_x _ _ ?e _,
-        H2: optimize_range_check ?e _ _ _ |- _ ] => 
-        specialize (eval_expr_value_preserve _ _ _ _ _ _ _ H1 H2); auto
-    end.
+    apply_eval_expr_value_reserve; smack.
   + apply Eval_E_Indexed_Component_Range_RTE_X with (a:=a0) (i:=i) (t:=t0) (l:=l) (u:=u0); auto.
-    match goal with
-    | [ H1: eval_expr_x _ _ ?e _,
-        H2: optimize_range_check ?e _ _ _ |- _ ] => 
-        specialize (eval_expr_value_preserve _ _ _ _ _ _ _ H1 H2); auto
-    end.
-    match goal with
-    | [H: optimize_name_x _ _ (?n', _) |- context[fetch_exp_type_x (name_astnum_x ?n') _ = _]] =>
-      rewrite <- (optimize_name_ast_num_eq _ _ _ _ H); auto
-    end.
+    apply_eval_expr_value_reserve; smack.
+    apply_optimize_name_ast_num_eq; smack.
     match goal with
     | [H1: fetch_exp_type_x _ _ = _ , H2: fetch_exp_type_x _ _ = _ |- _] => 
         rewrite H1 in H2; inversion H2; subst
     end;
     apply_extract_array_index_range_x_unique; smack.
-    admit.
+    apply_optimize_exp_ex_cks_eq; rewrite <- HZ in H20.
+    apply_eval_expr_value_in_bound.
+    match goal with
+    | [H: do_range_checks _ _ _ _ (Run_Time_Error RTE_Range) |- _] => inversion H; smack
+    end;
+    match goal with
+    | [H: do_range_check _ _ _ (Run_Time_Error RTE_Range) |- _] => inversion H; smack
+    end.
+    apply_optimize_range_check_reserve; smack.
   + apply Eval_E_Indexed_Component_X with (a:=a0) (i:=i) (t:=t0) (l:=l) (u:=u0); auto.
-    match goal with
-    | [ H1: eval_expr_x _ _ ?e _,
-        H2: optimize_range_check ?e _ _ _ |- _ ] => 
-        specialize (eval_expr_value_preserve _ _ _ _ _ _ _ H1 H2); auto
-    end.
-    match goal with
-    | [H: optimize_name_x _ _ (?n', _) |- context[fetch_exp_type_x (name_astnum_x ?n') _ = _]] =>
-      rewrite <- (optimize_name_ast_num_eq _ _ _ _ H); auto
-    end.
+    apply_eval_expr_value_reserve; smack.
+    apply_optimize_name_ast_num_eq; smack.
     match goal with
     | [H1: fetch_exp_type_x _ _ = _ , H2: fetch_exp_type_x _ _ = _ |- _] => 
         rewrite H1 in H2; inversion H2; subst
     end;
     apply_extract_array_index_range_x_unique; smack.
-    admit.
+    apply_optimize_exp_ex_cks_eq; rewrite <- HZ in H20.
+    apply_do_range_check_same_result; auto.
   - (** E_Selected_Component_X *)
   match goal with
   | [H: optimize_name_x ?st ?n ?n' |- _] => inversion H; clear H; subst
@@ -434,17 +1257,516 @@ Proof.
   + apply Eval_E_Selected_Component_X with (r:=r); auto.
 Qed.
 
+Ltac apply_expression_checks_optimization_soundness :=
+  match goal with
+  | [H1: well_typed_stack _ _,
+     H2: eval_expr_x _ _ ?e _,
+     H3: optimize_expression_x _ ?e _ |- _] =>
+      specialize (expression_checks_optimization_soundness _ _ _ _ _ _ H1 H2 H3);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+
+(** * Checks Optimization for Name *)
+
+Lemma name_checks_optimization_soundness: forall n n' st s v nBound,
+  well_typed_stack st s ->
+    eval_name_x st s n v ->
+      optimize_name_x st n (n', nBound) ->
+        eval_name_x st s n' v.
+Proof.
+  induction n; intros.
+- (** E_Identifier_X *)
+  match goal with
+  | [H: optimize_name_x ?st ?n ?n' |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_name_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  constructor; auto.
+- (** E_Indexed_Component_X *)
+  match goal with
+  | [H: optimize_name_x ?st ?n ?n' |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_name_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  try (apply_expression_checks_optimization_soundness).   
+  apply Eval_E_Indexed_Component_xRTE_X; smack.
+  apply Eval_E_Indexed_Component_eRTE_X with (a:=a0); smack.
+    apply_eval_expr_value_reserve; smack.
+
+  apply Eval_E_Indexed_Component_Range_RTE_X with (a:=a0) (i:=i) (t:=t0) (l:=l) (u:=u0); smack.
+    apply_eval_expr_value_reserve; smack.
+    apply_optimize_name_ast_num_eq; smack.
+    match goal with
+    | [H1: fetch_exp_type_x _ _ = _ , H2: fetch_exp_type_x _ _ = _ |- _] => 
+        rewrite H1 in H2; inversion H2; subst
+    end;
+    apply_extract_array_index_range_x_unique; smack.
+    apply_optimize_exp_ex_cks_eq; rewrite <- HZ0 in H18.
+    apply_eval_expr_value_in_bound.
+    match goal with
+    | [H: do_range_checks _ _ _ _ (Run_Time_Error RTE_Range) |- _] => inversion H; smack
+    end;
+    match goal with
+    | [H: do_range_check _ _ _ (Run_Time_Error RTE_Range) |- _] => inversion H; smack
+    end.
+    apply_optimize_range_check_reserve; smack.
+
+  apply Eval_E_Indexed_Component_X with (a:=a0) (i:=i) (t:=t0) (l:=l) (u:=u0); smack.
+    apply_eval_expr_value_reserve; smack.
+    apply_optimize_name_ast_num_eq; smack.
+    match goal with
+    | [H1: fetch_exp_type_x _ _ = _ , H2: fetch_exp_type_x _ _ = _ |- _] => 
+        rewrite H1 in H2; inversion H2; subst
+    end;
+    apply_extract_array_index_range_x_unique; smack.
+    apply_optimize_exp_ex_cks_eq; rewrite <- HZ0 in H18.
+    apply_do_range_check_same_result; auto.
+- (** E_Selected_Component_X *)
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: eval_name_x _ _ _ _ |- _] => inversion H; clear H; subst
+  end;
+  match goal with
+  | [H: forall (n' : name_x) (st : symboltable_x) 
+               (s : STACK.stack) (v : Return value) (eBound : bound),
+      well_typed_stack _ _ ->
+      eval_name_x _ _ ?n _ ->
+      optimize_name_x _ ?n _ -> eval_name_x _ _ _ _,
+     H1: well_typed_stack _ _,
+     H2: eval_name_x _ _ ?n _,
+     H3: optimize_name_x _ ?n _ |- _] => specialize (H _ _ _ _ _ H1 H2 H3)
+  end.
+  + apply Eval_E_Selected_Component_xRTE_X; auto.
+  + apply Eval_E_Selected_Component_X with (r:=r); auto.
+Qed.  
+  
+Ltac apply_name_checks_optimization_soundness :=
+  match goal with
+  | [H1: well_typed_stack _ _,
+     H2: eval_name_x _ _ ?n _,
+     H3: optimize_name_x _ ?n _ |- _] =>
+      specialize (name_checks_optimization_soundness _ _ _ _ _ _ H1 H2 H3);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+
+(** * Checks Optimization for store update *)
+
+Lemma store_update_optimization_soundness: forall st s x v s' x' v',
+  well_typed_stack st s ->
+    storeUpdate_x st s x v s' ->
+      optimize_name_x st x (x', v') ->
+        storeUpdate_x st s x' v s'.
+Proof.
+  intros st s x v s' x' v' H H0; revert x' v';
+  match goal with
+  | [H: storeUpdate_x _ _ _ _ _ |- _] => induction H; subst
+  end; intros.
+- (* 1 *)
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  end;
+  constructor; auto.
+- (* 2 *)
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  end;
+  apply_name_checks_optimization_soundness.
+  apply SU_Indexed_Component_xRTE_X; smack.  
+- (* 3 *)
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  end;
+  apply_name_checks_optimization_soundness;
+  apply_expression_checks_optimization_soundness;
+  apply SU_Indexed_Component_eRTE_X with (a:=a); smack;
+  apply_eval_expr_value_reserve; smack.
+- (* 4 *)
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  end;
+  apply_name_checks_optimization_soundness;
+  apply_expression_checks_optimization_soundness;
+  match goal with
+  | [H1: fetch_exp_type_x _ _ = _ , H2: fetch_exp_type_x _ _ = _ |- _] => 
+      rewrite H1 in H2; inversion H2; subst
+  end;
+  apply_extract_array_index_range_x_unique; smack;
+  apply_eval_expr_value_in_bound;
+  apply SU_Indexed_Component_Range_RTE_X with (a:=a) (i:=i) (t:=t0) (l:=l) (u:=u); smack;
+  solve[
+    apply_eval_expr_value_reserve; smack |
+    specialize (optimize_name_ast_num_eq _ _ _ _ H13); smack;
+    apply_optimize_exp_ex_cks_eq; smack;
+    match goal with
+    | [H: do_range_checks _ _ _ _ _ |- _] => inversion H; smack
+    end;
+    match goal with
+    | [H: do_range_check _ _ _ _ |- _] => inversion H; smack
+    end;
+    apply_optimize_range_check_reserve; smack
+  ].
+- (* 5 *)
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  end;
+  apply_name_checks_optimization_soundness;
+  apply_expression_checks_optimization_soundness;
+  match goal with
+  | [H1: fetch_exp_type_x _ _ = _ , H2: fetch_exp_type_x _ _ = _ |- _] => 
+      rewrite H1 in H2; inversion H2; subst
+  end;
+  apply_extract_array_index_range_x_unique; smack;
+  apply_eval_expr_value_in_bound;
+  apply_optimize_exp_ex_cks_eq; smack;
+  [ apply SU_Indexed_Component_X with 
+      (arrObj:=(ArrayV a)) (a:=a) (i:=i) (l:=l) (u:=u) (t:=t0) (a1:=(updateIndexedComp a i v)); smack |
+    apply SU_Indexed_Component_X with 
+      (arrObj:=Undefined) (i:=i) (a:=nil) (l:=l) (u:=u) (t:=t0) (a1:=((i, v) :: nil)); smack
+  ];
+  solve [
+    apply_eval_expr_value_reserve; smack |
+    specialize (optimize_name_ast_num_eq _ _ _ _ H16); smack |
+    match goal with
+    | [H1: do_range_checks ?cks _ _ _ _, H2: _ = ?cks |- _] => 
+        rewrite <- H2 in H1; apply_do_range_check_same_result; smack
+    end
+  ].
+- (* 6 *)
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  end;
+  apply_name_checks_optimization_soundness.
+  apply SU_Selected_Component_xRTE_X; smack.
+- (* 7 *)
+  match goal with
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  end;
+  apply_name_checks_optimization_soundness.
+  
+  apply SU_Selected_Component_X with 
+    (recObj:=(RecordV r)) (r:=r) (r1:=(updateSelectedComp r f v)); smack.
+  apply SU_Selected_Component_X with 
+    (recObj:=Undefined) (r:=nil) (r1:=((f, v) :: nil)); smack.
+Qed.
+
+
+(** * Checks Optimization for Copy_In *)
+Lemma copy_in_args_checks_optimization_soundness: forall st s params args f f' args',
+  well_typed_stack st s ->
+    copy_in_x st s f params args f' ->
+      optimize_args_x st params args args' ->
+        copy_in_x st s f params args' f'.
+Proof.
+  intros st s params; revert st s;
+  induction params; smack.
+- match goal with
+  | [H: copy_in_x _ _ _ _ _ _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H: optimize_args_x _ _ _ _ |- _] => inversion H; subst
+  end;
+  constructor.
+- destruct args, args';
+  match goal with 
+  | [H: copy_in_x _ _ _ (?a :: ?al) nil _ |- _] => inversion H
+  | [H: optimize_args_x _ (?a :: ?al) (?e :: ?el) nil |- _] => inversion H
+  | _ => idtac
+  end.
+  match goal with
+  | [H: optimize_args_x _ (?a :: ?al) (?e :: ?el) (?e' :: ?el') |- _ ] => inversion H; subst
+  end.
+  + (* 1 *)
+  match goal with
+  | [H: copy_in_x _ _ _ (?a :: ?al) (?e :: ?el) _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H1: parameter_mode_x ?x = _,
+     H2: parameter_mode_x ?x = _ |- _] => rewrite H1 in H2; inversion H2; clear H2
+  end;
+  [ apply Copy_In_Mode_In_eRTE_X; auto |
+    apply Copy_In_Mode_In_NoRangeCheck_X with (v:=v) (f':=(STACK.push f (parameter_name_x a) v)); auto |
+    apply Copy_In_Mode_In_Range_RTE_X with (v:=v) (l:=l) (u:=u); auto |
+    apply Copy_In_Mode_In_Range_X with (v:=v) (l:=l) (u:=u) (f':=(STACK.push f (parameter_name_x a) (Int v))); auto
+  ];
+  solve [
+    apply_expression_checks_optimization_soundness; auto |
+    apply_optimize_exp_ex_cks_eq; smack |
+    apply IHparams with (args := args); smack
+  ].
+  + (* 2 *)
+  match goal with
+  | [H: copy_in_x _ _ _ (?a :: ?al) (?e :: ?el) _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H1: parameter_mode_x ?x = _,
+     H2: parameter_mode_x ?x = _ |- _] => rewrite H1 in H2; inversion H2; clear H2
+  end;
+  apply_expression_checks_optimization_soundness; auto.
+
+  apply Copy_In_Mode_In_eRTE_X; smack.
+    apply_eval_expr_value_reserve; smack.
+
+  apply Copy_In_Mode_In_NoRangeCheck_X with (v:=v0) (f':=(STACK.push f (parameter_name_x a) v0)); smack.
+    apply_eval_expr_value_reserve; smack.
+    apply_optimize_exp_ex_cks_eq; smack.
+      match goal with
+      | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+      end; apply exp_updated_exterior_checks.
+ 
+  apply Copy_In_Mode_In_Range_RTE_X with (v:=v0) (l:=l) (u:=u0); smack.
+    apply_eval_expr_value_reserve; smack.
+    apply_optimize_exp_ex_cks_eq; smack.
+    apply_eval_expr_value_in_bound.
+    apply_extract_subtype_range_unique; smack;
+      match goal with
+     | [H: do_range_check _ _ _ _ |- _] => inversion H; subst
+     end;
+     apply_optimize_range_check_reserve; smack.
+     
+  match goal with
+  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+  end;
+  apply_optimize_exp_ex_cks_eq; smack.
+  apply Copy_In_Mode_In_NoRangeCheck_X with (v:=Int v0) (f':=(STACK.push f (parameter_name_x a) (Int v0))); smack.
+    apply eval_exp_with_any_exterior_checks; auto. 
+    apply exp_updated_exterior_checks; auto.  
+  apply Copy_In_Mode_In_Range_X with (v:=v0) (l:=l) (u:=u0) (f':=(STACK.push f (parameter_name_x a) (Int v0))); smack.
+  + (* 3 *)
+  match goal with
+  | [H: copy_in_x _ _ _ (?a :: ?al) (?e :: ?el) _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H1: parameter_mode_x ?x = _,
+     H2: parameter_mode_x ?x = _ |- _] => rewrite H1 in H2; inversion H2; clear H2
+  end.
+  apply Copy_In_Mode_Out_X with (f':=(STACK.push f (parameter_name_x a) Undefined)); smack.
+  + (* 4 *)
+  match goal with
+  | [H: copy_in_x _ _ _ (?a :: ?al) (?e :: ?el) _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H1: parameter_mode_x ?x = _,
+     H2: parameter_mode_x ?x = _ |- _] => rewrite H1 in H2; inversion H2; clear H2
+  end.
+  match goal with
+  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+  end;
+  apply Copy_In_Mode_Out_X with (f':=(STACK.push f (parameter_name_x a) Undefined)); smack.  
+  + (* 5 *)
+  match goal with
+  | [H: copy_in_x _ _ _ (?a :: ?al) (?e :: ?el) _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H1: parameter_mode_x ?x = _,
+     H2: parameter_mode_x ?x = _ |- _] => rewrite H1 in H2; inversion H2; clear H2
+  end;
+  apply_name_checks_optimization_soundness;
+  [ apply Copy_In_Mode_InOut_eRTE_x; smack |
+    apply Copy_In_Mode_InOut_NoRange_X with (v:=v) (f':=(STACK.push f (parameter_name_x a) v)); smack |
+    apply Copy_In_Mode_InOut_Range_RTE_X with (v:=v) (l:=l) (u:=u); smack |
+    apply Copy_In_Mode_InOut_Range_X with (v:=v) (l:=l) (u:=u) (f':=(STACK.push f (parameter_name_x a) (Int v))); smack
+  ];
+  apply_optimize_name_ex_cks_eq; smack.
+  + (* 6 *)
+  match goal with
+  | [H: copy_in_x _ _ _ (?a :: ?al) (?e :: ?el) _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H1: parameter_mode_x ?x = _,
+     H2: parameter_mode_x ?x = _ |- _] => rewrite H1 in H2; inversion H2; clear H2
+  end;
+  match goal with
+  | [H: optimize_expression_x _ _ _ |- _] => inversion H; subst
+  end;
+  apply_name_checks_optimization_soundness.
+  * 
+  match goal with
+  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: optimize_range_check_on_copy_out _ _ _ _ |- _] => inversion H; smack
+  end;
+  apply Copy_In_Mode_InOut_eRTE_x; smack;
+   repeat progress apply eval_name_with_any_exterior_checks; smack.
+  *
+  apply_optimize_name_ex_cks_eq; smack;
+  match goal with
+  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: optimize_range_check_on_copy_out _ _ _ _ |- _] => inversion H; smack
+  end;
+  apply Copy_In_Mode_InOut_NoRange_X with (v:=v0) (f':=(STACK.push f (parameter_name_x a) v0)); smack;
+   repeat progress apply eval_name_with_any_exterior_checks; smack;   
+   match goal with
+   | [H: List.In _ (name_exterior_checks _) |- _] => repeat progress rewrite name_updated_exterior_checks in H
+   end;
+   match goal with
+   | [H: _ -> False |- False] => apply H
+   end;
+   remember (remove_check_flag Do_Range_Check (name_exterior_checks n)) as X. 
+  
+   assert(beq_check_flag Do_Range_Check Do_Range_Check_On_CopyOut = false). smack.
+   apply_check_flag_in_reserve.     
+   apply_removed_check_flag_notin; smack.
+   
+   apply_removed_check_flag_notin; smack.
+   
+   assert(beq_check_flag Do_Range_Check Do_Range_Check_On_CopyOut = false). smack.
+   apply_check_flag_in_reserve; smack.
+  * 
+  assert(HA: eval_expr_x st s (E_Name_X ast_num n) (Normal (Int v0))). constructor; auto.
+  apply_optimize_name_ex_cks_eq; smack;
+  match goal with
+  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: optimize_range_check_on_copy_out _ _ _ _ |- _] => inversion H; smack
+  end;
+  apply_extract_subtype_range_unique; smack;
+  apply Copy_In_Mode_InOut_Range_RTE_X with (v:=v0) (l:=l) (u:=u0); smack;
+  repeat progress apply eval_name_with_any_exterior_checks; smack;
+  repeat progress rewrite name_updated_exterior_checks;
+  solve
+  [ apply_eval_expr_value_in_bound; apply_In_Bound_SubBound_Trans;
+    inversion H23; subst; apply_in_bound_unique; auto |
+    apply check_flag_in_reserve2; smack
+  ].
+  * 
+  apply_optimize_name_ex_cks_eq; smack;
+  match goal with
+  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+  end;
+  match goal with
+  | [H: optimize_range_check_on_copy_out _ _ _ _ |- _] => inversion H; smack
+  end;
+  apply_extract_subtype_range_unique; smack.
+  
+  
+  apply Copy_In_Mode_InOut_NoRange_X with 
+    (v:=Int v0) (f':=(STACK.push f (parameter_name_x a) (Int v0))); smack;
+   repeat progress apply eval_name_with_any_exterior_checks; smack.
+   match goal with
+   | [H: List.In _ (name_exterior_checks _) |- _] => repeat progress rewrite name_updated_exterior_checks in H
+   end;
+   remember (remove_check_flag Do_Range_Check (name_exterior_checks n)) as X.  
+   assert(HA: beq_check_flag Do_Range_Check Do_Range_Check_On_CopyOut = false). smack.
+   apply_check_flag_in_reserve.
+   apply_removed_check_flag_notin; smack.
+   
+   
+   apply Copy_In_Mode_InOut_NoRange_X with 
+    (v:=Int v0) (f':=(STACK.push f (parameter_name_x a) (Int v0))); smack;
+   repeat progress apply eval_name_with_any_exterior_checks; smack.
+   match goal with
+   | [H: List.In _ (name_exterior_checks _) |- _] => repeat progress rewrite name_updated_exterior_checks in H
+   end.
+   remember (remove_check_flag Do_Range_Check (name_exterior_checks n)) as X. 
+   apply_removed_check_flag_notin; smack.  
+  
+  apply Copy_In_Mode_InOut_Range_X with 
+    (v:=v0) (l:=l) (u:=u0) (f':=(STACK.push f (parameter_name_x a) (Int v0))); smack;
+  repeat progress apply eval_name_with_any_exterior_checks; smack;
+  repeat progress rewrite name_updated_exterior_checks.
+  assert(HA: beq_check_flag Do_Range_Check Do_Range_Check_On_CopyOut = false). smack.
+  apply_check_flag_in_reserve2; auto.
+
+  apply Copy_In_Mode_InOut_Range_X with 
+    (v:=v0) (l:=l) (u:=u0) (f':=(STACK.push f (parameter_name_x a) (Int v0))); smack.
+Qed.
+
+Ltac apply_copy_in_args_checks_optimization_soundness :=
+  match goal with
+  | [H1: well_typed_stack _ _,
+     H2: copy_in_x _ _ _ ?params ?args _,
+     H3: optimize_args_x _ ?params ?args _ |- _] =>
+      specialize (copy_in_args_checks_optimization_soundness _ _ _ _ _ _ H1 H2 H3);
+      let HZ := fresh "HZ" in intros HZ
+  end.
+
+
+  
+(** * Checks Optimization for Copy_Out *)
+Lemma copy_out_args_checks_optimization_soundness: forall st s f params args s' args',
+  well_typed_stack st s ->
+    copy_out_x st s f params args s' ->
+      optimize_args_x st params args args' ->
+        copy_out_x st s f params args' s'.
+Proof.
+  intros st s f params; revert st s f;
+  induction params; smack.
+- match goal with
+  | [H: copy_out_x _ _ _ _ _ _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H: optimize_args_x _ _ _ _ |- _] => inversion H; subst
+  end;
+  constructor.
+- destruct args, args';
+  match goal with
+  | [H: copy_out_x _ _ _ (?a :: ?al) nil _ |- _] => inversion H
+  | [H: optimize_args_x _ (?a :: ?al) (?e :: ?el) nil |- _] => inversion H
+  | _ => idtac
+  end;
+  match goal with
+  | [H: optimize_args_x _ (?a :: ?al) (?e :: ?el) (?e' :: ?el') |- _ ] => inversion H; subst
+  end.
+  + (* 1 *)
+  match goal with
+  | [H: copy_out_x _ _ _ (?a :: ?al) (?e :: ?el) _ |- _] => inversion H; smack
+  end;
+  apply Copy_Out_Mode_In_X; smack.
+  + (* 2 *)
+  match goal with
+  | [H: copy_out_x _ _ _ (?a :: ?al) (?e :: ?el) _ |- _] => inversion H; smack
+  end;
+  apply Copy_Out_Mode_In_X; smack.
+  + (* 3 *)
+  match goal with
+  | [H: copy_out_x _ _ _ (?a :: ?al) (?e :: ?el) _ |- _] => inversion H; subst
+  end;
+  match goal with
+  | [H1: parameter_mode_x ?x = _,
+     H2: parameter_mode_x ?x = _ |- _] => rewrite H1 in H2; inversion H2
+  | _ => idtac
+  end;
+  apply_optimize_name_ex_cks_eq; smack.
+  
+  apply Copy_Out_Mode_Out_nRTE with (v:=v); smack.
+  
+
+  (* continue .... *)
+  
+  (* the value of variable x, should be in the bound of its type range;
+     + E_Identifier ast_num x;
+     + during Copy_Out, the value of parameter is compared with the type range of the 
+       argument variable in copy_out_x, while in optimize_args_x, the type range of 
+       the parameter compared with the type range of the argument variable; we have to
+       make sure that the value of parameter should be fall within the type range of
+       the argument; 
+  *)
 
 
 
+    apply_eval_expr_value_reserve; smack.
+    apply_optimize_exp_ex_cks_eq; smack.
+    apply_eval_expr_value_in_bound.
+    apply_extract_subtype_range_unique; smack;
+
+  + (* 4 *)
+
+  + (* 5 *)
+
+  + (* 6 *)
 
 
-
-
-
-
-
-
+(** * Checks Optimization for Statement *)
 
 
 

@@ -1,4 +1,4 @@
-coq_makefile -o Makefile $* \
+coq_makefile -o Makefile -R . spark $* \
 CpdtTactics.v \
 LibTactics.v \
 more_list.v \

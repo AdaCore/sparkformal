@@ -188,7 +188,7 @@ Ltac un_done :=
            | [ H : done _ |- _ ] => clear H
          end.
 
-Require Import JMeq.
+Require Import JMeq Omega.
 
 (** A more parameterized version of the famous [crush].  Extra arguments are:
      - A tuple-list of lemmas we try [inster]-ing 

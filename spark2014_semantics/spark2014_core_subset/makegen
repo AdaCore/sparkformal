@@ -17,8 +17,11 @@ semantics.v \
 semantics_flagged.v \
 checks_soundness.v \
 checks_optimization.v \
+checks_optimization_util.v \
 well_typed.v \
-well_check_flagged.v \
+well_typed_util.v \
+checks_optimization_soundness_util.v \
 checks_optimization_soundness.v
-#other_coq_files.v \
-#other_coq_files.v
+#checks_optimization_soundness.v
+# can add other files here ...
+#well_check_flagged.v \

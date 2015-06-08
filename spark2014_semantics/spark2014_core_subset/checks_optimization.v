@@ -105,7 +105,7 @@ Inductive optimize_range_check: expression_x -> bound -> bound -> expression_x -
       e' = update_exterior_checks_exp e cks ->
       optimize_range_check e (Interval u v) (Interval u' v') e'
   | ORC_False: forall u v u' v' e,
-      sub_bound (Interval u v) (Interval u' v') true ->
+      sub_bound (Interval u v) (Interval u' v') false ->
       optimize_range_check e (Interval u v) (Interval u' v') e.
 
 Inductive optimize_range_check_on_copy_out: expression_x -> bound -> bound -> expression_x -> Prop :=
@@ -115,7 +115,7 @@ Inductive optimize_range_check_on_copy_out: expression_x -> bound -> bound -> ex
       e' = update_exterior_checks_exp e cks ->
       optimize_range_check_on_copy_out e (Interval u v) (Interval u' v') e'
   | ORCOCO_False: forall u v u' v' e,
-      sub_bound (Interval u v) (Interval u' v') true ->
+      sub_bound (Interval u v) (Interval u' v') false ->
       optimize_range_check_on_copy_out e (Interval u v) (Interval u' v') e.
 
 (*

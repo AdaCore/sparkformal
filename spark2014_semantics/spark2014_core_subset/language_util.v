@@ -57,6 +57,33 @@ Section AuxiliaryFunctions_For_Language_Flagged.
     intros; destruct n; smack.
   Qed.
 
+  Lemma exp_exterior_checks_refl: forall e,
+    update_exterior_checks_exp e (exp_exterior_checks e) = e.
+  Proof.
+    destruct e; smack.
+    destruct n; simpl; smack.
+  Qed.
+
+  Lemma name_exterior_checks_refl: forall n,
+    update_exterior_checks_name n (name_exterior_checks n) = n.
+  Proof.
+    destruct n; smack.
+  Qed.
+
+  Lemma update_exterior_checks_exp_astnum_eq: forall e cks,
+    expression_astnum_x (update_exterior_checks_exp e cks) = expression_astnum_x e.
+  Proof.
+    intros;
+    destruct e; smack.
+  Qed.
+
+  Lemma update_exterior_checks_name_astnum_eq: forall n cks,
+    name_astnum_x (update_exterior_checks_name n cks) = name_astnum_x n.
+  Proof.
+    intros;
+    destruct n; smack.
+  Qed.
+
 End AuxiliaryFunctions_For_Language_Flagged.
 
 

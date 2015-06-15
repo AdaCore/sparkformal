@@ -152,3 +152,43 @@ Inductive extract_array_index_range_x: symboltable_x -> typenum -> range_x -> Pr
       fetch_type_x tn' st = Some td ->
       subtype_range_x td = Some (Range_X l u) ->
       extract_array_index_range_x st t (Range_X l u).
+
+(** * Help Lemmas *)
+Lemma extract_array_index_range_x_unique: forall st a l u l' u',
+  extract_array_index_range_x st a (Range_X l u) ->
+    extract_array_index_range_x st a (Range_X l' u') ->
+      l = l' /\ u = u'.
+Proof.
+  intros.
+  inversion H; inversion H0; subst.
+  repeat progress match goal with
+  | [H1: ?x = _, 
+     H2: ?x = _ |- _] => rewrite H1 in H2; clear H1; inversion H2; subst
+  end; auto.
+Qed.
+
+Ltac apply_extract_array_index_range_x_unique := 
+  match goal with
+  | [H1: extract_array_index_range_x _ ?a (Range_X ?l ?u),
+     H2: extract_array_index_range_x _ ?a (Range_X ?l' ?u') |- _] => 
+      specialize (extract_array_index_range_x_unique _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ; inversion HZ
+  end.
+
+Lemma extract_subtype_range_unique: forall st t l u l' u',
+  extract_subtype_range_x st t (Range_X l u) ->
+    extract_subtype_range_x st t (Range_X l' u') ->
+      l = l' /\ u = u'.
+Proof.
+  intros;
+  inversion H; inversion H0; smack.
+Qed.
+
+Ltac apply_extract_subtype_range_unique :=
+  match goal with
+  | [H1: extract_subtype_range_x _ ?t _, 
+     H2: extract_subtype_range_x _ ?t _ |- _] => 
+      specialize (extract_subtype_range_unique _ _ _ _ _ _ H1 H2);
+      let HZ := fresh "HZ" in intros HZ; destruct HZ; subst
+  end.
+

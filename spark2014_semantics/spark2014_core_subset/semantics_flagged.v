@@ -161,9 +161,9 @@ with eval_name_x: symboltable_x -> stack -> name_x -> Return value -> Prop :=
         eval_name_x st s (E_Selected_Component_X ast_num x f ex_cks) (Normal v).
 
 
-(** Inductive semantic of declarations. [eval_decl_x st s sto decl rsto] 
-    means that rsto is the frame to be pushed on s after evaluating decl, 
-    sto is used as an accumulator for building the frame.
+(** Inductive semantic of declarations. [eval_decl_x st s f decl f'] 
+    means that [f'] is the frame to be pushed on s after evaluating decl, 
+    [f] is used as an accumulator for building the frame.
 *)
 
 (** ** Declaration Evaluation Semantics *)
@@ -515,7 +515,7 @@ Inductive eval_stmt_x: symboltable_x -> stack -> statement_x -> Return stack -> 
 
 (** * Help Lemmas *)
 
-Lemma eval_exp_with_any_exterior_checks: forall st s e v cks, 
+Lemma eval_exp_ex_cks_added: forall st s e v cks, 
   eval_expr_x st s e v ->
     eval_expr_x st s (update_exterior_checks_exp e cks) v.
 Proof.
@@ -545,7 +545,7 @@ Proof.
   ].
 Qed.
 
-Lemma eval_name_with_any_exterior_checks: forall st s n v cks, 
+Lemma eval_name_ex_cks_added: forall st s n v cks, 
   eval_name_x st s n v ->
     eval_name_x st s (update_exterior_checks_name n cks) v.
 Proof.
@@ -561,32 +561,173 @@ Proof.
   ].
 Qed.
 
+Scheme expression_ind := Induction for expression Sort Prop 
+                         with name_ind := Induction for name Sort Prop.
+
+Scheme expression_x_ind := Induction for expression_x Sort Prop 
+                         with name_x_ind := Induction for name_x Sort Prop.
+
+Lemma eval_exp_ex_cks_stripped: forall e st s cks v,
+  eval_expr_x st s (update_exterior_checks_exp e cks) v ->
+    eval_expr_x st s e v.
+Proof.
+  apply (expression_x_ind
+    (fun e: expression_x =>
+       forall (st : symboltable_x) (s : STACK.stack) (cks : exterior_checks) (v : Return value),
+      eval_expr_x st s (update_exterior_checks_exp e cks) v ->
+      eval_expr_x st s e v)
+    (fun n: name_x =>
+       forall (st : symboltable_x) (s : STACK.stack) (cks : exterior_checks) (v : Return value),
+      eval_name_x st s (update_exterior_checks_name n cks) v ->
+      eval_name_x st s n v)
+    ); intros;
+  match goal with
+  | [H: eval_expr_x _ _ _ _ |- _] => inversion H; subst
+  | [H: eval_name_x _ _ _ _ |- _] => inversion H; subst
+  end.
+- constructor; auto.
+- constructor; auto.
+  specialize (H _ _ _ _ H6); auto.
+- apply Eval_E_Binary_Operation_e1RTE_X.
+  rewrite <- (exp_exterior_checks_refl e) in H11.
+  specialize (H _ _ _ _ H11); auto.
+- apply Eval_E_Binary_Operation_e2RTE_X with (v1 := v1);
+  rewrite <- (exp_exterior_checks_refl e) in H11;
+  rewrite <- (exp_exterior_checks_refl e0) in H12;
+  specialize (H _ _ _ _ H11); auto;
+  specialize (H0 _ _ _ _ H12); auto.
+- apply Eval_E_Binary_Operation_X with (v1 := v1) (v2 := v2); auto.
+- apply Eval_E_Unary_Operation_eRTE_X; auto.
+- apply Eval_E_Unary_Operation_X with (v := v0); auto.
+- constructor; auto.
+- apply Eval_E_Indexed_Component_xRTE_X.
+  rewrite <- (name_exterior_checks_refl n) in H9;
+  specialize (H _ _ _ _ H9); auto.
+- apply Eval_E_Indexed_Component_eRTE_X with (a := a0); auto.
+- apply Eval_E_Indexed_Component_Range_RTE_X with (a := a0) (i := i) (t := t) (l := l) (u := u); auto.
+- apply Eval_E_Indexed_Component_X with (a := a0) (i := i) (t := t) (l := l) (u := u); auto.
+- apply Eval_E_Selected_Component_xRTE_X; auto.
+- apply Eval_E_Selected_Component_X with (r := r); auto.
+Qed.
+
+Lemma eval_name_ex_cks_stripped: forall n st s cks v,
+  eval_name_x st s (update_exterior_checks_name n cks) v ->
+      eval_name_x st s n v.
+Proof.
+  induction n; intros;
+  inversion H; subst.
+- constructor; auto.
+- apply Eval_E_Indexed_Component_xRTE_X; auto.
+- apply Eval_E_Indexed_Component_eRTE_X with (a := a0); auto.
+- apply Eval_E_Indexed_Component_Range_RTE_X with (a := a0) (i := i) (t := t) (l := l) (u := u); auto.
+- apply Eval_E_Indexed_Component_X with (a := a0) (i := i) (t := t) (l := l) (u := u); auto.
+- apply Eval_E_Selected_Component_xRTE_X; auto.
+- apply Eval_E_Selected_Component_X with (r := r); auto.  
+Qed.
+
 (** when the name expression is used as an address to update the store, then its exterior run-time
     check flags will not affect the store update; the run-time check flags are only used when the 
     name expression is to be evaluated as a value on the right hand side of assignment;
 *)
-Lemma storeUpdate_with_any_exterior_checks: forall st s n v s' cks, 
+
+Lemma store_update_ex_cks_added: forall st s n cks v s',
   storeUpdate_x st s n v s' ->
     storeUpdate_x st s (update_exterior_checks_name n cks) v s'.
 Proof.
-  intros; destruct n;
-  inversion H; smack;
-  [ apply SU_Identifier_X; auto |
-    apply SU_Indexed_Component_xRTE_X; auto |
-    apply SU_Indexed_Component_eRTE_X with (a:=a0); auto |
-    apply SU_Indexed_Component_eRTE_X with (a:=a0); auto |
-    apply SU_Indexed_Component_Range_RTE_X with (a:=a0) (i:=i) (t:=t) (l:=l) (u:=u); auto |
-    apply SU_Indexed_Component_Range_RTE_X with (a:=a0) (i:=i) (t:=t) (l:=l) (u:=u); auto |
-    apply SU_Indexed_Component_X with (arrObj:=(ArrayV a0)) (a:=a0) (i:=i) (t:=t) (l:=l) (u:=u) 
-                                                          (a1:=(updateIndexedComp a0 i v)); auto |
-    apply SU_Indexed_Component_X with (arrObj:=Undefined) (a:=a0) (i:=i) (t:=t) (l:=l) (u:=u) 
-                                                          (a1:=((i, v) :: nil)); auto |
-    apply SU_Selected_Component_xRTE_X; auto |
-    apply SU_Selected_Component_X with (recObj:=(RecordV r)) (r:=r) (r1:=(updateSelectedComp r i v)); auto |
-    apply SU_Selected_Component_X with (recObj:=Undefined) (r:=r) (r1:=((i, v) :: nil)); auto    
-  ].
+  induction n; intros;
+  inversion H; subst.
+- apply SU_Identifier_X; auto.
+- apply SU_Indexed_Component_xRTE_X; auto.
+- apply SU_Indexed_Component_eRTE_X with (a := a0); auto.
+- apply SU_Indexed_Component_Range_RTE_X with (a := a0) (i := i) (t := t) (l := l) (u := u); auto.
+- apply SU_Indexed_Component_X with (arrObj := arrObj) (a := a0) 
+                                    (i := i) (t := t) (l := l) (u := u) (a1 := a1); auto.
+- apply SU_Selected_Component_xRTE_X; auto.
+- apply SU_Selected_Component_X with (recObj := recObj) (r := r) (r1 :=r1); auto.
 Qed.
 
+Ltac apply_store_update_ex_cks_added :=
+  match goal with
+  | [|- storeUpdate_x _ _ (update_exterior_checks_name _ _) _ _] =>
+      apply store_update_ex_cks_added; auto
+  end.
+
+Lemma store_update_ex_cks_stripped: forall st s n cks v s',
+  storeUpdate_x st s (update_exterior_checks_name n cks) v s' ->
+    storeUpdate_x st s n v s'.
+Proof.
+  induction n; intros;
+  inversion H; subst.
+- apply SU_Identifier_X; auto.
+- apply SU_Indexed_Component_xRTE_X; auto.
+- apply SU_Indexed_Component_eRTE_X with (a := a0); auto.
+- apply SU_Indexed_Component_Range_RTE_X with (a := a0) (i := i) (t := t) (l := l) (u := u); auto.
+- apply SU_Indexed_Component_X with (arrObj := arrObj) (a := a0) 
+                                    (i := i) (t := t) (l := l) (u := u) (a1 := a1); auto.
+- apply SU_Selected_Component_xRTE_X; auto.
+- apply SU_Selected_Component_X with (recObj := recObj) (r := r) (r1 :=r1); auto.
+Qed.
+
+Ltac apply_store_update_ex_cks_stripped :=
+  match goal with
+  | [H: storeUpdate_x _ _ (update_exterior_checks_name _ _) _ _ |- _] =>
+      specialize (store_update_ex_cks_stripped _ _ _ _ _ _ H);
+      let HZ := fresh "HZ" in intro HZ
+  end.
+
+(***********************************************************)
+
+Lemma binop_arithm_operand_format: forall cks op v1 v2 v,
+  do_flagged_checks_on_binop cks op v1 v2 (Normal (Int v)) ->
+    exists n1 n2, v1 = Int n1 /\ v2 = Int n2.
+Proof.
+  intros.
+  inversion H; subst.
+  clear H.
+  destruct op; smack;
+  destruct v1, v2; smack.
+  clear H H1.
+  inversion H0; subst.
+  destruct op; smack;
+  destruct v1, v2; smack.
+  destruct v0; destruct v3; inversion H; smack.
+Qed.
+
+Ltac apply_binop_arithm_operand_format :=
+  match goal with
+  | [H: do_flagged_checks_on_binop _ _ _ _ (Normal (Int _)) |- _] =>
+      specialize (binop_arithm_operand_format _ _ _ _ _ H);
+      let HZ := fresh "HZ" in
+      let HZ1 := fresh "HZ" in 
+      let HZ2 := fresh "HZ" in
+      let n1 := fresh "n" in 
+      let n2 := fresh "n" in 
+      intros HZ;
+      destruct HZ as [n1 [n2 [HZ1 HZ2]]]
+  end.
+
+Lemma unop_arithm_operand_format: forall cks op v v',
+  do_flagged_checks_on_unop cks op v (Normal (Int v')) ->
+    exists n, v = Int n.
+Proof.
+  intros.
+  inversion H; subst.
+  clear H.
+  destruct op; destruct v; smack.
+  clear H H1.
+  inversion H0; subst.
+  destruct v; inversion H; smack.
+Qed.
+
+Ltac apply_unop_arithm_operand_format :=
+  match goal with
+  | [H: do_flagged_checks_on_unop _ _ _ (Normal (Int _)) |- _] =>
+      specialize (unop_arithm_operand_format _ _ _ _ H);
+      let HZ := fresh "HZ" in
+      let HZ1 := fresh "HZ" in 
+      let n := fresh "n" in 
+      intros HZ; destruct HZ as [n HZ1]
+  end.
 
 
 

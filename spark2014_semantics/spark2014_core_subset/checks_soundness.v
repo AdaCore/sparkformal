@@ -255,15 +255,15 @@ Proof.
   end.
   + apply Eval_E_Indexed_Component_xRTE_X; auto.
   + apply Eval_E_Indexed_Component_eRTE_X with (a:=a0); auto. 
-    apply eval_exp_with_any_exterior_checks; auto.
+    apply eval_exp_ex_cks_added; auto.
   + apply Eval_E_Indexed_Component_Range_RTE_X with (a:=a0) (i:=i) (t:=t) (l:=l) (u:=u); smack.
-    apply eval_exp_with_any_exterior_checks; auto.
+    apply eval_exp_ex_cks_added; auto.
     rewrite <- (name_ast_num_eq _ _ _ H10);
     apply symbol_table_exp_type_rel with (st := st); auto.
     apply index_range_rel with (st := st); auto.
     rewrite exp_updated_exterior_checks; constructor; auto.
   + apply Eval_E_Indexed_Component_X with (a:=a0) (i:=i) (t:=t) (l:=l) (u:=u); smack.
-    apply eval_exp_with_any_exterior_checks; auto.
+    apply eval_exp_ex_cks_added; auto.
     rewrite <- (name_ast_num_eq _ _ _ H10);
     apply symbol_table_exp_type_rel with (st := st); auto.
     apply index_range_rel with (st := st); auto.
@@ -332,14 +332,14 @@ Proof.
   end.
   apply Eval_E_Indexed_Component_xRTE_X; auto.
   apply Eval_E_Indexed_Component_eRTE_X with (a:=a0); auto.
-    apply eval_exp_with_any_exterior_checks; auto.
+    apply eval_exp_ex_cks_added; auto.
   apply Eval_E_Indexed_Component_Range_RTE_X with (a:=a0) (i:=i) (t:=t) (l:=l) (u:=u); smack.
-    apply eval_exp_with_any_exterior_checks; auto.
+    apply eval_exp_ex_cks_added; auto.
     rewrite <- (name_ast_num_eq _ _ _ H8); apply symbol_table_exp_type_rel with (st := st); auto.
     apply index_range_rel with (st := st); auto.
     rewrite exp_updated_exterior_checks; constructor; auto.
   apply Eval_E_Indexed_Component_X with (a:=a0) (i:=i) (t:=t) (l:=l) (u:=u); smack.
-    apply eval_exp_with_any_exterior_checks; auto.
+    apply eval_exp_ex_cks_added; auto.
     rewrite <- (name_ast_num_eq _ _ _ H8); apply symbol_table_exp_type_rel with (st := st); auto.
     apply index_range_rel with (st := st); auto.
     rewrite exp_updated_exterior_checks; constructor; auto.
@@ -409,8 +409,8 @@ Proof.
     apply Eval_Decl_Seq_X with (f':=f'); auto
   ];
   match goal with
-  | [ |- eval_expr_x _ _ (update_exterior_checks_exp _ _) _] => apply eval_exp_with_any_exterior_checks; auto
-  | [ |- eval_name_x _ _ (update_exterior_checks_name _ _) _] => apply eval_name_with_any_exterior_checks; auto
+  | [ |- eval_expr_x _ _ (update_exterior_checks_exp _ _) _] => apply eval_exp_ex_cks_added; auto
+  | [ |- eval_name_x _ _ (update_exterior_checks_name _ _) _] => apply eval_name_ex_cks_added; auto
   | [ |- context[name_exterior_checks (update_exterior_checks_name _ _)]] => rewrite name_updated_exterior_checks; smack
   | [ |- context[exp_exterior_checks (update_exterior_checks_exp _ _)]] => rewrite exp_updated_exterior_checks; auto
   | [H: context[name_exterior_checks (update_exterior_checks_name _ _)] |- False] => rewrite name_updated_exterior_checks in H; smack
@@ -470,7 +470,7 @@ Proof.
     apply SU_Indexed_Component_X with (arrObj:=Undefined) (a:=a0) (i:=i) (t:=t) (l:=l) (u:=u) (a1:=((i, v) :: nil)); auto
   ];
   match goal with
-  | [ |- eval_expr_x _ _ (update_exterior_checks_exp _ _) _] => apply eval_exp_with_any_exterior_checks; auto
+  | [ |- eval_expr_x _ _ (update_exterior_checks_exp _ _) _] => apply eval_exp_ex_cks_added; auto
   | [ |- context[exp_exterior_checks (update_exterior_checks_exp _ _)]] => rewrite exp_updated_exterior_checks; auto
   | [H: compile2_flagged_name ?st0 _ ?x' |- context[fetch_exp_type_x (name_astnum_x ?x') _]] =>
       rewrite <- (name_ast_num_eq _ _ _ H); apply symbol_table_exp_type_rel with (st := st0); auto
@@ -582,8 +582,8 @@ Proof.
     apply Copy_In_Mode_InOut_Range_X with (v:=v) (l:=l) (u:=u) (f':=(STACK.push f (parameter_name a) (Int v))); smack
   ];
   match goal with
-  | [ |- eval_expr_x _ _ (update_exterior_checks_exp _ _) _] => apply eval_exp_with_any_exterior_checks; auto
-  | [ |- eval_name_x _ _ (update_exterior_checks_name _ _) _] => apply eval_name_with_any_exterior_checks; auto
+  | [ |- eval_expr_x _ _ (update_exterior_checks_exp _ _) _] => apply eval_exp_ex_cks_added; auto
+  | [ |- eval_name_x _ _ (update_exterior_checks_name _ _) _] => apply eval_name_ex_cks_added; auto
   | [ |- context[name_exterior_checks (update_exterior_checks_name _ _)]] => rewrite name_updated_exterior_checks; smack
   | [ |- context[exp_exterior_checks (update_exterior_checks_exp _ _)]] => rewrite exp_updated_exterior_checks; auto
   | [H: context[name_exterior_checks (update_exterior_checks_name _ _)] |- False] => rewrite name_updated_exterior_checks in H; smack
@@ -685,13 +685,13 @@ Proof.
   | [H1: compile2_flagged_name _ ?n ?n', H2: List.In _ (name_exterior_checks ?n') |- False] => 
       rewrite (name_exterior_checks_beq_nil _ _ _ H1) in H2; inversion H2
   | [ |- context[fetch_exp_type_x _ _]] => apply symbol_table_exp_type_rel with (st := st); auto
-  | [ |- storeUpdate_x _ _ _ _ _] => apply storeUpdate_with_any_exterior_checks; auto
+  | [ |- storeUpdate_x _ _ _ _ _] => apply store_update_ex_cks_added; auto
   | [H1: compile2_flagged_symbol_table ?st ?st',
      H2: extract_subtype_range ?st ?t (Range _ _) |- 
      extract_subtype_range_x ?st' ?t (Range_X _ _)] =>
        specialize (subtype_range_rel _ _ _ _ _ H1 H2); smack
   | _ => idtac
-  end.
+  end. 
 Qed.
 
 Lemma statement_assign_checks_soundness: forall st s ast_num x e s' stmt' st',
@@ -732,7 +732,7 @@ Proof.
   ];
   match goal with
   | [H: compile2_flagged_exp _ _ ?e' |- context[exp_exterior_checks ?e']] => specialize (exp_exterior_checks_beq_nil _ _ _ H); smack
-  | [ |- eval_expr_x _ _ (update_exterior_checks_exp _ _) _] => apply eval_exp_with_any_exterior_checks; auto
+  | [ |- eval_expr_x _ _ (update_exterior_checks_exp _ _) _] => apply eval_exp_ex_cks_added; auto
   | [ |- context[exp_exterior_checks (update_exterior_checks_exp _ _)]] => rewrite exp_updated_exterior_checks; auto
   | [H: compile2_flagged_name ?st0 _ ?x' |- context[fetch_exp_type_x (name_astnum_x ?x') _]] =>
       rewrite <- (name_ast_num_eq _ _ _ H); apply symbol_table_exp_type_rel with (st := st0); auto

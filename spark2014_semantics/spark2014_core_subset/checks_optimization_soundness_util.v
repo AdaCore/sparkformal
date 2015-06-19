@@ -691,7 +691,8 @@ Proof.
         (recObj:=(RecordV r)) (r:=r) (r1:=(updateSelectedComp r i v)); smack |
       apply SU_Selected_Component_X with 
         (recObj:=Undefined) (r:=nil) (r1:=((i, v) :: nil)); smack
-    ].
+    ];
+    apply_name_checks_optimization_soundness; auto.
 Qed.
  
 Ltac apply_store_update_optimization_soundness := 

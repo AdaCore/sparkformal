@@ -234,7 +234,7 @@ with optimize_name_x: symboltable_x -> name_x -> (name_x * bound) -> Prop :=
       fetch_exp_type_x (name_astnum_x x) st = Some (Record_Type t) ->
       bound_of_record_field_type st t f fieldBound ->
       optimize_name_x st (E_Selected_Component_X ast_num x f ex_cks)
-                         ((E_Selected_Component_X ast_num x f ex_cks), fieldBound).
+                         ((E_Selected_Component_X ast_num x' f ex_cks), fieldBound).
 
 
 (** optimize run-time checks for arguments during procedure call;

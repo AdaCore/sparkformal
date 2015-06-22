@@ -156,6 +156,29 @@ Module STORE(V:ENTRY).
     | nil => false
     end.
 
+
+  (* These three functions are used by Compcert compilation *)
+  Function frameG (x : idnum) (s : stack): option frame :=
+    match s with
+    | f :: s' => if reside x f then Some f
+                 else frameG x s'
+    | nil => None
+    end.
+
+  Definition pop_frame (s:stack) : option frame :=
+    match s with
+      | nil => None
+      | cons f _ => Some f
+    end.
+
+  Definition level_of_top (s:stack): option scope_level :=
+    match pop_frame  s with
+      | Some (lvl,_) => Some lvl
+      | None => None
+    end.
+
+
+  
   Inductive stack_eq_length : stack -> stack -> Prop :=
     | eqnil: stack_eq_length nil nil
     | eqncons: forall s s' f f',

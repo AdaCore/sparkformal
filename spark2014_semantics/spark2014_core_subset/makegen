@@ -17,6 +17,8 @@ semantics.v \
 semantics_flagged.v \
 checks_soundness.v \
 checks_optimization.v \
+checks_optimization_exe.v \
+checks_optimization_exe_sound.v \
 checks_optimization_util.v \
 well_typed.v \
 well_typed_util.v \

@@ -1,0 +1,14 @@
+if [ ! $# == 1 ]; then
+  echo "Usage: $0 filename"
+  exit
+fi
+
+INPUT_FILENAME="$1"
+
+egrep -o "((Do_\S+))" $INPUT_FILENAME | cut -d " " -f 2 | wc -l
+
+# egrep -o "(\s(rs\S+))" data.txt | cut -d " " -f 2 > newfile.txt
+# \s looks for something that starts with any whitespace character
+# (rs\S+) and then searches for a string that starts with "rs" and is followed by any non-whitespace character
+#The results still have the white spaces in it, which we don't want, 
+#so we "cut" them out, before the content gets written to new file.

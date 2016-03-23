@@ -1,0 +1,192 @@
+if [ ! $# == 1 ]; then
+  echo "Usage: $0 output_file_name"
+  exit
+fi
+
+OUTPUT_FILENAME="$1"
+
+echo "jago_acats_c53007a" >> $1
+run ./tests/jago_acats_c53007a.smf.v ./tests/jago_acats_c53007a.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline
+
+# > $1  # empty the file
+echo "jago_acats_c55c02b" >> $1
+run ./tests/jago_acats_c55c02b.smf.v ./tests/jago_acats_c55c02b.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline
+
+echo "jago_array_record_package" >> $1
+run ./tests/jago_array_record_package.smf.v ./tests/jago_array_record_package.v  >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline
+
+echo "jago_array_subtype_index" >> $1
+run ./tests/jago_array_subtype_index.smf.v ./tests/jago_array_subtype_index.v  >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline
+
+echo "jago_arrayrecord" >> $1
+run ./tests/jago_arrayrecord.smf.v ./tests/jago_arrayrecord.v  >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_assign_subtype_var" >> $1
+run ./tests/jago_assign_subtype_var.smf.v ./tests/jago_assign_subtype_var.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_binary_search" >> $1
+run ./tests/jago_binary_search.smf.v ./tests/jago_binary_search.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_binary_search_test" >> $1
+run ./tests/jago_binary_search_test.smf.v ./tests/jago_binary_search_test.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_bounded_in_out" >> $1
+run ./tests/jago_bounded_in_out.smf.v ./tests/jago_bounded_in_out.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_dependence_test_suite_01" >> $1
+run ./tests/jago_dependence_test_suite_01.smf.v ./tests/jago_dependence_test_suite_01.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_dependence_test_suite_02" >> $1
+run ./tests/jago_dependence_test_suite_02.smf.v ./tests/jago_dependence_test_suite_02.v  >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_division_by_non_zero" >> $1
+run ./tests/jago_division_by_non_zero.smf.v ./tests/jago_division_by_non_zero.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_example" >> $1
+run ./tests/jago_example.smf.v ./tests/jago_example.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_factorial" >> $1
+run ./tests/jago_factorial.smf.v ./tests/jago_factorial.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_faultintegrator" >> $1
+run ./tests/jago_faultintegrator.smf.v ./tests/jago_faultintegrator.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_gcd" >> $1
+run ./tests/jago_gcd.smf.v ./tests/jago_gcd.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_gnatprove_test_bool" >> $1
+run ./tests/jago_gnatprove_test_bool.smf.v ./tests/jago_gnatprove_test_bool.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_linear_div" >> $1
+run ./tests/jago_linear_div.smf.v ./tests/jago_linear_div.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_max" >> $1
+run ./tests/jago_max.smf.v ./tests/jago_max.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_min" >> $1
+run ./tests/jago_min.smf.v ./tests/jago_min.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_modulus" >> $1
+run ./tests/jago_modulus.smf.v ./tests/jago_modulus.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_odd" >> $1
+run ./tests/jago_odd.smf.v ./tests/jago_odd.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_p_simple_call" >> $1
+run ./tests/jago_p_simple_call.smf.v ./tests/jago_p_simple_call.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_p_simple_call_two" >> $1
+run ./tests/jago_p_simple_call_two.smf.v ./tests/jago_p_simple_call_two.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_packagedemo_a" >> $1
+run ./tests/jago_packagedemo_a.smf.v ./tests/jago_packagedemo_a.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_prime" >> $1
+run ./tests/jago_prime.smf.v ./tests/jago_prime.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_proceduretest01" >> $1
+run ./tests/jago_proceduretest01.smf.v ./tests/jago_proceduretest01.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_quantifiertest" >> $1
+run ./tests/jago_quantifiertest.smf.v ./tests/jago_quantifiertest.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_recordtest01" >> $1
+run ./tests/jago_recordtest01.smf.v ./tests/jago_recordtest01.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_recursive_proc_pkg" >> $1
+run ./tests/jago_recursive_proc_pkg.smf.v ./tests/jago_recursive_proc_pkg.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_sort" >> $1
+run ./tests/jago_sort.smf.v ./tests/jago_sort.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_test_case_10" >> $1
+run ./tests/jago_test_case_10.smf.v ./tests/jago_test_case_10.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_the_stack" >> $1
+run ./tests/jago_the_stack.smf.v ./tests/jago_the_stack.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline  
+
+echo "jago_the_stack_praxis" >> $1
+run ./tests/jago_the_stack_praxis.smf.v ./tests/jago_the_stack_praxis.v  >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline
+
+echo "jago_two_way_sort" >> $1  
+run ./tests/jago_two_way_sort.smf.v ./tests/jago_two_way_sort.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline
+
+echo "jago_tetris" >> $1
+run ./tests/jago_tetris_functional.smf.v ./tests/jago_tetris_functional.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline
+
+echo "jago_skein" >> $1
+run ./tests/jago_skein.smf.v ./tests/jago_skein.v >> $1
+echo "" >> $1  # insert newline
+echo "" >> $1  # insert newline

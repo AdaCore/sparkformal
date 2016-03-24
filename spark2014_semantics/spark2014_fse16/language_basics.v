@@ -13,7 +13,6 @@ Require Export ZArith.
 Require Export Coq.Lists.List.
 Require Export Coq.Bool.Bool.
 Require Export CpdtTactics.
-Require Export LibTactics.
 Require Export more_list.
 
 (** This file defines some basic data types and operations used for

@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 Require Import Eqdep List.
 
-Require Omega.
+Require Export Coq.omega.Omega.
 
 Set Implicit Arguments.
 

@@ -1,5 +1,22 @@
 Formalization of SPARK2014 in Coq Proof Assistant
 
+===========
+ Notes:
+===========
+it’s compiled with Coq8.5 version
+run: ./makegen  will generate Makefile,
+within Makefile, replace the following two lines:
+COQLIBS?=\
+  -R "." Top\
+  -I "."
+COQDOCLIBS?=\
+  -R "." Top
+
+with: 
+
+COQLIBS?=-I "." 
+COQDOCLIBS?= 
+
 ============
      Overview
 ============

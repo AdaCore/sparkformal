@@ -1,6 +1,5 @@
 coq_makefile -o Makefile $* \
 CpdtTactics.v \
-LibTactics.v \
 more_list.v \
 language_basics.v \
 language.v \

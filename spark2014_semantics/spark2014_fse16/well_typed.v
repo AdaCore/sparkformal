@@ -387,7 +387,7 @@ Proof.
   remember (beq_nat x0 x) as b.
   destruct b; smack.
   + rewrite (beq_nat_eq _ _ Heqb).
-    exists x1 x2; smack.
+    exists x1, x2; smack.
   + inversion IHs; smack.
 Qed.
 

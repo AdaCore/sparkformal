@@ -75,7 +75,6 @@ Proof.
   inversion H0; subst.
   rewrite <- (exp_exterior_checks_refl e) in H6.
   specialize (H _ _ H6).
-  Print well_typed_exp_x.
   apply WT_Unary_Exp_X with (t := t) (t' := t'); auto.
 - simpl in H.
   inversion H; subst.
@@ -85,7 +84,6 @@ Proof.
   rewrite <- (exp_exterior_checks_refl e) in H8.
   specialize (H _ _ H6).
   specialize (H0 _ _ H8).
-  Print well_typed_name_x.
   apply WT_Indexed_Component_X with (t := t) (t' := t') (a_ast_num := a_ast_num) (tn := tn) (tm := tm); auto.
 - simpl in H0.
   inversion H0; subst.
@@ -133,7 +131,7 @@ Proof.
   remember (beq_nat x0 x) as b.
   destruct b; smack.
   rewrite (beq_nat_eq _ _ Heqb).
-  exists m t; smack.
+  exists m, t; smack.
   constructor.
 Qed.
 
@@ -221,7 +219,7 @@ Lemma well_typed_store_updated_by_undefined_value': forall st f x m t,
 Proof.
   intros.
   constructor; smack.
-  exists m t; smack; constructor.
+  exists m, t; smack; constructor.
 Qed.
 
 Ltac apply_well_typed_store_updated_by_undefined_value' :=
@@ -1120,7 +1118,7 @@ Proof.
   
   symmetry in e0; rewrite (beq_nat_eq _ _ e0) in *.
   rewrite H0 in H3; inversion H3; subst.
-  exists x0 x1; smack.
+  exists x0, x1; smack.
 Qed.
 
 Ltac apply_storeUpdate_with_typed_value_preserve_typed_store :=
@@ -1438,7 +1436,7 @@ Lemma push_value_in_range_preserve_typed_store: forall st f x m t l u v,
 Proof.
   intros.
   constructor; auto.
-  exists m t; smack.
+  exists m, t; smack.
   inversion H2; subst.
   destruct t;
   inversion H1; smack.
@@ -1468,7 +1466,7 @@ Lemma push_typed_value_preserve_typed_store: forall st f x m t t' v,
 Proof.
   intros.
   constructor; auto.
-  exists m t; smack.
+  exists m, t; smack.
   inversion H; subst.
   inversion H5; subst.
   destruct t; inversion H2; smack;
@@ -2000,7 +1998,7 @@ Proof.
      H2: initialization_expRT ?x = _ |- _] => rewrite H1 in H2; inversion H2; subst
   end.
   constructor; auto.
-  exists m (object_nominal_subtype_rt d); smack.
+  exists m, (object_nominal_subtype_rt d); smack.
   match goal with
   | [H1: fetch_exp_type_rt ?e st = _, H2: fetch_exp_type_rt ?e st = _ |- _] =>
       rewrite H1 in H2; inversion H2; subst
@@ -2029,7 +2027,7 @@ Proof.
      H2: initialization_expRT ?x = _ |- _] => rewrite H1 in H2; inversion H2; subst
   end.
   constructor; auto.
-  exists m0 (object_nominal_subtype_rt d); smack.
+  exists m0, (object_nominal_subtype_rt d); smack.
   match goal with
   | [H1: fetch_exp_type_rt ?e st = _, H2: fetch_exp_type_rt ?e st = _ |- _] =>
       rewrite H1 in H2; inversion H2; subst

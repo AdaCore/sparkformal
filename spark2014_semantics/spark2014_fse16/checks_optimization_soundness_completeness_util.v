@@ -553,7 +553,7 @@ Proof.
   destruct v1, v2;
   inversion H0;
   match goal with
-  | [|- exists v1' v2', Int ?n = Int v1' /\ Int ?n0 = Int v2'] => exists n n0; auto 
+  | [|- exists v1' v2', Int ?n = Int v1' /\ Int ?n0 = Int v2'] => exists n, n0; auto 
   | [H: Math.binary_operation _ _ _ = _ |- _] => inversion H; subst
   | _ => idtac
   end;
@@ -562,7 +562,7 @@ Proof.
   | _ => idtac
   end;
   match goal with
-  | [|- exists v1' v2', Int ?n = Int v1' /\ Int ?n0 = Int v2'] => exists n n0; auto 
+  | [|- exists v1' v2', Int ?n = Int v1' /\ Int ?n0 = Int v2'] => exists n, n0; auto 
   | [H: Math.binary_operation _ _ _ = _ |- _] => inversion H; subst
   | _ => idtac
   end.

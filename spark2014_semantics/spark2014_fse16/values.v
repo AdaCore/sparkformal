@@ -9,15 +9,15 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export language_basics.
+Require Export ast_basics.
 
-(** * Run Time Error Types *)
+(** * Run-Time Error *)
 Inductive errorType: Type :=
     | DivByZero
     | OverflowError
     | RangeError.
 
-(** * Return Values / States *)
+(** * Return Value / State *)
 (** Statement and expression evaluation returns one of the following results:
     - normal result;
     - run-time errors, which are required to be detected at run time,
@@ -53,16 +53,9 @@ Definition max_unsigned : Z := Z.sub modulus 1.
 Definition max_signed : Z := Z.sub half_modulus 1.
 Definition min_signed : Z := Z.opp half_modulus.
 
-(** * Stored Values *) 
+(** * Value *) 
 
 (** Type of basic values*)
-
-(** TODO: now we only model the 32-bit singed integer for SPARK 
-    program, where Coq integer (Z) is used to represent this integer  
-    value with a range bound between min_signed and max_signed. 
-    This integer range constraint is enforced when we define the
-    semantics for the language;
-*)
 
 (** Type of stored values in the store *)
 Inductive value: Type :=
@@ -77,7 +70,7 @@ Definition Overflow_Error: Ret value := RTE OverflowError.
 Definition Range_Error: Ret value := RTE RangeError.
 
 
-(** * value types for run time checks optimization *)
+(** * Bound of Value *)
 
 (** value is represented by a range, for a variable, if its initial value is undefined 
     or it's a parameter or its value is dynamically determined, then we use the range 
@@ -103,10 +96,10 @@ Inductive in_bound: Z -> bound -> bool -> Prop :=
       (Zle_bool l v) && (Zle_bool v u) = false ->
       in_bound v (Interval l u) false.
 
-(** * Value Operations *)
+(** * Value Operation *)
 Module Math.
 
-(** ** Arithmetic Operations *)
+(** ** Arithmetic Operation *)
 
 Definition add (v1 v2: value): option value := 
     match v1, v2 with
@@ -155,7 +148,7 @@ Definition mod' (v1 v2: value): option value :=
     | _, _ => None
     end.
 
-(** ** Logic Operations  *)
+(** ** Logic Operation  *)
 Definition and (v1 v2: value): option value :=
     match v1, v2 with
     | Bool v1', Bool v2' => Some (Bool (andb v1' v2'))
@@ -168,7 +161,7 @@ Definition or (v1 v2: value): option value :=
     | _, _ => None
     end.
 
-(** ** Relational Operations *)
+(** ** Relational Operation *)
 Definition eq (v1 v2: value): option value :=
     match v1, v2 with
     | Int v1', Int v2' => Some (Bool (Zeq_bool v1' v2'))
@@ -225,7 +218,7 @@ Definition unary_minus (v: value): option value :=
     end.
 
 
-(** * Binary Operations *)
+(** * Binary Operation *)
 Definition binary_operation (op: binary_operator) (v1: value) (v2: value): option value :=
     match op with
     | Equal => eq v1 v2
@@ -243,7 +236,7 @@ Definition binary_operation (op: binary_operator) (v1: value) (v2: value): optio
     | Modulus => mod' v1 v2
     end.
 
-(** * Unary Operations *)
+(** * Unary Operation *)
 Definition unary_operation (op: unary_operator) (v: value): option value := 
     match op with
     | Not => unary_not v

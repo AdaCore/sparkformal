@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export language_basics.
+Require Export ast_basics.
 
 (** This file can be auto-generated from language_template.v by running languagegen in terminal *)
 
@@ -24,7 +24,7 @@ Require Export language_basics.
 
 (* Ada 2012 RM, Chapter 3. Declaration and Types *)
 
-(** ** exps *)
+(** ** Expression *)
 (* Chapter 4 *)
 
 Inductive exp: Type := 
@@ -49,7 +49,7 @@ Scheme exp_ind := Induction for exp Sort Prop
                          with name_ind := Induction for name Sort Prop.
 *)
 
-(** ** Statements *)
+(** ** Statement *)
 (* Chapter 5 *)
 (* Sequence is not a statement in Ada, it's a shortcut for now;
    check flags can be easily added if they are needed later;
@@ -69,7 +69,7 @@ Inductive stmt: Type :=
 *)
 Inductive range: Type := Range (l: Z) (u: Z). (* 3.5 *)
 
-(** ** Type Declarations *)
+(** ** Type Declaration *)
 Inductive typeDecl: Type := (* 3.2.1 *)
     | SubtypeDecl:
         astnum -> typenum (*subtype name*) -> type -> range -> typeDecl (* 3.2.2 *)
@@ -99,7 +99,7 @@ Record paramSpec: Type := mkparamSpec{
 (*  parameter_default_exp: option (exp) *)
 }.
 
-(** ** Declarations *)
+(** ** Declaration *)
 (* Mutual records/inductives are not allowed in coq, so we build a record by hand. *)
 Inductive decl: Type :=  (* 3.1 *)
     | NullDecl: decl
@@ -108,6 +108,7 @@ Inductive decl: Type :=  (* 3.1 *)
     | ProcBodyDecl: astnum -> procBodyDecl -> decl (* 6.1 *)
     | SeqDecl: astnum -> decl -> decl -> decl (* it's introduced for easy proof *)
 
+(** ** Procedure *)
 with procBodyDecl: Type :=
   mkprocBodyDecl
     (procedure_astnum: astnum)
@@ -116,8 +117,17 @@ with procBodyDecl: Type :=
     (procedure_declarative_part: decl)
     (procedure_statements: stmt).
 
+(** * Program *)
+(** A program is composed of a sequence of (1) type declarations, (2) variable declarations 
+(3) procedure declarations, where 'main' is the main procedure (with empty parameters) working 
+as the entry point of the whole program  *)
 
-(** ** Auxiliary Functions *)
+Record program : Type := mkprogram{
+    decls: decl;
+    main: procnum
+}.
+
+(** * Auxiliary Functions *)
 
 Section AuxiliaryFunctions.
 

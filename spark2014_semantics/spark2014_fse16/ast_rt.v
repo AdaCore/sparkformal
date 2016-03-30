@@ -9,12 +9,12 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export language.
-Require Export checks.
+Require Export ast.
+Require Export rt.
 
 (** This file can be auto-generated from language_template.v by running languagegen in terminal *)
 
-(** * SPARK Subset Language *)
+(** * SPARK Subset Language with Run-Time Check Decorations *)
 
 (** We use the Ada terminology to define the terms of this subset 
     language, which makes it easy for Ada(SPARK) users to read it;
@@ -25,7 +25,7 @@ Require Export checks.
 
 (* Ada 2012 RM, Chapter 3. Declaration and Types *)
 
-(** ** Expressions *)
+(** ** Expression + RT *)
 (* Chapter 4 *)
 
 Inductive expRT: Type := 
@@ -50,7 +50,7 @@ Scheme expRT_ind := Induction for expRT Sort Prop
                          with nameRT_ind := Induction for nameRT Sort Prop.
 *)
 
-(** ** Statements *)
+(** ** Statement + RT *)
 (* Chapter 5 *)
 (* Sequence is not a statement in Ada, it's a shortcut for now;
    check flags can be easily added if they are needed later;
@@ -70,7 +70,7 @@ Inductive stmtRT: Type :=
 *)
 Inductive rangeRT: Type := RangeRT (l: Z) (u: Z). (* 3.5 *)
 
-(** ** Type Declarations *)
+(** ** Type Declaration + RT *)
 Inductive typeDeclRT: Type := (* 3.2.1 *)
     | SubtypeDeclRT:
         astnum -> typenum (*subtype name*) -> type -> rangeRT -> typeDeclRT (* 3.2.2 *)
@@ -100,7 +100,7 @@ Record paramSpecRT: Type := mkparamSpecRT{
 (*  parameter_default_expRT: option (expRT) *)
 }.
 
-(** ** Declarations *)
+(** ** Declaration + RT *)
 (* Mutual records/inductives are not allowed in coq, so we build a record by hand. *)
 Inductive declRT: Type :=  (* 3.1 *)
     | NullDeclRT: declRT
@@ -109,6 +109,7 @@ Inductive declRT: Type :=  (* 3.1 *)
     | ProcBodyDeclRT: astnum -> procBodyDeclRT -> declRT (* 6.1 *)
     | SeqDeclRT: astnum -> declRT -> declRT -> declRT (* it's introduced for easy proof *)
 
+(** ** Procedure + RT *)
 with procBodyDeclRT: Type :=
   mkprocBodyDeclRT
     (procedure_astnum_rt: astnum)
@@ -118,7 +119,14 @@ with procBodyDeclRT: Type :=
     (procedure_statements_rt: stmtRT).
 
 
-(** ** Auxiliary Functions *)
+(** ** Program + RT *)
+
+Record programRT : Type := mkprogramRT{
+    declsRT: declRT;
+    mainRT: procnum
+}.
+
+(** * Auxiliary Functions *)
 
 Section AuxiliaryFunctions_RT.
 

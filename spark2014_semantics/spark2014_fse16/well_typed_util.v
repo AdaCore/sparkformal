@@ -9,9 +9,10 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export checks_generator.
+Require Export rt_gen.
+Require Export rt_gen_util.
+Require Export rt_opt_util.
 Require Export well_typed.
-Require Export checks_optimization_util.
 
 Import STACK. 
 

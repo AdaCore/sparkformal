@@ -10,9 +10,9 @@ zhangzhi@ksu.edu
 *)
 
 Require Export symboltable_module.
-Require Export language_flagged.
+Require Export ast_rt.
 
-(** * Symbol Tables *)
+(** * Symbol Table *)
 
 (** it's used to map back to the source location once an error is detected in ast tree *)
 Record source_location := sloc{
@@ -22,14 +22,14 @@ Record source_location := sloc{
   endcol : nat
 }.
 
-(** symbol table for unflagged program *)
+(** symbol table for normal SPARK program *)
 Module Symbol_Table_Elements <: SymTable_Element.
   Definition Procedure_Decl := procBodyDecl.
   Definition Type_Decl := typeDecl.
   Definition Source_Location := source_location.
 End Symbol_Table_Elements.
 
-(** symbol table for run-time checks-flagged program *)
+(** symbol table for SPARK program with run-time check decorations *)
 Module Symbol_Table_Elements_RT <: SymTable_Element.
   Definition Procedure_Decl := procBodyDeclRT.
   Definition Type_Decl := typeDeclRT.
@@ -40,11 +40,13 @@ Module Symbol_Table_Module := SymbolTableM (Symbol_Table_Elements).
 
 Module Symbol_Table_Module_RT := SymbolTableM (Symbol_Table_Elements_RT).
 
+(** ** SymTab *)
 Definition symTab := Symbol_Table_Module.symboltable.
 Definition mkSymTab := Symbol_Table_Module.mkSymbolTable.
 Definition proc_decl := Symbol_Table_Module.proc_decl.
 Definition type_decl := Symbol_Table_Module.type_decl.
 
+(** ** SymTabRT *)
 Definition symTabRT := Symbol_Table_Module_RT.symboltable.
 Definition mkSymTabRT := Symbol_Table_Module_RT.mkSymbolTable.
 Definition proc_decl_rt := Symbol_Table_Module_RT.proc_decl.
@@ -52,7 +54,10 @@ Definition type_decl_rt := Symbol_Table_Module_RT.type_decl.
 
 Definition level := Symbol_Table_Module.level.
 
-(** name table and symbol table operations for unflagged program *)
+(** * Symbol Table Operation *)
+
+(** ** Symbol Table Operation for AST *)
+(** name table and symbol table operations for program (AST) *)
 
 Definition reside_nametable_vars := Symbol_Table_Module.reside_nametable_vars.
 Definition reside_nametable_procs := Symbol_Table_Module.reside_nametable_procs.
@@ -79,7 +84,8 @@ Definition update_types := Symbol_Table_Module.update_types.
 Definition update_exps := Symbol_Table_Module.update_exps.
 Definition update_sloc := Symbol_Table_Module.update_sloc.
 
-(** name table and symbol table operations for run-time checks flagged program *)
+(** ** Symbol Table Operation for AST_RT *)
+(** name table and symbol table operations for program with run-time check decorations (AST_RT) *)
 
 Definition reside_nametable_vars_rt := Symbol_Table_Module_RT.reside_nametable_vars.
 Definition reside_nametable_procs_rt := Symbol_Table_Module_RT.reside_nametable_procs.

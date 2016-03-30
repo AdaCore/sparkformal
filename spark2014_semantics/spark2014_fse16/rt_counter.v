@@ -8,9 +8,9 @@ Kansas State University
 zhangzhi@ksu.edu
 >>
 *)
-Require Export checks_generator.
+Require Export rt_gen.
 
-(** * Count the number of check flags *) 
+(** * Count Number of Run-Time Checks *) 
 
 Section Check_Count.
 
@@ -45,7 +45,7 @@ Section Check_Count.
       end
     end.
 
-  (** ** Count Check Flags For Expression *)
+  (** ** Check Counter for Expression *)
 
   Function count_exp_check_flags (e: expRT): cks_infor_t :=
     match e with
@@ -64,7 +64,7 @@ Section Check_Count.
                        (count_exp_check_flags e)
      end
 
-  (** ** Check Flags Comparison Function For Name *)
+  (** ** Check Counter for Name *)
 
   with count_name_check_flags (n: nameRT): cks_infor_t :=
     match n with
@@ -90,7 +90,7 @@ Section Check_Count.
     end.
 
 
-  (** ** Count Check Flags For Statement *)
+  (** ** Check Counter for Statement *)
 
   Function count_stmt_check_flags (c: stmtRT): cks_infor_t :=
     match c with
@@ -158,7 +158,7 @@ Section Check_Count.
                        (count_param_specs_check_flags lparam1')
     end.
 
-  (** ** Count Check Flags For Declaration *)
+  (** ** Check Counter for Declaration *)
 
   Function count_declaration_check_flags (d: declRT): cks_infor_t :=
     match d with
@@ -172,6 +172,8 @@ Section Check_Count.
     | SeqDeclRT n d1 d2 =>
         conj_cks_infor (count_declaration_check_flags d1) (count_declaration_check_flags d2)
     end
+
+  (** ** Check Counter for Procedure *)
 
   with count_procedure_body_check_flags (p: procBodyDeclRT): cks_infor_t :=
     match p with

@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export checks_optimization.
+Require Export rt_opt.
 
 (**********************************************)
 (** * executable check optimization functions *)
@@ -204,7 +204,9 @@ Function extract_array_index_range_f (st: symTabRT) (t: typenum): option rangeRT
   | _ => None
   end.
 
-(** ** Run-Time Checks Optimization For Expression *)
+(** * Run-Time Checks Optimization *)
+
+(** ** Checks Optimization for Expression *)
 
 Function optExpImpl (st: symTabRT) (e: expRT): option (expRT * bound) :=
   match e with
@@ -237,6 +239,8 @@ Function optExpImpl (st: symTabRT) (e: expRT): option (expRT * bound) :=
     | None => None 
     end
   end
+
+(** ** Checks Optimization for Name *)
 
 with optNameImpl (st: symTabRT) (n: nameRT): option (nameRT * bound) :=
   match n with 
@@ -277,6 +281,8 @@ with optNameImpl (st: symTabRT) (n: nameRT): option (nameRT * bound) :=
     end
   end.
 
+
+(** ** Checks Optimization for Arguments *)
 
 Function optArgsImpl (st: symTabRT) (params: list paramSpecRT) (args: list expRT): option (list expRT) :=
   match params, args with
@@ -362,7 +368,8 @@ Function optArgsImpl (st: symTabRT) (params: list paramSpecRT) (args: list expRT
   | _, _ => None 
   end.
 
-(** ** Run-Time Checks Optimization For Statement *)
+(** ** Checks Optimization for Statement *)
+
 (** given a statement, optimize its run-time check flags and return a new optimized statement *)
 Function optStmtImpl (st: symTabRT) (stmt: stmtRT): option stmtRT :=
   match stmt with
@@ -417,9 +424,7 @@ Function optStmtImpl (st: symTabRT) (stmt: stmtRT): option stmtRT :=
     | _, _ => None
     end 
   end.
-    
 
-(** ** Run-Time Checks Optimization For Declaration *)
 
 Function optObjDeclImpl (st: symTabRT) (o: objDeclRT) : option objDeclRT :=
   match o with
@@ -443,6 +448,8 @@ Function optObjDeclImpl (st: symTabRT) (o: objDeclRT) : option objDeclRT :=
     end  
   end.
 
+(** ** Checks Optimization for Declaration *)
+
 Function optDeclImpl (st: symTabRT) (d: declRT): option declRT :=
   match d with
   | NullDeclRT => Some NullDeclRT 
@@ -464,6 +471,8 @@ Function optDeclImpl (st: symTabRT) (d: declRT): option declRT :=
     end
   end
 
+(** ** Checks Optimization for Procedure *)
+
 with optProcBodyDeclImpl (st: symTabRT) (pb: procBodyDeclRT): option procBodyDeclRT :=
   match pb with
   | mkprocBodyDeclRT n p params decls stmt => 
@@ -473,5 +482,11 @@ with optProcBodyDeclImpl (st: symTabRT) (pb: procBodyDeclRT): option procBodyDec
     end
   end.
 
+(** ** Checks Optimization for Program *)
 
+Function optProgramImpl (st: symTabRT) (p: programRT): option programRT :=
+  match optDeclImpl st p.(declsRT) with
+  | Some declsRT' => Some (mkprogramRT declsRT' p.(mainRT))
+  | None => None
+  end.
 

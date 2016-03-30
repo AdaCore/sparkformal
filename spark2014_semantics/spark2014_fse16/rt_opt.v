@@ -10,10 +10,10 @@ zhangzhi@ksu.edu
 *)
 
 Require Export environment.
-Require Export checks.
-Require Export language_flagged.
-Require Export semantics_flagged.
-Require Export checks_optimization_ZArith.
+Require Export rt.
+Require Export ast_rt.
+Require Export eval_rt.
+Require Export rt_opt_ZArith.
 
 
 Inductive bound_of_type: symTabRT -> type -> bound -> Prop :=
@@ -77,6 +77,10 @@ Inductive sub_bound: bound -> bound -> bool -> Prop :=
       in_bound u (Interval u' v') false \/ in_bound v (Interval u' v') false ->
       sub_bound (Interval u v) (Interval u' v') false.
 
+(** * Run-Time Checks Optimization Rule *)
+
+(** ** optimize_overflow_check *)
+
 (** if the bound (Interval u v) is within the bound of the integer type,
     then optimize away the overflow check from the check set "cks", return 
     the optimized run-time check flags, and return the resulting bound 
@@ -90,6 +94,8 @@ Inductive optimize_overflow_check: bound -> check_flags -> (bound * check_flags)
   | OOC_False: forall u v cks,
       sub_bound (Interval u v) int32_bound false ->
       optimize_overflow_check (Interval u v) cks (Interval (Z.max min_signed u) (Z.min max_signed v), cks).
+
+(** ** optimize_range_check *)
 
 (** given an expression and its possible value bound, if it's used in a context where
     a range constraint is enforced, then check whether the value bound of the expression 
@@ -106,6 +112,7 @@ Inductive optimize_range_check: expRT -> bound -> bound -> expRT -> Prop :=
       sub_bound (Interval u v) (Interval u' v') false ->
       optimize_range_check e (Interval u v) (Interval u' v') e.
 
+(** ** optimize_range_check_on_copy_out *)
 Inductive optimize_range_check_on_copy_out: expRT -> bound -> bound -> expRT -> Prop :=
   | ORCOCO_True: forall u v u' v' cks e e',
       sub_bound (Interval u v) (Interval u' v') true ->
@@ -116,6 +123,8 @@ Inductive optimize_range_check_on_copy_out: expRT -> bound -> bound -> expRT -> 
       sub_bound (Interval u v) (Interval u' v') false ->
       optimize_range_check_on_copy_out e (Interval u v) (Interval u' v') e.
 
+
+(** ** optimize_rtc_binop *)
 
 (** optimization for binary operation, in the following rule: 
     optimize_rtc_binop op (Interval u v) (Interval u' v') ck (Interval x y, cks'),
@@ -190,6 +199,8 @@ Inductive optimize_rtc_binop: binary_operator -> bound -> bound -> check_flags -
       optimize_rtc_binop op x y cks (Boolval, cks).
 
 
+(** ** optimize_rtc_unop *)
+
 (** optimization for unary operation *)
 Inductive optimize_rtc_unop: unary_operator -> bound -> check_flags -> (bound * check_flags) -> Prop :=
   | O_RTC_Unary_Minus: forall v x u y cks retBound cks',
@@ -201,6 +212,9 @@ Inductive optimize_rtc_unop: unary_operator -> bound -> check_flags -> (bound * 
       (* op <> Unary_Minus -> *)
       optimize_rtc_unop Not Boolval cks (Boolval, cks).
 
+(** * Run-Time Checks Optimization *)
+
+(** ** Checks Optimization for Literal *)
 
 (** for a literal with run-time check flags, if it's an int literal and its value falls 
     in the integer range, then optimize away the overflow check
@@ -213,7 +227,8 @@ Inductive optLiteral: literal -> check_flags -> (bound * check_flags) -> Prop :=
       optLiteral (Integer_Literal v) cks (retBound, cks').
 
 
-(** * Run-Time Checks Optimization For Expression *)
+(** ** Checks Optimization for Expression *)
+
 (** given an expression, optimize its run time checks, and return the optimized expression
     and its possible value bound, which will be used later to optimize other checks;
 *)
@@ -237,6 +252,8 @@ Inductive optExp: symTabRT -> expRT -> (expRT * bound) -> Prop :=
       optExp st (UnOpRT n op e in_cks ex_cks) 
                 ((UnOpRT n op e' in_cks' ex_cks), retBound)
       
+(** ** Checks Optimization for Name *)
+
 with optName: symTabRT -> nameRT -> (nameRT * bound) -> Prop :=
   | O_Identifier: forall n st t xBound x ex_cks,
       fetch_exp_type_rt n st = Some t ->
@@ -258,6 +275,8 @@ with optName: symTabRT -> nameRT -> (nameRT * bound) -> Prop :=
       optName st (SelectedComponentRT n x f ex_cks)
                          ((SelectedComponentRT n x' f ex_cks), fieldBound).
 
+
+(** ** Checks Optimization for Arguments *)
 
 (** optimize run-time checks for arguments during procedure call;
     for a procedure call, given a list of arguments and its corresponding formal parameters,
@@ -320,7 +339,8 @@ Inductive optArgs: symTabRT -> list paramSpecRT -> list expRT -> list expRT -> P
 
 
 
-(** * Run-Time Checks Optimization For Statement *)
+(** ** Checks Optimization for Statement *)
+
 (** given a statement, optimize its run-time check flags and return a new optimized statement *)
 Inductive optStmt: symTabRT -> stmtRT -> stmtRT -> Prop :=
   | O_Null: forall st, 
@@ -356,8 +376,6 @@ Inductive optStmt: symTabRT -> stmtRT -> stmtRT -> Prop :=
       optStmt st c2 c2' ->
       optStmt st (SeqRT n c1 c2) (SeqRT n c1' c2').
 
-(** * Run-Time Checks Optimization For Declaration *)
-
 Inductive optObjDecl: symTabRT -> objDeclRT -> objDeclRT -> Prop :=
   | O_ObjDecl_NoneInit: forall st n x t,
       optObjDecl st (mkobjDeclRT n x t None) 
@@ -375,6 +393,8 @@ Inductive optObjDecl: symTabRT -> objDeclRT -> objDeclRT -> Prop :=
                                        (mkobjDeclRT n x t (Some e'')).
 
 
+(** ** Checks Optimization for Declaration *)
+
 Inductive optDecl: symTabRT -> declRT -> declRT -> Prop :=
   | O_NullDecl: forall st,
       optDecl st NullDeclRT NullDeclRT
@@ -391,6 +411,8 @@ Inductive optDecl: symTabRT -> declRT -> declRT -> Prop :=
       optDecl st d2 d2' ->
       optDecl st (SeqDeclRT n d1 d2) (SeqDeclRT n d1' d2')
 
+(** ** Checks Optimization for Procedure *)
+
 with optProcBodyDecl: symTabRT -> procBodyDeclRT -> procBodyDeclRT -> Prop :=
   | O_ProcBodyDecl: forall st decls decls' stmt stmt' n p params,
       optDecl st decls decls' ->
@@ -399,8 +421,23 @@ with optProcBodyDecl: symTabRT -> procBodyDeclRT -> procBodyDeclRT -> Prop :=
                          (mkprocBodyDeclRT n p params decls' stmt').
 
 
+(** ** Checks Optimization for Program *)
+
+Inductive optProgram: symTabRT -> programRT -> programRT -> Prop :=
+  | OptProgram: forall st p declsRT',
+      optDecl st p.(declsRT) declsRT' ->
+      optProgram st p (mkprogramRT declsRT' p.(mainRT)).
 
 
-
-
+Inductive optSymTab: symTabRT -> symTabRT -> Prop :=
+  | OptSymTab: forall st st',
+      (forall p n pb, 
+        fetch_proc_rt p st = Some (n, pb) -> 
+          exists pb', fetch_proc_rt p st' = Some (n, pb') /\ optProcBodyDecl st pb pb') ->
+      (forall p n pb, 
+        fetch_proc_rt p st' = Some (n, pb') -> 
+          exists pb, fetch_proc_rt p st = Some (n, pb) /\ optProcBodyDecl st pb pb') ->  
+      (st.(vars) = st'.(vars) /\ st.(types) = st'.(types) /\ st.(exps) = st'.(exps) /\
+       st.(sloc) = st'.(sloc) /\ st.(names) = st'.(names) ) ->
+      optSymTab st st'.
 

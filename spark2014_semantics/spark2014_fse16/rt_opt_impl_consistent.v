@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export checks_optimization_exe.
+Require Export rt_opt_impl.
 
 (**********************************************)
 (** *             helper lemmas               *)
@@ -335,17 +335,32 @@ Proof.
   rewrite H, H0, H1, H2; auto.
 Qed.
 
+Lemma range_constrainted_type_true: forall st t u v,
+  extract_subtype_range_rt st t (RangeRT u v) ->
+    is_range_constrainted_type t = true.
+Proof.
+  intros.
+  induction H; subst.
+  unfold is_range_constrainted_type.
+  destruct t; smack.
+Qed.
 
-(**********************************************)
-(** *          correctness proof              *)
-(*  (1) soundness proof                       *)
-(*  (2) completeness proof                    *)
-(**********************************************)
+(***************************************************)
+(** *  Consistency Proof for RT-OPT Implementation *)
+(*  (1) soundness proof                            *)
+(*  (2) completeness proof                         *)
+(***************************************************)
 
 Scheme expression_x_ind := Induction for expRT Sort Prop 
                          with name_x_ind := Induction for nameRT Sort Prop.
 
-(** * optLiteralImpl soundness and completeness *)
+Scheme declaration_x_ind := Induction for declRT Sort Prop 
+                            with procedure_body_x_ind := Induction for procBodyDeclRT Sort Prop.
+
+
+(** * Soundness of RT-OPT Implementation *)
+
+(** ** optLiteralImpl_soundness *)
 Lemma optLiteralImpl_soundness: forall l cks lbound cks',
   optLiteralImpl l cks = Some (lbound, cks') ->
     optLiteral l cks (lbound, cks').
@@ -356,19 +371,7 @@ Proof.
   apply optimize_overflow_check_f_soundness; auto.
 Qed.
 
-Lemma optLiteralImpl_completeness: forall l cks lbound cks',
-  optLiteral l cks (lbound, cks') ->
-    optLiteralImpl l cks = Some (lbound, cks').
-Proof.
-  intros;
-  induction H; auto;
-  specialize (optimize_overflow_check_f_completeness _ _ _ _ H); intro;
-  unfold optLiteralImpl;
-  rewrite H0; auto.
-Qed.
-
-
-(** * optExpImpl soundness and completeness *)
+(** ** optExpImpl_soundness *)
 Lemma optExpImpl_soundness: forall e e' ebound st,
   optExpImpl st e = Some (e', ebound) ->
     optExp st e (e', ebound).
@@ -460,88 +463,7 @@ Proof.
     apply bound_of_record_field_type_f_soundness; auto.
 Qed.
 
-Lemma optExpImpl_completeness: forall e e' ebound st,
-  optExp st e (e', ebound) ->
-    optExpImpl st e = Some (e', ebound).
-Proof.
-  apply (expression_x_ind
-      (fun e: expRT => forall (e' : expRT) (ebound: bound) (st: symTabRT),
-        optExp st e (e', ebound) ->
-        optExpImpl st e = Some (e', ebound))
-      (fun n: nameRT => forall (n': nameRT) (nbound: bound) (st: symTabRT),
-        optName st n (n', nbound) ->
-        optNameImpl st n = Some (n', nbound))
-      ); intros; simpl.
-  - (*1. literal *)
-    remember (LiteralRT a l i e) as x.
-    inversion H; subst;
-    match goal with
-    | [H: _ = LiteralRT _ _ _ _ |- _] => inversion H; subst 
-    end.
-    specialize (optLiteralImpl_completeness _ _ _ _ H3); intro HZ;
-    rewrite HZ; auto.
-  - (*2. name *)
-    remember (NameRT a n) as x.
-    inversion H0; subst;
-    match goal with
-    | [H: _ = NameRT _ _ |- _] => inversion H; subst 
-    end.
-    specialize (H _ _ _ H4);
-    rewrite H; auto.
-  - (*3. binary expression *)
-    remember (BinOpRT a b e e0 i e1) as x.
-    inversion H1; subst;
-    match goal with
-    | [H: _ = BinOpRT _ _ _ _ _ _ |- _] => inversion H; subst
-    end.
-    specialize (H _ _ _ H4); 
-    specialize (H0 _ _ _ H7).
-    specialize (optimize_rtc_binop_f_completeness _ _ _ _ _ _ H8); intro HZ.
-    rewrite H, H0; auto.
-    rewrite HZ; auto.
-  - (*4. unary expression *)
-    remember (UnOpRT a u e i e0) as x.
-    inversion H0; subst;
-    match goal with 
-    | [H: _ = UnOpRT _ _ _ _ _ |- _] => inversion H; subst 
-    end.
-    specialize (H _ _ _ H5).
-    specialize (optimize_rtc_unop_f_completeness _ _ _ _ _ H6); intro HZ.
-    rewrite H, HZ; auto.
-  - (*5. identifier *)
-    remember (IdentifierRT a i e) as x.
-    inversion H; subst;
-    match goal with
-    | [H: _ = IdentifierRT _ _ _ |- _] => inversion H; subst 
-    end.
-    specialize (bound_of_type_f_completeness _ _ _ H5); intro HZ;
-    rewrite H4, HZ; auto.     
-  - (*6. indexed component *)
-    remember (IndexedComponentRT a n e e0) as x.
-    inversion H1; subst;
-    match goal with 
-    | [H: _ = IndexedComponentRT _ _ _ _ |- _] => inversion H; subst 
-    end.
-    specialize (H _ _ _ H4).
-    specialize (H0 _ _ _ H5).
-    rewrite H, H0, H6; auto.
-    specialize (extract_array_index_range_f_completeness _ _ _ _ H7); intro HZ1.
-    specialize (optimize_range_check_f_completeness _ _ _ _ H10); intro HZ2.
-    specialize (bound_of_array_component_type_f_completeness _ _ _ H11); intro HZ3.
-    rewrite HZ1, HZ2, HZ3; auto.
-  - (*7. selected component *)
-    remember (SelectedComponentRT a n i e) as x.
-    inversion H0; subst;
-    match goal with 
-    | [H: _ = SelectedComponentRT _ _ _ _ |- _] => inversion H; subst 
-    end.
-    specialize (H _ _ _ H3).
-    rewrite H, H6; auto.
-    specialize (bound_of_record_field_type_f_completeness _ _ _ _ H7); intro HZ.
-    rewrite HZ; auto.
-Qed.
-
-(** * optNameImpl soundness and completeness *)  
+(** ** optNameImpl_soundness *)  
 Lemma optNameImpl_soundness: forall st n n' nbound,
   optNameImpl st n = Some (n', nbound) ->
     optName st n (n', nbound).
@@ -590,30 +512,8 @@ Proof.
     apply bound_of_record_field_type_f_soundness; auto.
 Qed.
 
-Lemma optNameImpl_completeness: forall n n' nbound st,
-  optName st n (n', nbound) ->
-    optNameImpl st n = Some (n', nbound).
-Proof.
-  intros;
-  induction H; auto; simpl.
-  - rewrite H; auto.
-    specialize (bound_of_type_f_completeness _ _ _ H0); intro HZ.
-    rewrite HZ; auto.
-  - rewrite IHoptName; auto.
-    specialize (optExpImpl_completeness _ _ _ _ H0); intro HZ1.
-    rewrite HZ1; auto. rewrite H1; auto.
-    specialize (extract_array_index_range_f_completeness _ _ _ _ H2); intro HZ2.
-    rewrite HZ2; auto.
-    specialize (optimize_range_check_f_completeness _ _ _ _ H3); intro HZ3.
-    rewrite HZ3; auto.
-    specialize (bound_of_array_component_type_f_completeness _ _ _ H4); intro HZ4.
-    rewrite HZ4; auto.
-  - rewrite IHoptName, H0; auto.
-    specialize (bound_of_record_field_type_f_completeness _ _ _ _ H1); intro HZ.
-    rewrite HZ; auto. 
-Qed.
 
-(** * optArgsImpl soundness and completeness *)  
+(** ** optArgsImpl_soundness *)  
 Lemma optArgsImpl_soundness: forall st params args args',
   optArgsImpl st params args = Some args' ->
     optArgs st params args args'.
@@ -725,72 +625,7 @@ Proof.
       }
 Qed.
 
-Lemma range_constrainted_type_true: forall st t u v,
-  extract_subtype_range_rt st t (RangeRT u v) ->
-    is_range_constrainted_type t = true.
-Proof.
-  intros.
-  induction H; subst.
-  unfold is_range_constrainted_type.
-  destruct t; smack.
-Qed.
-
-Lemma optArgsImpl_completeness: forall st params args args',
-  optArgs st params args args' ->
-    optArgsImpl st params args = Some args'.
-Proof.
-  induction params; intros;
-  match goal with
-  | [H: optArgs _ _ _ _ |- _] => inversion H; clear H; subst; simpl; auto
-  end;
-  match goal with
-  | [H: optName _ _ _ |- _] => 
-    specialize (optNameImpl_completeness _ _ _ _ H); intro HZ 
-  | [H: optExp _ _ _ |- _] => 
-    specialize (optExpImpl_completeness _ _ _ _ H); intro HZ
-  end;
-  match goal with
-  | [H1: forall args args' : list expRT,
-           optArgs ?st ?params args args' ->
-           optArgsImpl ?st ?params args = Some args',
-     H2: optArgs ?st ?params _ _ |- _] => specialize (H1 _ _ H2)
-  | _ => idtac
-  end;
-  match goal with
-  | [H: optArgsImpl ?st ?params ?args0 = Some _ |- _] => rewrite H; simpl; auto
-  end;
-  match goal with
-  | [H: extract_subtype_range_rt _ _ _ |- _] => 
-    specialize (range_constrainted_type_true _ _ _ _ H);
-    let HZ := fresh HZ in intro HZ
-  | _ => idtac
-  end;
-  repeat progress match goal with
-  | [H: optimize_range_check _ _ _ _ |- _] =>
-    specialize (optimize_range_check_f_completeness _ _ _ _ H); clear H;
-    let HZ := fresh HZ in intro HZ
-  | [H: bound_of_type ?st _ _ |- _] =>
-    specialize (bound_of_type_f_completeness _ _ _ H); clear H;
-    let HZ := fresh HZ in intro HZ  
-  | [H: optimize_range_check_on_copy_out _ _ _ _ |- _ ] => 
-    specialize (optimize_range_check_on_copy_out_f_completeness _ _ _ _ H); clear H;
-    let HZ := fresh HZ in intro HZ
-  | _ => idtac
-  end; 
-  match goal with
-  | [H: extract_subtype_range_rt _ _ _ |- _] => 
-    specialize (extract_subtype_range_f_completeness _ _ _ _ H); clear H;
-    let HZ := fresh HZ in intro HZ 
-  | _ => idtac
-  end; smack. 
-  destruct (is_range_constrainted_type t); auto.
-  specialize (range_constrainted_type_true _ _ _ _ H3); intro HZ4.
-  rewrite HZ4; auto.
-  specialize (extract_subtype_range_f_completeness _ _ _ _ H3); intros HZ5.
-  smack.
-Qed.
-
-(** * optStmtImpl soundness and completeness *)  
+(** ** optStmtImpl_soundness *)  
 Lemma optStmtImpl_soundness: forall st c c',
   optStmtImpl st c = Some c' ->
     optStmt st c c'.
@@ -858,6 +693,260 @@ Proof.
     apply O_Seq; auto.
 Qed.
 
+(** ** optObjDeclImpl_soundness *)  
+Lemma optObjDeclImpl_soundness: forall st o o',
+  optObjDeclImpl st o = Some o' ->
+    optObjDecl st o o'.
+Proof.
+  intros.
+  functional induction optObjDeclImpl st o; 
+  inversion H; subst;
+  match goal with
+  | [H: optExpImpl _ _ = _ |- _] => 
+    specialize (optExpImpl_soundness _ _ _ _ H); clear H;
+      let HZ := fresh HZ in intro HZ  
+  | _ => idtac
+  end.
+  constructor.
+  apply O_ObjDecl_NoRangeCheck with (eBound:=eBound); auto.
+  apply O_ObjDecl_RangeCheck with (u:=u) (v:=v) (e':=e') (u':=u') (v':=v'); auto.
+  apply extract_subtype_range_f_soundness; auto.
+  apply optimize_range_check_f_soundness; auto.
+Qed.
+
+(** ** optDeclImpl_soundness *)  
+Lemma optDeclImpl_soundness: forall d d' st,
+  optDeclImpl st d = Some d' ->
+    optDecl st d d'.
+Proof.
+  apply (declaration_x_ind
+      (fun d: declRT => forall (d' : declRT) (st: symTabRT),
+        optDeclImpl st d = Some d' ->
+        optDecl st d d')
+      (fun p: procBodyDeclRT => forall (p': procBodyDeclRT) (st: symTabRT),
+        optProcBodyDeclImpl st p = Some p' ->
+        optProcBodyDecl st p p')
+      ); smack;
+  try (constructor; auto).
+ - remember (optObjDeclImpl st o) as x.
+   destruct x; inversion H; subst.
+   apply O_ObjDecl.
+   apply optObjDeclImpl_soundness; auto.
+  - remember (optProcBodyDeclImpl st p) as x.
+    destruct x; inversion H0; subst.
+    symmetry in Heqx.
+    specialize (H _ _ Heqx).
+    apply O_ProcBody; auto.
+  - remember (optDeclImpl st d) as x.
+    destruct x; [ | inversion H1]; subst.
+    remember (optDeclImpl st d0) as y.
+    destruct y; inversion H1; subst.
+    symmetry in Heqx, Heqy.
+    specialize (H _ _ Heqx); specialize (H0 _ _ Heqy).
+    apply O_SeqDecl; auto.
+  - remember (optDeclImpl st procedure_declarative_part_rt) as x.
+    destruct x; [ | inversion H0]; subst.
+    remember (optStmtImpl st procedure_statements_rt) as y.
+    destruct y; inversion H0; subst.
+    symmetry in Heqx; specialize (H _ _ Heqx).
+    apply O_ProcBodyDecl; auto.
+    apply optStmtImpl_soundness; auto.
+Qed.
+
+(** ** optProgramImpl_soundness *)  
+Lemma optProgramImpl_soundness: forall p p' st,
+  optProgramImpl st p = Some p' ->
+    optProgram st p p'.
+Proof.
+  intros.
+  destruct p, p'. 
+  unfold optProgramImpl in H; 
+  inversion H; subst; clear H. 
+  remember (optDeclImpl st declsRT) as x.
+  destruct x; inversion H1; subst.
+  constructor;
+  apply optDeclImpl_soundness; auto.
+Qed.
+
+(** * Completeness of RT-OPT Implementation *)
+
+(** ** optLiteralImpl_completeness *)
+
+Lemma optLiteralImpl_completeness: forall l cks lbound cks',
+  optLiteral l cks (lbound, cks') ->
+    optLiteralImpl l cks = Some (lbound, cks').
+Proof.
+  intros;
+  induction H; auto;
+  specialize (optimize_overflow_check_f_completeness _ _ _ _ H); intro;
+  unfold optLiteralImpl;
+  rewrite H0; auto.
+Qed.
+
+(** ** optExpImpl_completeness *)
+Lemma optExpImpl_completeness: forall e e' ebound st,
+  optExp st e (e', ebound) ->
+    optExpImpl st e = Some (e', ebound).
+Proof.
+  apply (expression_x_ind
+      (fun e: expRT => forall (e' : expRT) (ebound: bound) (st: symTabRT),
+        optExp st e (e', ebound) ->
+        optExpImpl st e = Some (e', ebound))
+      (fun n: nameRT => forall (n': nameRT) (nbound: bound) (st: symTabRT),
+        optName st n (n', nbound) ->
+        optNameImpl st n = Some (n', nbound))
+      ); intros; simpl.
+  - (*1. literal *)
+    remember (LiteralRT a l i e) as x.
+    inversion H; subst;
+    match goal with
+    | [H: _ = LiteralRT _ _ _ _ |- _] => inversion H; subst 
+    end.
+    specialize (optLiteralImpl_completeness _ _ _ _ H3); intro HZ;
+    rewrite HZ; auto.
+  - (*2. name *)
+    remember (NameRT a n) as x.
+    inversion H0; subst;
+    match goal with
+    | [H: _ = NameRT _ _ |- _] => inversion H; subst 
+    end.
+    specialize (H _ _ _ H4);
+    rewrite H; auto.
+  - (*3. binary expression *)
+    remember (BinOpRT a b e e0 i e1) as x.
+    inversion H1; subst;
+    match goal with
+    | [H: _ = BinOpRT _ _ _ _ _ _ |- _] => inversion H; subst
+    end.
+    specialize (H _ _ _ H4); 
+    specialize (H0 _ _ _ H7).
+    specialize (optimize_rtc_binop_f_completeness _ _ _ _ _ _ H8); intro HZ.
+    rewrite H, H0; auto.
+    rewrite HZ; auto.
+  - (*4. unary expression *)
+    remember (UnOpRT a u e i e0) as x.
+    inversion H0; subst;
+    match goal with 
+    | [H: _ = UnOpRT _ _ _ _ _ |- _] => inversion H; subst 
+    end.
+    specialize (H _ _ _ H5).
+    specialize (optimize_rtc_unop_f_completeness _ _ _ _ _ H6); intro HZ.
+    rewrite H, HZ; auto.
+  - (*5. identifier *)
+    remember (IdentifierRT a i e) as x.
+    inversion H; subst;
+    match goal with
+    | [H: _ = IdentifierRT _ _ _ |- _] => inversion H; subst 
+    end.
+    specialize (bound_of_type_f_completeness _ _ _ H5); intro HZ;
+    rewrite H4, HZ; auto.     
+  - (*6. indexed component *)
+    remember (IndexedComponentRT a n e e0) as x.
+    inversion H1; subst;
+    match goal with 
+    | [H: _ = IndexedComponentRT _ _ _ _ |- _] => inversion H; subst 
+    end.
+    specialize (H _ _ _ H4).
+    specialize (H0 _ _ _ H5).
+    rewrite H, H0, H6; auto.
+    specialize (extract_array_index_range_f_completeness _ _ _ _ H7); intro HZ1.
+    specialize (optimize_range_check_f_completeness _ _ _ _ H10); intro HZ2.
+    specialize (bound_of_array_component_type_f_completeness _ _ _ H11); intro HZ3.
+    rewrite HZ1, HZ2, HZ3; auto.
+  - (*7. selected component *)
+    remember (SelectedComponentRT a n i e) as x.
+    inversion H0; subst;
+    match goal with 
+    | [H: _ = SelectedComponentRT _ _ _ _ |- _] => inversion H; subst 
+    end.
+    specialize (H _ _ _ H3).
+    rewrite H, H6; auto.
+    specialize (bound_of_record_field_type_f_completeness _ _ _ _ H7); intro HZ.
+    rewrite HZ; auto.
+Qed.
+
+(** ** optNameImpl_completeness *)
+Lemma optNameImpl_completeness: forall n n' nbound st,
+  optName st n (n', nbound) ->
+    optNameImpl st n = Some (n', nbound).
+Proof.
+  intros;
+  induction H; auto; simpl.
+  - rewrite H; auto.
+    specialize (bound_of_type_f_completeness _ _ _ H0); intro HZ.
+    rewrite HZ; auto.
+  - rewrite IHoptName; auto.
+    specialize (optExpImpl_completeness _ _ _ _ H0); intro HZ1.
+    rewrite HZ1; auto. rewrite H1; auto.
+    specialize (extract_array_index_range_f_completeness _ _ _ _ H2); intro HZ2.
+    rewrite HZ2; auto.
+    specialize (optimize_range_check_f_completeness _ _ _ _ H3); intro HZ3.
+    rewrite HZ3; auto.
+    specialize (bound_of_array_component_type_f_completeness _ _ _ H4); intro HZ4.
+    rewrite HZ4; auto.
+  - rewrite IHoptName, H0; auto.
+    specialize (bound_of_record_field_type_f_completeness _ _ _ _ H1); intro HZ.
+    rewrite HZ; auto. 
+Qed.
+
+(** ** optArgsImpl_completeness *)
+Lemma optArgsImpl_completeness: forall st params args args',
+  optArgs st params args args' ->
+    optArgsImpl st params args = Some args'.
+Proof.
+  induction params; intros;
+  match goal with
+  | [H: optArgs _ _ _ _ |- _] => inversion H; clear H; subst; simpl; auto
+  end;
+  match goal with
+  | [H: optName _ _ _ |- _] => 
+    specialize (optNameImpl_completeness _ _ _ _ H); intro HZ 
+  | [H: optExp _ _ _ |- _] => 
+    specialize (optExpImpl_completeness _ _ _ _ H); intro HZ
+  end;
+  match goal with
+  | [H1: forall args args' : list expRT,
+           optArgs ?st ?params args args' ->
+           optArgsImpl ?st ?params args = Some args',
+     H2: optArgs ?st ?params _ _ |- _] => specialize (H1 _ _ H2)
+  | _ => idtac
+  end;
+  match goal with
+  | [H: optArgsImpl ?st ?params ?args0 = Some _ |- _] => rewrite H; simpl; auto
+  end;
+  match goal with
+  | [H: extract_subtype_range_rt _ _ _ |- _] => 
+    specialize (range_constrainted_type_true _ _ _ _ H);
+    let HZ := fresh HZ in intro HZ
+  | _ => idtac
+  end;
+  repeat progress match goal with
+  | [H: optimize_range_check _ _ _ _ |- _] =>
+    specialize (optimize_range_check_f_completeness _ _ _ _ H); clear H;
+    let HZ := fresh HZ in intro HZ
+  | [H: bound_of_type ?st _ _ |- _] =>
+    specialize (bound_of_type_f_completeness _ _ _ H); clear H;
+    let HZ := fresh HZ in intro HZ  
+  | [H: optimize_range_check_on_copy_out _ _ _ _ |- _ ] => 
+    specialize (optimize_range_check_on_copy_out_f_completeness _ _ _ _ H); clear H;
+    let HZ := fresh HZ in intro HZ
+  | _ => idtac
+  end; 
+  match goal with
+  | [H: extract_subtype_range_rt _ _ _ |- _] => 
+    specialize (extract_subtype_range_f_completeness _ _ _ _ H); clear H;
+    let HZ := fresh HZ in intro HZ 
+  | _ => idtac
+  end; smack. 
+  destruct (is_range_constrainted_type t); auto.
+  specialize (range_constrainted_type_true _ _ _ _ H3); intro HZ4.
+  rewrite HZ4; auto.
+  specialize (extract_subtype_range_f_completeness _ _ _ _ H3); intros HZ5.
+  smack.
+Qed.
+
+
+(** ** optStmtImpl_completeness *)
 Lemma optStmtImpl_completeness: forall st c c',
   optStmt st c c' ->
     optStmtImpl st c = Some c'.
@@ -900,27 +989,8 @@ Proof.
   end; smack.
 Qed.
 
-(** * optObjDeclImpl soundness and completeness *)  
-Lemma optObjDeclImpl_soundness: forall st o o',
-  optObjDeclImpl st o = Some o' ->
-    optObjDecl st o o'.
-Proof.
-  intros.
-  functional induction optObjDeclImpl st o; 
-  inversion H; subst;
-  match goal with
-  | [H: optExpImpl _ _ = _ |- _] => 
-    specialize (optExpImpl_soundness _ _ _ _ H); clear H;
-      let HZ := fresh HZ in intro HZ  
-  | _ => idtac
-  end.
-  constructor.
-  apply O_ObjDecl_NoRangeCheck with (eBound:=eBound); auto.
-  apply O_ObjDecl_RangeCheck with (u:=u) (v:=v) (e':=e') (u':=u') (v':=v'); auto.
-  apply extract_subtype_range_f_soundness; auto.
-  apply optimize_range_check_f_soundness; auto.
-Qed.
 
+(** ** optObjDeclImpl_completeness *)
 Lemma optObjDeclImpl_completeness: forall st o o',
   optObjDecl st o o' ->
     optObjDeclImpl st o = Some o'.
@@ -948,48 +1018,7 @@ Proof.
 Qed.
 
 
-Scheme declaration_x_ind := Induction for declRT Sort Prop 
-                            with procedure_body_x_ind := Induction for procBodyDeclRT Sort Prop.
-
-(** * optDeclImpl soundness and completeness *)  
-Lemma optDeclImpl_soundness: forall d d' st,
-  optDeclImpl st d = Some d' ->
-    optDecl st d d'.
-Proof.
-  apply (declaration_x_ind
-      (fun d: declRT => forall (d' : declRT) (st: symTabRT),
-        optDeclImpl st d = Some d' ->
-        optDecl st d d')
-      (fun p: procBodyDeclRT => forall (p': procBodyDeclRT) (st: symTabRT),
-        optProcBodyDeclImpl st p = Some p' ->
-        optProcBodyDecl st p p')
-      ); smack;
-  try (constructor; auto).
- - remember (optObjDeclImpl st o) as x.
-   destruct x; inversion H; subst.
-   apply O_ObjDecl.
-   apply optObjDeclImpl_soundness; auto.
-  - remember (optProcBodyDeclImpl st p) as x.
-    destruct x; inversion H0; subst.
-    symmetry in Heqx.
-    specialize (H _ _ Heqx).
-    apply O_ProcBody; auto.
-  - remember (optDeclImpl st d) as x.
-    destruct x; [ | inversion H1]; subst.
-    remember (optDeclImpl st d0) as y.
-    destruct y; inversion H1; subst.
-    symmetry in Heqx, Heqy.
-    specialize (H _ _ Heqx); specialize (H0 _ _ Heqy).
-    apply O_SeqDecl; auto.
-  - remember (optDeclImpl st procedure_declarative_part_rt) as x.
-    destruct x; [ | inversion H0]; subst.
-    remember (optStmtImpl st procedure_statements_rt) as y.
-    destruct y; inversion H0; subst.
-    symmetry in Heqx; specialize (H _ _ Heqx).
-    apply O_ProcBodyDecl; auto.
-    apply optStmtImpl_soundness; auto.
-Qed.
-
+(** ** optDeclImpl_completeness *)
 Lemma optDeclImpl_completeness: forall d d' st,
   optDecl st d d' ->
     optDeclImpl st d = Some d'.
@@ -1022,7 +1051,20 @@ Proof.
   rewrite HZ; auto.
 Qed.
 
-(** * Consistency of RT-OPT Impl with RT-OPT Spec *)
+(** ** optProgramImpl_completeness *)  
+Lemma optProgramImpl_completeness: forall p p' st,
+  optProgram st p p' ->
+    optProgramImpl st p = Some p'.
+Proof.
+  intros.
+  destruct p, p'. 
+  inversion H; subst; clear H; simpl in H3.
+  unfold optProgramImpl; simpl.
+  specialize (optDeclImpl_completeness _ _ _ H3); intro HZ.
+  rewrite HZ; auto.
+Qed.
+
+(** * Consistency of RT-OPT Impl and RT-OPT Spec *)
 
 (** ** optExpImplConsistent *)
 Lemma optExpImplConsistent: forall e e' ebound st,
@@ -1065,5 +1107,16 @@ Proof.
   split; intro;
   [apply optDeclImpl_soundness; auto |
    apply optDeclImpl_completeness; auto 
+  ].
+Qed.
+
+(** ** optProgramImplConsistent *)
+Lemma optProgramImplConsistent: forall p p' st,
+  optProgramImpl st p = Some p' <-> optProgram st p p'.
+Proof.
+  intro; 
+  split; intro;
+  [apply optProgramImpl_soundness; auto |
+   apply optProgramImpl_completeness; auto 
   ].
 Qed.

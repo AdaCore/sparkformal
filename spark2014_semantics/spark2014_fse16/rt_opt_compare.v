@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export checks_generator.
+Require Export rt_gen.
 
 (** * Check Flags Optimization Comparison For Program *) 
 (**

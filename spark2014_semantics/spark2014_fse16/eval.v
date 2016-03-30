@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export more_list.
+Require Export list_util.
 Require Export values.
 Require Export environment.
 Require Export symboltable.
@@ -23,8 +23,9 @@ Module STACK := STORE(Entry_Value_Stored).
 Import STACK.
 
 
-(** * Run Time Check Semantics *)
+(** * Run-Time Check Evaluation *)
 
+(** ** Overflow Check *)
 (** check whether a value falls into the bound of basic integer type *)
 Inductive overflowCheck: Z -> Ret value -> Prop :=
     | OverflowCheck_Fail: forall v,
@@ -34,6 +35,7 @@ Inductive overflowCheck: Z -> Ret value -> Prop :=
         in_bound v int32_bound true ->
         overflowCheck v (OK (Int v)).
 
+(** ** Division Check *)
 Inductive divCheck: binary_operator -> Z -> Z -> Ret value -> Prop :=
     | DivCheck_RTE: forall op dividend divisor,
         op = Divide \/ op = Modulus ->
@@ -48,6 +50,7 @@ Inductive divCheck: binary_operator -> Z -> Z -> Ret value -> Prop :=
         Math.mod' (Int dividend) (Int divisor) = Some v ->
         divCheck Modulus dividend divisor (OK v).
 
+(** ** Range Check *)
 Inductive rangeCheck: Z -> Z -> Z -> Ret value -> Prop :=
     | RangeCheck_Fail: forall v l u,
         in_bound v (Interval l u) false ->
@@ -57,6 +60,7 @@ Inductive rangeCheck: Z -> Z -> Z -> Ret value -> Prop :=
         rangeCheck v l u (OK (Int v)).
 
 
+(** ** Run-Time Check for Binary Operator *)
 (* verify run time checks on binary / unary operations *)
 Inductive do_run_time_check_on_binop: binary_operator -> value -> value -> Ret value -> Prop :=
     | DoCheckOnBinops: forall op v1 v2 v v',
@@ -83,6 +87,7 @@ Inductive do_run_time_check_on_binop: binary_operator -> value -> value -> Ret v
         Math.binary_operation op v1 v2 = Some v ->
         do_run_time_check_on_binop op v1 v2 (OK v).
 
+(** ** Run-Time Check for Unary Operator *)
 Inductive do_run_time_check_on_unop: unary_operator -> value -> Ret value -> Prop :=
     | DoCheckOnUnary_Minus: forall v v' v'',
         Math.unary_minus v = Some (Int v') ->
@@ -115,6 +120,10 @@ Function array_select (a: list (arrindex * value)) (i: Z): option value :=
     | nil => None
     end.
 
+
+(** * Relational Semantics *)
+
+(** ** Literal Evaluation *)
 (** interpret the literal expressions *)
 Inductive evalLiteral: literal -> Ret value -> Prop :=
     | EvalLiteral_Bool: forall v,
@@ -123,9 +132,7 @@ Inductive evalLiteral: literal -> Ret value -> Prop :=
         overflowCheck v v' ->
         evalLiteral (Integer_Literal v) v'.
 
-(** * Relational Semantics *)
-
-(** ** Expression Evaluation Semantics *)
+(** ** Expression Evaluation *)
 (**
     for binary expression and unary expression, if a run time error 
     is detected in any of its child expressions, then return a run
@@ -164,6 +171,7 @@ Inductive evalExp: symTab -> state -> exp -> Ret value -> Prop :=
         do_run_time_check_on_unop op v v' ->
         evalExp st s (UnOp n op e) v'
 
+(** ** Name Evaluation *)
 with evalName: symTab -> state -> name -> Ret value -> Prop :=
     | EvalIdentifier: forall x s v st n, 
         fetchG x s = Some v ->
@@ -199,7 +207,7 @@ with evalName: symTab -> state -> name -> Ret value -> Prop :=
         evalName st s (SelectedComponent n x f) (OK v).
 
 
-(** ** Declaration Evaluation Semantics *)
+(** ** Declaration Evaluation *)
 (** Inductive semantic of declarations [eval_decl st s sto decl rsto] 
     means that rsto is the frame to be pushed on s after evaluating 
     decl, sto is used as an accumulator for building the frame;
@@ -323,7 +331,7 @@ Inductive storeUpdate: symTab -> state -> name -> value -> Ret state -> Prop :=
         storeUpdate st s (SelectedComponent n x f) v s1.
 
 
-(** ** Statement Evaluation Semantics *)
+(** ** Statement Evaluation *)
 
 (** State Manipulation For Procedure Calls And Return *)
 
@@ -505,7 +513,7 @@ Qed.
     evaluation is terminated and return a run-time error; otherwise,
     evaluate the statement into a normal state.
 
-   - in the evaluation for assignment statement (S_Assignment n x e),
+   - in the evaluation for assignment statement (Assign n x e),
 
      first, check if it's needed to do range check on the right side (e) 
      of the assignment,
@@ -529,7 +537,7 @@ Qed.
      why the range check for expression e is enforced at the level of assignment 
      statement even though the RangeCheck flag is set on the expression e;
 
-   - in the store update storeUpdate_x for indexed component (e.g. a(i):=v) or selected
+   - in the store update storeUpdate_rt for indexed component (e.g. a(i):=v) or selected
      component (e.g. r.f := v), 
      
      if the value of array a (or value of record r) is Undefined, then create a new 
@@ -541,11 +549,12 @@ Qed.
      ith element of its array value (or update the filed f of its record value), and assign
      the updated aggregate value to array variable a (or record variable r);
 
-   - in the store update storeUpdate_x for indexed component (e.g. a(i):=v), a
+   - in the store update storeUpdate_rt for indexed component (e.g. a(i):=v), a
      range check is required to be performed on the value of index expression i
      before it's used to update the array value;
  *)
 
+(** ** evalStmt *)
 Inductive evalStmt: symTab -> state -> stmt -> Ret state -> Prop := 
     | EvalNull: forall st s,
         evalStmt st s Null (OK s)
@@ -634,6 +643,19 @@ Inductive evalStmt: symTab -> state -> stmt -> Ret state -> Prop :=
         evalStmt st s (Seq n c1 c2) s2.
 
 
+(** ** evalProgram *)
+(** the main procedure (with empty parameters) is working as the entry point of the whole program 
+    - p: is the program
+    - p.(main): the main procedure of the program
+    - mainProc: the declaration of the main procedure
+    - the arguments of the main procedure is nil
+    - the initial state of the program is nil
+*)
+
+Inductive evalProgram: symTab -> state -> program -> Ret state -> Prop := 
+    | EvalProgram: forall st s p n pn,
+        evalStmt st nil (Call n pn p.(main) nil) s ->
+        evalProgram st nil p s.
 
 (**********************************************************************************************************
 

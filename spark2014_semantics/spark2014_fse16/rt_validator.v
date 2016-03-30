@@ -9,9 +9,9 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export checks_generator.
+Require Export rt_gen.
 
-(** * Check Flags Validator For Program *) 
+(** * Run-Time Check Validator *) 
 
 Section Check_Flags_Validator.
   
@@ -84,7 +84,7 @@ Section Check_Flags_Validator.
     end.
 
 
-  (** ** Check Flags Validator For Expression *)
+  (** ** Run-Time Check Validator for Expression *)
 
   Function exp_check_flags_validator (e_opt e_gnat e_cmp: expRT): return_message :=
     match e_opt, e_gnat, e_cmp with
@@ -104,7 +104,7 @@ Section Check_Flags_Validator.
      | _, _, _ => Error
      end
 
-  (** ** Check Flags Validator For Name *)
+  (** ** Run-Time Check Validator for Name *)
 
   with name_check_flags_validator (n_opt n_gnat n_cmp: nameRT): return_message :=
     match n_opt, n_gnat, n_cmp with
@@ -133,7 +133,7 @@ Section Check_Flags_Validator.
     end.
 
 
-  (** ** Check Flags Validator For Statement *)
+  (** ** Run-Time Check Validator for Statement *)
 
   Function stmt_check_flags_validator (c_opt c_gnat c_cmp: stmtRT): return_message :=
     match c_opt, c_gnat, c_cmp with
@@ -214,7 +214,7 @@ Section Check_Flags_Validator.
     | _, _, _ => Error
     end.
 
-  (** ** Check Flags Validator For Declaration *)
+  (** ** Run-Time Check Validator for Declaration *)
 
   Function declaration_check_flags_validator (d_opt d_gnat d_cmp: declRT): return_message :=
     match d_opt, d_gnat, d_cmp with
@@ -231,6 +231,8 @@ Section Check_Flags_Validator.
     | _, _, _ => Error
     end
 
+  (** ** Run-Time Check Validator for Procedure *)
+
   with procedure_body_check_flags_validator (p_opt p_gnat p_cmp: procBodyDeclRT): return_message :=
     match p_opt, p_gnat, p_cmp with
     | mkprocBodyDeclRT n p params decls stmt, mkprocBodyDeclRT n' p' params' decls' stmt',
@@ -238,6 +240,14 @@ Section Check_Flags_Validator.
         conj_message (param_specs_check_flags_validator params params' params'')
                      (conj_message (declaration_check_flags_validator decls decls' decls'')
                                    (stmt_check_flags_validator stmt stmt' stmt''))
+    end.
+
+  (** ** Run-Time Check Validator for Program *)
+
+  Function program_check_flags_validator (p_opt p_gnat p_cmp: programRT): return_message :=
+    match p_opt, p_gnat, p_cmp with
+    | mkprogramRT declsRT main, mkprogramRT declsRT' main', mkprogramRT declsRT'' main'' =>
+        declaration_check_flags_validator declsRT declsRT' declsRT''
     end.
 
   (** compile2_flagged_declaration_f (st: symboltable) (d: declaration): option declRT, 
@@ -250,6 +260,14 @@ Section Check_Flags_Validator.
                               (cmp_ast_option: option declRT): return_message :=
     match opt_ast_option, cmp_ast_option with
     | Some opt_ast, Some cmp_ast => declaration_check_flags_validator opt_ast gnat_ast cmp_ast
+    | _, _ => Error
+    end.
+
+  Definition program_checks_validator (opt_program_option: option programRT) (gnat_program: programRT) 
+                                      (cmp_program_option: option programRT): return_message :=
+    match opt_program_option, cmp_program_option with
+    | Some opt_program, Some cmp_program => 
+        program_check_flags_validator opt_program gnat_program cmp_program
     | _, _ => Error
     end.
 

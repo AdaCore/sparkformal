@@ -9,14 +9,14 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export semantics_flagged.
-Require Export checks_optimization.
+Require Export eval_rt.
+Require Export rt_opt.
 
 Import STACK.
 
 (** * Helper Functions *)
 
-(** ** the type of the expression *)
+(** ** type of the expression *)
 
 Definition type_of_name_x (st: symTabRT) (n: nameRT): option type :=
   match n with
@@ -273,6 +273,13 @@ with well_typed_proc_body_x: symTabRT -> procBodyDeclRT -> Prop :=
       well_typed_decl_x st (procedure_declarative_part_rt p) ->
       well_typed_statement_x st (procedure_statements_rt p) ->
       well_typed_proc_body_x st p.
+
+(** * Well-Typed Program *)
+
+Inductive well_typed_program_x: symTabRT -> programRT -> Prop :=
+  | WT_Program_X: forall st p,
+      well_typed_decl_x st p.(declsRT) ->
+      well_typed_program_x st p.
 
 (******************************************************************)
 (******************************************************************)

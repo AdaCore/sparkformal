@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export checks_optimization.
+Require Export rt_opt.
 
 
 Scheme expression_ind := Induction for exp Sort Prop 
@@ -18,6 +18,9 @@ Scheme expression_ind := Induction for exp Sort Prop
 Scheme expression_x_ind := Induction for expRT Sort Prop 
                          with name_x_ind := Induction for nameRT Sort Prop.
 
+(** * Helper Lemmas for RT-OPT *)
+
+(** ** in_bound Lemmas *)
 
 Lemma In_Bound_Refl: forall v,
   in_bound v (Interval v v) true.
@@ -393,6 +396,8 @@ Ltac apply_in_bound_value_neq_zero :=
 (********************************************************************)
 (********************************************************************)
 
+(** ** run-time erasion Lemmas *)
+
 Lemma removed_check_flag_notin: forall ck cks cks',
  remove_check_flag ck cks = cks' ->
    ~(List.In ck cks').
@@ -511,6 +516,8 @@ Ltac apply_sub_bound_unique :=
 (********************************************************************)
 (********************************************************************)
 
+(** ** RT-OPT exterior checks Lemmas *)
+
 Lemma optimize_name_ast_num_eq: forall st n n' nBound,
   optName st n (n', nBound) ->
     fetch_exp_type_rt (name_astnum_rt n) st = fetch_exp_type_rt (name_astnum_rt n') st.
@@ -599,6 +606,7 @@ Ltac apply_range_check_opt_subBound_true :=
     specialize (range_check_opt_subBound_true _ _ _ _ H1 H2 H3); let HZ := fresh "HZ" in intro HZ
   end.
 
+(** ** Other Lemmas *)
 
 Lemma eval_expr_value_reserve: forall e eBound rBound e' st s v,
   optimize_range_check e eBound rBound e' ->
@@ -1576,7 +1584,6 @@ Ltac apply_unop_arithm_in_bound :=
       let HZ := fresh "HZ" in intros HZ
   end.
 
-(** * Checks Optimization for Literal *)
 
 Lemma literal_checks_optimization_soundness: forall cks l v lBound cks',
   evalLiteralRT cks l v ->
@@ -1602,7 +1609,6 @@ Ltac apply_literal_checks_optimization_soundness :=
       specialize (literal_checks_optimization_soundness _ _ _ _ _ H1 H2); auto
   end.
 
-(** * optimize_exp_ex_cks_stripped *)
 Lemma optimize_exp_ex_cks_stripped: forall e e' st cks vBound,
   optExp st (update_exterior_checks_exp e cks) (e', vBound) ->
     optExp st e (update_exterior_checks_exp e' (exp_exterior_checks e), vBound).

@@ -9,15 +9,15 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export checks.
-Require Export language_flagged.
-Require Export language_util.
-Require Export semantics.
+Require Export rt.
+Require Export ast_rt.
+Require Export ast_util.
+Require Export eval.
 
 Import STACK.
 
-(** * Do Flagged Checks *)
-(** do run time checks according to the check flags  *)
+(** * Run-Time Check Evaluation + RT *)
+(** do run time checks according to the run-time check decorations  *)
 (*
 Inductive do_flagged_check_on_binop: check_flag -> binary_operator -> value -> value -> Ret value -> Prop :=
     | OverflowCheckBinop: forall op v1 v2 v v',
@@ -77,6 +77,7 @@ Inductive evalUnOpRT: check_flag -> unary_operator -> value -> Ret value -> Prop
         overflowCheck v' v'' ->
         evalUnOpRT OverflowCheck Unary_Minus v v''.
 
+(** ** Run-Time Check for Binary Operator + RT *)
 Inductive evalBinOpRTS: check_flags -> binary_operator -> value -> value -> Ret value -> Prop :=
     | CheckBinOpNil: forall op v1 v2 v,
         Math.binary_operation op v1 v2 = Some v ->
@@ -89,6 +90,7 @@ Inductive evalBinOpRTS: check_flags -> binary_operator -> value -> value -> Ret 
         evalBinOpRTS cks op v1 v2 v' ->
         evalBinOpRTS (ck :: cks) op v1 v2 v'.
 
+(** ** Run-Time Check for Unary Operator + RT *)
 Inductive evalUnOpRTS: check_flags -> unary_operator -> value -> Ret value -> Prop :=
     | Do_Check_Unop_Nil: forall op v v',
         Math.unary_operation op v = Some v' ->
@@ -118,7 +120,16 @@ Inductive rangeChecks: check_flags -> Z -> Z -> Z -> Ret value -> Prop :=
 
 (** * Relational Semantics *)
 
-(** ** Expression Evaluation Semantics *)
+(** ** Evaluation of Literal + RT *)
+
+Inductive evalLiteralRT: check_flags -> literal -> Ret value -> Prop :=
+    | EvalLiteralRT_Bool: forall cks v,
+        evalLiteralRT cks (Boolean_Literal v) (OK (Bool v))
+    | EvalLiteralRT_Int: forall cks v v',
+        overflowChecks cks v v' -> 
+        evalLiteralRT cks (Integer_Literal v) v'.
+
+(** ** Evaluation of Expression + RT *)
 (**
     for binary expression and unary expression, if a run-time error 
     is detected in any of its child expressions, then Ret a run-time
@@ -129,8 +140,8 @@ Inductive rangeChecks: check_flags -> Z -> Z -> Z -> Ret value -> Prop :=
     detected and the program is terminated, otherwise, OK binary 
     operation result is Reted;
 
-   - in name evaluation eval_name_x, the check flags for name are all nil, e.g.
-     (E_Indexed_Component_X n x_n x e nil), because if there is a
+   - in name evaluation evalNameRT, the check flags for name are all nil, e.g.
+     (IndexedComponentRT n x_n x e nil), because if there is a
      RangeCheck on the name expression, this range check should be enforced
      by the context where the name expression appears, that's why it's invisible 
      during the evaluation of name expression;
@@ -142,15 +153,8 @@ Inductive rangeChecks: check_flags -> Z -> Z -> Z -> Ret value -> Prop :=
      value of x against the target subtype range of y, but the RangeCheck should
      be invisible when evaluate the value of x even though the RangeCheck is set
      on the variable x, this range check should be enforced at the assignment level; 
-     that's why in name evaluation eval_name_x, the check flags for name are all nil;
+     that's why in name evaluation evalNameRT, the check flags for name are all nil;
 *)
-
-Inductive evalLiteralRT: check_flags -> literal -> Ret value -> Prop :=
-    | EvalLiteralRT_Bool: forall cks v,
-        evalLiteralRT cks (Boolean_Literal v) (OK (Bool v))
-    | EvalLiteralRT_Int: forall cks v v',
-        overflowChecks cks v v' -> 
-        evalLiteralRT cks (Integer_Literal v) v'.
 
 Inductive evalExpRT: symTabRT -> state -> expRT -> Ret value -> Prop :=
     | EvalLiteralRT: forall l v st s n in_cks ex_cks,
@@ -179,6 +183,7 @@ Inductive evalExpRT: symTabRT -> state -> expRT -> Ret value -> Prop :=
         evalUnOpRTS in_cks op v v' ->
         evalExpRT st s (UnOpRT n op e in_cks ex_cks) v'
 
+(** ** Evaluation of Name + RT *)
 with evalNameRT: symTabRT -> state -> nameRT -> Ret value -> Prop :=
     | EvalIdentifierRT: forall x s v st n ex_cks, 
         fetchG x s = Some v ->
@@ -219,7 +224,7 @@ with evalNameRT: symTabRT -> state -> nameRT -> Ret value -> Prop :=
     [f] is used as an accumulator for building the frame.
 *)
 
-(** ** Declaration Evaluation Semantics *)
+(** ** Evaluation of Declaration + RT *)
 
 Inductive evalDeclRT: symTabRT -> state -> frame -> declRT -> Ret frame -> Prop :=
     | EvalDeclRT_Null: forall st s f,
@@ -309,11 +314,11 @@ Inductive storeUpdateRT: symTabRT -> state -> nameRT -> value -> Ret state -> Pr
         storeUpdateRT st s (SelectedComponentRT n x f cks) v s1.
 
 
-(** ** Statement Evaluation Semantics *)
+(** ** Evaluation of Statement + RT *)
 
 (** State manipulation for procedure calls and Ret *)
 
-(** *** Copy In *)
+(** *** Copy In + RT *)
 
 Inductive copyInRT: symTabRT -> state -> frame -> list paramSpecRT -> list expRT -> Ret frame -> Prop :=
     | CopyIn_Nil_X : forall st s f, 
@@ -381,7 +386,7 @@ Inductive copyInRT: symTabRT -> state -> frame -> list paramSpecRT -> list expRT
         copyInRT st s f (param :: lparam) ((NameRT n nm) :: le) f''.
 
 
-(** *** Copy Out *)
+(** *** Copy Out + RT *)
 
 Inductive copyOutRT: symTabRT -> state -> frame -> list paramSpecRT -> list expRT -> Ret state -> Prop :=
     | CopyOut_Nil_X : forall st s f, 
@@ -482,6 +487,7 @@ Inductive copyOutRT: symTabRT -> state -> frame -> list paramSpecRT -> list expR
      it's used to update the array value;
  *)
 
+(** *** evalStmtRT *)
 Inductive evalStmtRT: symTabRT -> state -> stmtRT -> Ret state -> Prop := 
     | EvalNullRT: forall st s,
         evalStmtRT st s NullRT (OK s)
@@ -570,6 +576,19 @@ Inductive evalStmtRT: symTabRT -> state -> stmtRT -> Ret state -> Prop :=
         evalStmtRT st s1 c2 s2 ->
         evalStmtRT st s (SeqRT n c1 c2) s2.
 
+
+(** ** evalProgramRT *)
+(** the main procedure (with empty parameters) is working as the entry point of the whole program 
+    - p: is the program
+    - p.(mainRT): the main procedure of the program
+    - mainProc: the declaration of the main procedure
+    - the arguments of the main procedure is nil
+*)
+
+Inductive evalProgramRT: symTabRT -> state -> programRT -> Ret state -> Prop := 
+    | EvalProgramRT: forall st s p n pn,
+        evalStmtRT st nil (CallRT n pn p.(mainRT) nil) s ->
+        evalProgramRT st nil p s.
 
 
 (** * Help Lemmas *)

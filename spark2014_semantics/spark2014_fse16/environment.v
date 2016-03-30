@@ -35,7 +35,7 @@ Module STORE(V:ENTRY).
 
   Definition store : Type := list (idnum * V).
 
-  (** ** Store Operations *)
+  (** ** Store Operation *)
   (** check whether variable x has already been declared *)
   Function resides (x : idnum) (s : store) := 
     match s with 
@@ -79,7 +79,7 @@ Module STORE(V:ENTRY).
    | nil => None
    end.
 
-  (** ** Lemmas About Store Operations *)
+  (** ** Lemmas About Store Operation *)
 
   Lemma updates_length: forall s x v s', 
     updates s x v = Some s' -> 
@@ -125,9 +125,8 @@ Module STORE(V:ENTRY).
   Definition newFrame (n: scope_level): frame := (n, nil). 
 
 
-  (** ** State Operations *)
+  (** ** State Operation *)
 
-  (* TODO: verifiy that x is not already bound in s? *)
   Definition pushG x v (s: state) :=
     match s with
     | nil => None
@@ -173,6 +172,8 @@ Module STORE(V:ENTRY).
         stack_eq_length s s' ->
         List.length (store_of f) = List.length (store_of f') ->
         stack_eq_length (f :: s) (f' :: s').
+
+  (** ** Lemmas About State Operation *)
 
   Lemma stack_eq_length_refl: forall s s', 
     s = s' -> 

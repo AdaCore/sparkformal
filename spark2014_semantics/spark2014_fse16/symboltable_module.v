@@ -12,7 +12,7 @@ zhangzhi@ksu.edu
 Require Export environment.
 Require Export Coq.Strings.String.
 
-(** * Symbol Table Elements *)
+(** * Symbol Table Element *)
 
 Record nametable := mkNameTable{
   varNames:  list (idnum * (string * string));
@@ -101,7 +101,7 @@ Module SymbolTableM (S: SymTable_Element).
   Module SymTable_Exps := STORE(Entry_Exp_Type).
   Module SymTable_Sloc := STORE(Entry_Sloc).
 
-  (** ** Name Table Operations *)
+  (** ** Name Table Operation *)
   Function reside_nametable_vars  (x: idnum)   (nt: nametable) := Names.resides x nt.(varNames).
   Function reside_nametable_procs (x: procnum) (nt: nametable) := Names.resides x nt.(procNames).
   Function reside_nametable_pkgs  (x: pkgnum)  (nt: nametable) := Names.resides x nt.(pkgNames).
@@ -113,7 +113,7 @@ Module SymbolTableM (S: SymTable_Element).
   Function fetch_type_name (x: typenum) (nt: nametable) := Names.fetches x nt.(typeNames).
 
 
-  (** ** Symbol Table Operations *)
+  (** ** Symbol Table Operation *)
 
   Function reside_symtable_vars (x: idnum)   (st: symboltable) := SymTable_Vars.resides x st.(vars).
   Function reside_symtable_procs (x: procnum) (st: symboltable) := SymTable_Procs.resides x st.(procs).

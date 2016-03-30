@@ -13,7 +13,7 @@ Require Export ZArith.
 Require Export Coq.Lists.List.
 Require Export Coq.Bool.Bool.
 Require Export CpdtTactics.
-Require Export more_list.
+Require Export list_util.
 
 (** This file defines some basic data types and operations used for
     formalization of SPARK 2014 language;

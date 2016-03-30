@@ -9,17 +9,17 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export language_flagged.
+Require Export ast_rt.
 
-(** * Auxiliary Functions For Language *)
-Section AuxiliaryFunctions_For_Language.
+(** * Auxiliary Functions for AST *)
+Section AuxiliaryFunctions_For_AST.
 
-End AuxiliaryFunctions_For_Language.
+End AuxiliaryFunctions_For_AST.
 
 
-(** * Auxiliary Functions For Language_Flagged *)
+(** * Auxiliary Functions for AST_RT *)
 
-Section AuxiliaryFunctions_For_Language_Flagged.
+Section AuxiliaryFunctions_For_AST_RT.
 
   (** Check Flags Extraction Functions *)
 
@@ -95,7 +95,7 @@ Section AuxiliaryFunctions_For_Language_Flagged.
     destruct n; smack.
   Qed.
 
-End AuxiliaryFunctions_For_Language_Flagged.
+End AuxiliaryFunctions_For_AST_RT.
 
 
 

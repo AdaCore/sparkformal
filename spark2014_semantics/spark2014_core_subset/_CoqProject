@@ -14,6 +14,7 @@ values.v
 environment.v
 symboltable_module.v
 symboltable.v
+more_store.v
 semantics.v
 semantics_flagged.v
 checks_soundness.v

@@ -42,7 +42,7 @@ result before and after the run-time checks optimizations;
 - language.v
 - language_flagged.v
    * language_basics.v defines some basic data types and operators 
-     and lirerals that are used to define the SPARK 2014 AST syntax;
+     and literals that are used to define the SPARK 2014 AST syntax;
    * language_template.v defines a template for SPARK 2014 AST
      syntax; run the script program "languagegen" will generate
      language.v and language_flagged.v automatically;

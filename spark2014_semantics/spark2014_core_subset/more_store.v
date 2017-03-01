@@ -1,5 +1,5 @@
 Require Import environment.
-Require Import Morphisms Relations.
+Require Import Morphisms Relations SetoidList.
 
 (* Import STACK. *)
 
@@ -22,7 +22,7 @@ Module STORE_PROP (V:ENTRY).
     forall nme lvl sto (sto' sto'':store),
       frameG nme s = Some (lvl,sto) ->
       cuts_to nme sto = (sto',sto'') ->
-      resides nme sto'' = false.
+      resides nme (List.tl sto'') = false.
 
   (* extra-store *)
   Definition NoDup_G (s : stack) := 
@@ -615,6 +615,93 @@ Module STORE_PROP (V:ENTRY).
     - apply frameG_resideG_1;auto.
   Qed.
 
+  
+  Lemma cuts_to_decomp: forall nme sto sto' sto'',
+      cuts_to nme sto = (sto', sto'')
+      -> sto = sto'++sto''.
+  Proof.
+    intros nme sto. 
+    functional induction cuts_to nme sto ;simpl.
 
+    - intros sto' sto'' heq.
+      inversion heq.
+      reflexivity.
+    - intros sto' sto'' heq.
+      inversion heq; clear heq.
+      simpl. subst.
+      erewrite IHp;eauto.
+    - intros sto' sto'' heq. 
+      inversion heq;auto.
+  Qed.
+
+  Lemma cuts_to_snd: forall nme sto sto' sto'',
+      cuts_to nme sto = (sto', sto'')
+      -> sto'' = nil \/ exists x sto''', sto'' = (nme,x)::sto'''.
+  Proof.
+    intros nme sto. 
+    functional induction cuts_to nme sto;simpl.
+    - intros sto' sto'' H.
+      inversion H.
+      right.
+      exists v s'.
+      rewrite Nat.eqb_eq in e0.
+      subst;auto.
+    - intros sto' sto'' H.
+      inversion H; clear H.
+      subst.
+      eapply IHp;eauto.
+    - intros sto' sto'' heq.
+      inversion heq;auto.
+  Qed.
+
+  Lemma cuts_to_fst: forall nme sto sto' sto'',
+      cuts_to nme sto = (sto', sto'')
+      -> resides nme sto' = false.
+  Proof.
+    intros nme sto. 
+    functional induction cuts_to nme sto;simpl.
+    - intros sto' sto'' heq.
+      inversion heq.
+      reflexivity.
+    - intros sto' sto'' heq.
+      inversion heq; clear heq.
+      simpl.
+      rewrite e0.
+      eapply IHp;eauto.
+    - intros sto' sto'' heq.
+      inversion heq;subst;auto.
+  Qed.
+
+  Lemma cuts_to_snd_reside: forall nme sto sto' sto'',
+      resides nme sto = true
+      -> cuts_to nme sto = (sto', sto'')
+      -> exists x sto''', sto'' = (nme,x)::sto'''.
+  Proof.
+    intros nme sto sto' sto'' heq heq0.
+    pose proof @cuts_to_snd _ _ _ _ heq0 as h_or.
+    destruct h_or.
+    - subst.
+      pose proof cuts_to_fst _ _ _ _ heq0 as heq_bool_false.
+      pose proof cuts_to_decomp _ _ _ _ heq0.
+      subst.
+      rewrite app_nil_r in *.
+      rewrite heq_bool_false in heq. 
+      discriminate.
+    - inversion heq;auto.
+  Qed.
+
+  Lemma frameG_resides: forall nme s lvl sto, frameG nme s = Some (lvl, sto) ->  resides nme sto = true.
+  Proof.
+    intros nme s.
+    functional induction frameG nme s.
+    - intros lvl sto H. 
+      inversion H.
+      subst.
+      assumption.
+    - intros lvl sto H. 
+      eapply IHo;eauto.
+    - intros lvl sto H. 
+      inversion H.
+  Qed.
 
 End STORE_PROP.

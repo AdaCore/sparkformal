@@ -520,9 +520,9 @@ Lemma eval_exp_ex_cks_added: forall st s e v cks,
     eval_expr_x st s (update_exterior_checks_exp e cks) v.
 Proof.
   intros; destruct e; 
-  inversion H; smack;
+  inversion H; crush;
   match goal with
-  | [H: eval_literal_x _ _ _ |- _] => constructor; smack
+  | [H: eval_literal_x _ _ _ |- _] => constructor; crush
   | _ => idtac
   end;
   [ |
@@ -533,7 +533,7 @@ Proof.
     apply Eval_E_Unary_Operation_X with (v := v0); auto
   ];
   match goal with
-  | [H: eval_name_x _ _ ?n _ |- _] => inversion H; smack; constructor
+  | [H: eval_name_x _ _ ?n _ |- _] => inversion H; crush; constructor
   end;
   [ apply Eval_E_Identifier_X; auto |
     apply Eval_E_Indexed_Component_xRTE_X; auto |
@@ -550,7 +550,7 @@ Lemma eval_name_ex_cks_added: forall st s n v cks,
     eval_name_x st s (update_exterior_checks_name n cks) v.
 Proof.
   intros; destruct n; 
-  inversion H; smack;
+  inversion H; crush;
   [ apply Eval_E_Identifier_X; auto |
     apply Eval_E_Indexed_Component_xRTE_X; auto |
     apply Eval_E_Indexed_Component_eRTE_X with (a:=a0); auto |
@@ -684,13 +684,13 @@ Proof.
   intros.
   inversion H; subst.
   clear H.
-  destruct op; smack;
-  destruct v1, v2; smack.
+  destruct op; crush;eauto;
+    destruct v1, v2; crush;eauto.
   clear H H1.
   inversion H0; subst.
-  destruct op; smack;
-  destruct v1, v2; smack.
-  destruct v0; destruct v3; inversion H; smack.
+  destruct op; crush;eauto;
+  destruct v1, v2; crush;eauto.
+  destruct v0; destruct v3; inversion H; crush;eauto.
 Qed.
 
 Ltac apply_binop_arithm_operand_format :=
@@ -713,10 +713,10 @@ Proof.
   intros.
   inversion H; subst.
   clear H.
-  destruct op; destruct v; smack.
+  destruct op; destruct v; crush;eauto.
   clear H H1.
   inversion H0; subst.
-  destruct v; inversion H; smack.
+  destruct v; inversion H; crush;eauto.
 Qed.
 
 Ltac apply_unop_arithm_operand_format :=

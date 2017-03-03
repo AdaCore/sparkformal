@@ -1,38 +1,35 @@
-(*
-~~~~~~~~~~~
-BSD LICENSE
-~~~~~~~~~~~
+(* Copyright (c) 2008-2012, Adam Chlipala
+ * 
+ * This work is licensed under a
+ * Three-clause BSD Licence
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright notice,
+ *   this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ * - The names of contributors may not be used to endorse or promote products
+ *   derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *)
 
-Copyright (c) 2006-2013, Adam Chlipala
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-- Redistributions of source code must retain the above copyright notice,
-  this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-- The names of contributors may not be used to endorse or promote products
-  derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
-*)
-
-Require Import Eqdep List.
-
-Require Omega.
+Require Import Eqdep List Omega.
 
 Set Implicit Arguments.
 
@@ -70,7 +67,7 @@ Ltac all f ls :=
   end.
 
 (** Workhorse tactic to simplify hypotheses for a variety of proofs.
-    Argument [invOne] is a tuple-list of predicates for which we always do inversion automatically. *)
+   * Argument [invOne] is a tuple-list of predicates for which we always do inversion automatically. *)
 Ltac simplHyp invOne :=
   (** Helper function to do inversion on certain hypotheses, where [H] is the hypothesis and [F] its head symbol *)
   let invert H F :=
@@ -90,7 +87,7 @@ Ltac simplHyp invOne :=
       (** This first branch of the [||] fails the whole attempt iff the arguments of the constructor applications are already easy to prove equal. *)
       (assert (X = Y); [ assumption | fail 1 ])
       (** If we pass that filter, then we use injection on [H] and do some simplification as in [inject].
-          The odd-looking check of the goal form is to avoid cases where [injection] gives a more complex result because of dependent typing, which we aren't equipped to handle here. *)
+         * The odd-looking check of the goal form is to avoid cases where [injection] gives a more complex result because of dependent typing, which we aren't equipped to handle here. *)
       || (injection H;
         match goal with
           | [ |- X = Y -> G ] =>
@@ -139,7 +136,7 @@ Hint Rewrite app_ass.
 Definition done (T : Type) (x : T) := True.
 
 (** Try a new instantiation of a universally quantified fact, proved by [e].
-     [trace] is an accumulator recording which instantiations we choose. *)
+   * [trace] is an accumulator recording which instantiations we choose. *)
 Ltac inster e trace :=
   (** Does [e] have any quantifiers left? *)
   match type of e with
@@ -188,11 +185,11 @@ Ltac un_done :=
            | [ H : done _ |- _ ] => clear H
          end.
 
-Require Import JMeq Omega.
+Require Import JMeq.
 
 (** A more parameterized version of the famous [crush].  Extra arguments are:
-     - A tuple-list of lemmas we try [inster]-ing 
-     - A tuple-list of predicates we try inversion for *)
+   * - A tuple-list of lemmas we try [inster]-ing 
+   * - A tuple-list of predicates we try inversion for *)
 Ltac crush' lemmas invOne :=
   (** A useful combination of standard automation *)
   let sintuition := simpl in *; intuition; try subst;
@@ -227,7 +224,7 @@ Ltac crush' lemmas invOne :=
 (** [crush] instantiates [crush'] with the simplest possible parameters. *)
 Ltac crush := crush' false fail.
 
-(** Wrap Program's [dependent destruction] in a slightly more pleasant form *)
+(** * Wrap Program's [dependent destruction] in a slightly more pleasant form *)
 
 Require Import Program.Equality.
 
@@ -247,7 +244,7 @@ Ltac clear_all :=
          end.
 
 (** Instantiate a quantifier in a hypothesis [H] with value [v], or, if [v] doesn't have the right type, with a new unification variable.
-     Also prove the lefthand sides of any implications that this exposes, simplifying [H] to leave out those implications. *)
+   * Also prove the lefthand sides of any implications that this exposes, simplifying [H] to leave out those implications. *)
 Ltac guess v H :=
   repeat match type of H with
            | forall x : ?T, _ =>
@@ -271,7 +268,3 @@ Ltac guess v H :=
 Ltac guessKeep v H :=
   let H' := fresh "H'" in
     generalize H; intro H'; guess v H'.
-
-Create HintDb X_Lib.
-
-Ltac smack := try autorewrite with X_Lib in *; crush; eauto.

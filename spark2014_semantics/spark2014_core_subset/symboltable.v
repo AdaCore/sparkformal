@@ -181,7 +181,7 @@ Lemma extract_subtype_range_unique: forall st t l u l' u',
       l = l' /\ u = u'.
 Proof.
   intros;
-  inversion H; inversion H0; smack.
+  inversion H; inversion H0; crush.
 Qed.
 
 Ltac apply_extract_subtype_range_unique :=

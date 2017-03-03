@@ -47,41 +47,41 @@ Section AuxiliaryFunctions_For_Language_Flagged.
   Lemma exp_updated_exterior_checks: forall e cks,
     exp_exterior_checks (update_exterior_checks_exp e cks) = cks.
   Proof.
-    intros; destruct e; smack;
-    destruct n; smack.
+    intros; destruct e; crush;
+    destruct n; crush.
   Qed.
 
   Lemma name_updated_exterior_checks: forall n cks,
     name_exterior_checks (update_exterior_checks_name n cks) = cks.
   Proof.
-    intros; destruct n; smack.
+    intros; destruct n; crush.
   Qed.
 
   Lemma exp_exterior_checks_refl: forall e,
     update_exterior_checks_exp e (exp_exterior_checks e) = e.
   Proof.
-    destruct e; smack.
-    destruct n; simpl; smack.
+    destruct e; crush.
+    destruct n; simpl; crush.
   Qed.
 
   Lemma name_exterior_checks_refl: forall n,
     update_exterior_checks_name n (name_exterior_checks n) = n.
   Proof.
-    destruct n; smack.
+    destruct n; crush.
   Qed.
 
   Lemma update_exterior_checks_exp_astnum_eq: forall e cks,
     expression_astnum_x (update_exterior_checks_exp e cks) = expression_astnum_x e.
   Proof.
     intros;
-    destruct e; smack.
+    destruct e; crush.
   Qed.
 
   Lemma update_exterior_checks_name_astnum_eq: forall n cks,
     name_astnum_x (update_exterior_checks_name n cks) = name_astnum_x n.
   Proof.
     intros;
-    destruct n; smack.
+    destruct n; crush.
   Qed.
 
 End AuxiliaryFunctions_For_Language_Flagged.

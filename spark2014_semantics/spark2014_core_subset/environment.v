@@ -206,8 +206,8 @@ Module STORE(V:ENTRY).
     match goal with
     | [H: cut_until nil _ _ _ |- _] => inversion H
     | [H: cut_until (?f :: ?s) _ _ _ |- _] => inversion H
-    end; smack;
-    specialize (IHcut_until _ _ H8); smack.
+    end; crush;
+    specialize (IHcut_until _ _ H8); crush.
   Qed.
 
   Lemma cut_until_spec1:

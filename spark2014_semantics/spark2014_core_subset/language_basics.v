@@ -163,15 +163,15 @@ Section LB_AuxiliaryFunctions.
     true = beq_type t t.
   Proof.
     intros; destruct t; 
-    smack; apply beq_nat_refl.
+    crush; apply beq_nat_refl.
   Qed.
   
   Lemma beq_type_eq: forall t1 t2,
     true = beq_type t1 t2 -> 
       t1 = t2.
   Proof.
-    intros; destruct t1, t2; smack;
-    specialize (beq_nat_eq _ _ H); smack.
+    intros; destruct t1, t2; crush;
+    specialize (beq_nat_eq _ _ H); crush.
   Qed.
 
 End LB_AuxiliaryFunctions.

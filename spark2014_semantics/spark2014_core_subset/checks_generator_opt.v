@@ -720,37 +720,37 @@ Section Checks_Generator_Function_Correctness_Proof.
       (fun n: name => forall (n': name_x) (st: symboltable),
         compile2_flagged_name_f st n = Some n' ->
         compile2_flagged_name   st n n')
-      ); smack.
+      ); crush.
     - (*E_Literal*)
       destruct l;
       [ remember ((z >=? min_signed)%Z && (z <=? max_signed)%Z) as b; destruct b;
-        smack; constructor; smack |
-        smack; constructor
+        crush; constructor; crush |
+        crush; constructor
       ].
     - (*E_Name*)
-      remember (compile2_flagged_name_f st n) as b; destruct b; smack;
+      remember (compile2_flagged_name_f st n) as b; destruct b; crush;
       constructor; apply H; auto.
     - (*E_Binary_Operation a b e e0*)
       remember (compile2_flagged_exp_f st e) as b1; remember (compile2_flagged_exp_f st e0) as b2; 
-      destruct b1, b2, b; smack; 
-      constructor; smack. 
+      destruct b1, b2, b; crush; 
+      constructor; crush. 
     - (*E_Unary_Operation a u e*)
-      remember (compile2_flagged_exp_f st e) as b; destruct b, u; smack; 
-      constructor; smack.
+      remember (compile2_flagged_exp_f st e) as b; destruct b, u; crush; 
+      constructor; crush.
     - (*E_Identifier a i*)
       constructor.
     - (*E_Indexed_Component a n e*)
       remember (compile2_flagged_name_f st n) as b1; remember (compile2_flagged_exp_f st e) as b2;
       remember (fetch_array_index_type st (name_astnum n)) as b3;
-      remember (fetch_exp_type (expression_astnum e) st) as b4; destruct b1, b2, b3, b4; smack;
-      remember (beq_type t0 t) as b; destruct b; smack;
-      [ specialize (beq_type_eq _ _ Heqb); smack;
+      remember (fetch_exp_type (expression_astnum e) st) as b4; destruct b1, b2, b3, b4; crush;
+      remember (beq_type t0 t) as b; destruct b; crush;
+      [ specialize (beq_type_eq _ _ Heqb); crush;
         apply C2_Flagged_Indexed_Component_NoRangeCheck with (index_type := t) |
         apply C2_Flagged_Indexed_Component with (index_type := t) (t := t0) 
-      ]; smack.
+      ]; crush.
     - (*E_Selected_Component a n i*)
-      remember (compile2_flagged_name_f st n) as b; destruct b; smack;
-      constructor; smack.
+      remember (compile2_flagged_name_f st n) as b; destruct b; crush;
+      constructor; crush.
   Qed.
 
   Lemma compile2_flagged_name_f_correctness: forall st n n',
@@ -758,20 +758,20 @@ Section Checks_Generator_Function_Correctness_Proof.
       compile2_flagged_name st n n'.
   Proof.
     intros st n.
-    induction n; smack.
+    induction n; crush.
     constructor.
   - (*E_Indexed_Component a n e*)
     remember (compile2_flagged_name_f st n) as b1; remember (compile2_flagged_exp_f st e) as b2;
     remember (fetch_array_index_type st (name_astnum n)) as b3;
     remember (fetch_exp_type (expression_astnum e) st) as b4;
-    destruct b1, b2, b3, b4; smack;
-    remember (beq_type t0 t) as b; destruct b; smack;
-    [ specialize (beq_type_eq _ _ Heqb) | ]; smack;
+    destruct b1, b2, b3, b4; crush;
+    remember (beq_type t0 t) as b; destruct b; crush;
+    [ specialize (beq_type_eq _ _ Heqb) | ]; crush;
     [ apply C2_Flagged_Indexed_Component_NoRangeCheck with (index_type := t) |
       apply C2_Flagged_Indexed_Component with (index_type := t) (t := t0) 
-    ]; smack; apply compile2_flagged_exp_f_correctness; auto.
+    ]; crush; apply compile2_flagged_exp_f_correctness; auto.
   - (*E_Selected_Component a n i*)
-    remember (compile2_flagged_name_f st n) as b; destruct b; smack;
+    remember (compile2_flagged_name_f st n) as b; destruct b; crush;
     constructor; auto.
   Qed.
 
@@ -779,50 +779,50 @@ Section Checks_Generator_Function_Correctness_Proof.
     compile2_flagged_args_f st params args = Some args' ->
       compile2_flagged_args st params args args'.
   Proof.
-    induction params; smack.
-  - destruct args; smack.
+    induction params; crush.
+  - destruct args; crush.
     constructor.
-  - destruct args; smack.
+  - destruct args; crush.
     remember (compile2_flagged_exp_f st e) as b1;
     remember (compile2_flagged_args_f st params args) as b2;
     remember (parameter_mode a) as b3; 
-    destruct b1, b2, b3; smack.
+    destruct b1, b2, b3; crush.
     + (*In Mode*)
       remember (is_range_constrainted_type (parameter_subtype_mark a)) as x;
       remember (fetch_exp_type (expression_astnum e) st) as y;
-      destruct x, y; smack;
+      destruct x, y; crush;
       solve[
         remember (beq_type t (parameter_subtype_mark a)) as z; 
-        destruct z; smack;
-        [ specialize (beq_type_eq _ _ Heqz); smack;
+        destruct z; crush;
+        [ specialize (beq_type_eq _ _ Heqz); crush;
           apply C2_Flagged_Args_In_NoRangeCheck |
           apply C2_Flagged_Args_In_RangeCheck with (t := t) 
-        ]; smack; apply compile2_flagged_exp_f_correctness; auto |
-        constructor; smack;
+        ]; crush; apply compile2_flagged_exp_f_correctness; auto |
+        constructor; crush;
         apply compile2_flagged_exp_f_correctness; auto
       ].
     + (*Out Mode*)
       remember (fetch_exp_type (expression_astnum e) st) as b4;
-      destruct b4; smack;
-      remember (is_range_constrainted_type t) as b5; destruct b5; smack;
-      [ remember (beq_type t (parameter_subtype_mark a)) as b6; destruct b6; smack | ];
-      [ specialize (beq_type_eq _ _ Heqb6); smack;
+      destruct b4; crush;
+      remember (is_range_constrainted_type t) as b5; destruct b5; crush;
+      [ remember (beq_type t (parameter_subtype_mark a)) as b6; destruct b6; crush | ];
+      [ specialize (beq_type_eq _ _ Heqb6); crush;
         apply C2_Flagged_Args_Out_NoRangeCheck |
         apply C2_Flagged_Args_Out_RangeCheck with (t:=t) |
         apply C2_Flagged_Args_Out with (t := t) 
-      ]; smack; apply compile2_flagged_exp_f_correctness; auto.
+      ]; crush; apply compile2_flagged_exp_f_correctness; auto.
     + (*In_Out Mode*)
       remember (is_range_constrainted_type (parameter_subtype_mark a)) as b4;
       remember (fetch_exp_type (expression_astnum e) st) as b5;
-      destruct b4, b5; smack;
+      destruct b4, b5; crush;
       remember (is_range_constrainted_type t) as b6;
-      destruct b6; smack;
-      [ remember (beq_type t (parameter_subtype_mark a)) as b7; destruct b7; smack |
+      destruct b6; crush;
+      [ remember (beq_type t (parameter_subtype_mark a)) as b7; destruct b7; crush |
         apply C2_Flagged_Args_InOut_In_RangeCheck with (t:=t) |
         apply C2_Flagged_Args_InOut_Out_RangeCheck with (t:=t) |
         apply C2_Flagged_Args_InOut with (t:=t)
       ]; auto;
-      [ specialize (beq_type_eq _ _ Heqb7); smack; apply C2_Flagged_Args_InOut_NoRangeCheck |
+      [ specialize (beq_type_eq _ _ Heqb7); crush; apply C2_Flagged_Args_InOut_NoRangeCheck |
         apply C2_Flagged_Args_InOut_RangeCheck with (t:=t) | | |
       ];
       auto; apply compile2_flagged_exp_f_correctness; auto.
@@ -832,22 +832,22 @@ Section Checks_Generator_Function_Correctness_Proof.
     compile2_flagged_stmt_f st c = Some c' ->
       compile2_flagged_stmt st c c'.
   Proof.
-    induction c; smack.
+    induction c; crush.
   - (*S_Null*)
     constructor.
   - (*S_Assignment*)
     remember (compile2_flagged_name_f st n) as b1;
     remember (compile2_flagged_exp_f st e) as b2;
     remember (fetch_exp_type (name_astnum n) st ) as b3;
-    destruct b1, b2, b3; smack;
+    destruct b1, b2, b3; crush;
     remember (is_range_constrainted_type t) as b4;
-    destruct b4; smack;
+    destruct b4; crush;
     [ remember (fetch_exp_type (expression_astnum e) st) as b5;
-      destruct b5; smack;
+      destruct b5; crush;
       remember (beq_type t t0) as b6; 
-      destruct b6; smack | 
+      destruct b6; crush | 
     ];
-    [ specialize (beq_type_eq _ _ Heqb6); smack;
+    [ specialize (beq_type_eq _ _ Heqb6); crush;
       apply C2_Flagged_Assignment_NoRangeCheck with (t:=t0) |
       apply C2_Flagged_Assignment_RangeCheck with (t := t) (t':=t0) |
       apply C2_Flagged_Assignment with (t := t)
@@ -860,27 +860,27 @@ Section Checks_Generator_Function_Correctness_Proof.
     remember (compile2_flagged_exp_f st e) as b1;
     remember (compile2_flagged_stmt_f st c1) as b2;
     remember (compile2_flagged_stmt_f st c2) as b3;
-    destruct b1, b2, b3; smack;
-    constructor; smack;
+    destruct b1, b2, b3; crush;
+    constructor; crush;
     apply compile2_flagged_exp_f_correctness; auto.
   - (*S_While_Loop*)
     remember (compile2_flagged_exp_f st e) as b1;
     remember (compile2_flagged_stmt_f st c) as b2;
-    destruct b1, b2; smack;
-    constructor; smack;
+    destruct b1, b2; crush;
+    constructor; crush;
     apply compile2_flagged_exp_f_correctness; auto.
   - (*S_Procedure_Call*)
     remember (fetch_proc p st) as b1;
-    destruct b1; smack;
+    destruct b1; crush;
     destruct t;
     remember (compile2_flagged_args_f st (procedure_parameter_profile p0) l) as b2;
-    destruct b2; smack;
-    apply C2_Flagged_Procedure_Call with (n := l0) (pb := p0) (params := (procedure_parameter_profile p0)); smack;
+    destruct b2; crush;
+    apply C2_Flagged_Procedure_Call with (n := l0) (pb := p0) (params := (procedure_parameter_profile p0)); crush;
     apply compile2_flagged_args_f_correctness; auto.
   - (*S_Sequence*)
     remember (compile2_flagged_stmt_f st c1) as b1;
     remember (compile2_flagged_stmt_f st c2) as b2;
-    destruct b1, b2; smack;
+    destruct b1, b2; crush;
     constructor; auto.
   Qed.
 
@@ -888,7 +888,7 @@ Section Checks_Generator_Function_Correctness_Proof.
     compile2_flagged_type_declaration_f t = t' ->
         compile2_flagged_type_declaration t t'.
   Proof.
-    destruct t; smack;
+    destruct t; crush;
     try (destruct r); constructor.
   Qed.
 
@@ -897,9 +897,9 @@ Section Checks_Generator_Function_Correctness_Proof.
       compile2_flagged_object_declaration st o o'.
   Proof.
     intros;
-    functional induction compile2_flagged_object_declaration_f st o; smack;
+    functional induction compile2_flagged_object_declaration_f st o; crush;
     [ constructor |
-      symmetry in e4; specialize (beq_type_eq _ _ e4); smack;
+      symmetry in e4; specialize (beq_type_eq _ _ e4); crush;
       apply C2_Flagged_Object_Declaration_NoRangeCheck |
       apply C2_Flagged_Object_Declaration_RangeCheck with (t':=t') |
       apply C2_Flagged_Object_Declaration 
@@ -910,12 +910,12 @@ Section Checks_Generator_Function_Correctness_Proof.
     compile2_flagged_object_declarations_f st lo = Some lo' ->
       compile2_flagged_object_declarations st lo lo'.
   Proof.
-    induction lo; smack;
+    induction lo; crush;
     [ constructor |
       remember (compile2_flagged_object_declaration_f st a) as b1;
       remember (compile2_flagged_object_declarations_f st lo) as b2;
-      destruct b1, b2; smack;
-      constructor; smack;
+      destruct b1, b2; crush;
+      constructor; crush;
       apply compile2_flagged_object_declaration_f_correctness; auto 
     ].
   Qed.
@@ -924,7 +924,7 @@ Section Checks_Generator_Function_Correctness_Proof.
     compile2_flagged_parameter_specification_f param = param' ->
       compile2_flagged_parameter_specification param param'.
   Proof.
-    smack;
+    crush;
     destruct param;
     constructor.  
   Qed.
@@ -933,8 +933,8 @@ Section Checks_Generator_Function_Correctness_Proof.
     compile2_flagged_parameter_specifications_f lparam = lparam' ->
       compile2_flagged_parameter_specifications lparam lparam'.
   Proof.
-    induction lparam; smack;
-    constructor; smack.
+    induction lparam; crush;
+    constructor; crush.
     apply compile2_flagged_parameter_specification_f_correctness; auto.
   Qed.
 
@@ -953,24 +953,24 @@ Section Checks_Generator_Function_Correctness_Proof.
       (fun p: procedure_body => forall (p': procedure_body_x) (st: symboltable),
         compile2_flagged_procedure_body_f st p = Some p' ->
         compile2_flagged_procedure_body st p p')
-      ); smack.
+      ); crush.
   - constructor.
   - constructor.
     apply compile2_flagged_type_declaration_f_correctness; auto.
   - remember (compile2_flagged_object_declaration_f st o) as x;
-    destruct x; smack;
+    destruct x; crush;
     constructor;
     apply compile2_flagged_object_declaration_f_correctness; auto.
   - remember (compile2_flagged_procedure_body_f st p) as x; 
-    destruct x; smack;
+    destruct x; crush;
     constructor; auto.
   - remember (compile2_flagged_declaration_f st d) as x;
     remember (compile2_flagged_declaration_f st d0) as y;
-    destruct x, y; smack;
-    constructor; smack.
+    destruct x, y; crush;
+    constructor; crush.
   - remember (compile2_flagged_declaration_f st procedure_declarative_part) as x;
     remember (compile2_flagged_stmt_f st procedure_statements) as y;
-    destruct x, y; smack;
+    destruct x, y; crush;
     constructor;
     [ apply compile2_flagged_parameter_specifications_f_correctness | |
       apply compile2_flagged_stmt_f_correctness
@@ -982,10 +982,10 @@ Section Checks_Generator_Function_Correctness_Proof.
       compile2_flagged_procedure_body st p p'.
   Proof.
     intros;
-    destruct p; smack.
+    destruct p; crush.
     remember (compile2_flagged_declaration_f st procedure_declarative_part) as x;
     remember (compile2_flagged_stmt_f st procedure_statements) as y;
-    destruct x, y; smack;
+    destruct x, y; crush;
     constructor;
     [ apply compile2_flagged_parameter_specifications_f_correctness |
       apply compile2_flagged_declaration_f_correctness |
@@ -1009,25 +1009,25 @@ Section Checks_Generator_Function_Completeness_Proof.
       (fun n: name => forall (n': name_x) (st: symboltable),
         compile2_flagged_name   st n n' ->
         compile2_flagged_name_f st n = Some n')
-      ); smack;
+      ); crush;
     match goal with
-    | [H: compile2_flagged_exp  _ ?e ?e' |- _] => inversion H; clear H; smack
-    | [H: compile2_flagged_name _ ?n ?n' |- _] => inversion H; clear H; smack
+    | [H: compile2_flagged_exp  _ ?e ?e' |- _] => inversion H; clear H; crush
+    | [H: compile2_flagged_name _ ?n ?n' |- _] => inversion H; clear H; crush
     end;
     repeat progress match goal with
     | [H1:forall (e' : expression_x) (st : symboltable),
           compile2_flagged_exp _ ?e e' ->
           compile2_flagged_exp_f _ ?e = Some e',
-       H2:compile2_flagged_exp _ ?e ?e1_flagged |- _] => specialize (H1 _ _ H2); smack
+       H2:compile2_flagged_exp _ ?e ?e1_flagged |- _] => specialize (H1 _ _ H2); crush
     | [H1:forall (n' : name_x) (st : symboltable),
           compile2_flagged_name _ ?n n' ->
           compile2_flagged_name_f _ ?n = Some n',
-       H2:compile2_flagged_name _ ?n ?n_flagged |- _] => specialize (H1 _ _ H2); smack
+       H2:compile2_flagged_name _ ?n ?n_flagged |- _] => specialize (H1 _ _ H2); crush
     end;
     [ destruct b | 
       destruct u |
       rewrite <- beq_type_refl 
-    ]; smack.
+    ]; crush.
   Qed.
 
   Lemma compile2_flagged_name_f_completeness: forall st n n',
@@ -1035,10 +1035,10 @@ Section Checks_Generator_Function_Completeness_Proof.
       compile2_flagged_name_f st n = Some n'.
   Proof.
     intros;
-    induction H; smack;
+    induction H; crush;
     match goal with
     | [H: compile2_flagged_exp ?st ?e ?e' |- _] => 
-        specialize (compile2_flagged_exp_f_completeness _ _ _ H); smack
+        specialize (compile2_flagged_exp_f_completeness _ _ _ H); crush
     end;
     rewrite <- beq_type_refl; auto.
   Qed.
@@ -1047,9 +1047,9 @@ Section Checks_Generator_Function_Completeness_Proof.
     compile2_flagged_args st params args args' ->
       compile2_flagged_args_f st params args = Some args'.
   Proof.
-    induction params; smack;
+    induction params; crush;
     match goal with
-    | [H: compile2_flagged_args _ _ ?args ?args' |- _] => inversion H; clear H; smack
+    | [H: compile2_flagged_args _ _ ?args ?args' |- _] => inversion H; clear H; crush
     end;
     match goal with
     | [H1: forall (args : list expression) (args' : list expression_x),
@@ -1058,7 +1058,7 @@ Section Checks_Generator_Function_Completeness_Proof.
        H2: compile2_flagged_args _ ?params _ _ |- _] => specialize (H1 _ _ H2)
     end;
     match goal with
-    | [H: compile2_flagged_exp _ ?e ?e' |- _] => specialize (compile2_flagged_exp_f_completeness _ _ _ H); smack
+    | [H: compile2_flagged_exp _ ?e ?e' |- _] => specialize (compile2_flagged_exp_f_completeness _ _ _ H); crush
     | _ => idtac
     end;
     match goal with
@@ -1070,9 +1070,9 @@ Section Checks_Generator_Function_Completeness_Proof.
     compile2_flagged_stmt st c c' ->
       compile2_flagged_stmt_f st c = Some c'.
   Proof.
-    induction c; smack;
+    induction c; crush;
     match goal with
-    | [H: compile2_flagged_stmt _ ?c ?c' |- _] => inversion H; clear H; smack
+    | [H: compile2_flagged_stmt _ ?c ?c' |- _] => inversion H; clear H; crush
     end;
     repeat progress match goal with
     | [H: compile2_flagged_exp  _ ?e ?e' |- _] => specialize (compile2_flagged_exp_f_completeness  _ _ _ H); clear H
@@ -1081,10 +1081,10 @@ Section Checks_Generator_Function_Completeness_Proof.
            compile2_flagged_stmt _ ?c _ ->
            compile2_flagged_stmt_f _ ?c = Some _,
        H2: compile2_flagged_stmt _ ?c _ |- _ ] => specialize (H1 _ H2)
-    end; smack;
+    end; crush;
     match goal with
     | [|- context [beq_type _ _]] => rewrite <- beq_type_refl; auto
-    | [H: compile2_flagged_args _ _ _ _ |- _ ] => specialize (compile2_flagged_args_f_completeness _ _ _ _ H); smack
+    | [H: compile2_flagged_args _ _ _ _ |- _ ] => specialize (compile2_flagged_args_f_completeness _ _ _ _ H); crush
     end.
   Qed.
 
@@ -1094,7 +1094,7 @@ Section Checks_Generator_Function_Completeness_Proof.
   Proof.
     destruct t; intros;
     match goal with
-    | [H: compile2_flagged_type_declaration _ _ |- _] => inversion H; smack
+    | [H: compile2_flagged_type_declaration _ _ |- _] => inversion H; crush
     end.
   Qed.
 
@@ -1105,11 +1105,11 @@ Section Checks_Generator_Function_Completeness_Proof.
     intros;
     functional induction compile2_flagged_object_declaration_f st o;
     match goal with
-    | [H: compile2_flagged_object_declaration _ _ _ |- _] => inversion H; smack
+    | [H: compile2_flagged_object_declaration _ _ _ |- _] => inversion H; crush
     end;
     match goal with
     | [H: compile2_flagged_exp _ _ _ |- _] => 
-        specialize (compile2_flagged_exp_f_completeness _ _ _ H); smack
+        specialize (compile2_flagged_exp_f_completeness _ _ _ H); crush
     end;
     match goal with
     | [H1: fetch_exp_type _ _ = Some ?t1, H2: fetch_exp_type _ _ = Some ?t2, H3: beq_type ?t1 ?t2 = false |- _] =>
@@ -1121,15 +1121,15 @@ Section Checks_Generator_Function_Completeness_Proof.
     compile2_flagged_object_declarations st lo lo' ->
       compile2_flagged_object_declarations_f st lo = Some lo'.
   Proof.
-    induction lo; smack;
+    induction lo; crush;
     match goal with
-    | [H: compile2_flagged_object_declarations _ _ _ |- _] => inversion H; clear H; smack
+    | [H: compile2_flagged_object_declarations _ _ _ |- _] => inversion H; clear H; crush
     end;
     match goal with
     | [H: compile2_flagged_object_declaration _ ?o ?o' |- _] => 
-        specialize (compile2_flagged_object_declaration_f_completeness _ _ _ H); smack
+        specialize (compile2_flagged_object_declaration_f_completeness _ _ _ H); crush
     end;
-    specialize (IHlo _ H5); smack.
+    specialize (IHlo _ H5); crush.
   Qed.
 
   Lemma compile2_flagged_parameter_specification_f_completeness: forall param param',
@@ -1149,7 +1149,7 @@ Section Checks_Generator_Function_Completeness_Proof.
     specialize (IHlparam _ H4).
     match goal with
     | [H: compile2_flagged_parameter_specification _ _ |- _] => 
-        specialize (compile2_flagged_parameter_specification_f_completeness _ _ H); smack
+        specialize (compile2_flagged_parameter_specification_f_completeness _ _ H); crush
     end.
   Qed.
 
@@ -1164,30 +1164,30 @@ Section Checks_Generator_Function_Completeness_Proof.
       (fun p: procedure_body => forall (p': procedure_body_x) (st: symboltable),
         compile2_flagged_procedure_body st p p' ->
         compile2_flagged_procedure_body_f st p = Some p')
-      ); smack;
+      ); crush;
     match goal with
-    | [H: compile2_flagged_declaration _ _ _ |- _] => inversion H; clear H; smack
-    | [H: compile2_flagged_procedure_body _ _ _ |- _] => inversion H; clear H; smack
+    | [H: compile2_flagged_declaration _ _ _ |- _] => inversion H; clear H; crush
+    | [H: compile2_flagged_procedure_body _ _ _ |- _] => inversion H; clear H; crush
     end;
     repeat progress match goal with
     | [H: compile2_flagged_type_declaration _ _ |- _] => 
-        specialize (compile2_flagged_type_declaration_f_completeness _ _ H); smack
+        specialize (compile2_flagged_type_declaration_f_completeness _ _ H); crush
     | [H: compile2_flagged_object_declaration _ _ _ |- _] =>
-        specialize (compile2_flagged_object_declaration_f_completeness _ _ _ H); smack
+        specialize (compile2_flagged_object_declaration_f_completeness _ _ _ H); crush
     | [H: compile2_flagged_parameter_specifications _ _ |- _] =>
-        specialize (compile2_flagged_parameter_specifications_f_completeness _ _ H); clear H; smack
+        specialize (compile2_flagged_parameter_specifications_f_completeness _ _ H); clear H; crush
     | [H: compile2_flagged_stmt _ _ _ |- _] =>
-        specialize (compile2_flagged_stmt_f_completeness _ _ _ H); clear H; smack
+        specialize (compile2_flagged_stmt_f_completeness _ _ _ H); clear H; crush
     | [H1: forall (p' : procedure_body_x) (st : symboltable),
            compile2_flagged_procedure_body _ ?p _ ->
            compile2_flagged_procedure_body_f _ ?p = Some _,
        H2: compile2_flagged_procedure_body _ ?p _ |- _] =>
-        specialize (H1 _ _ H2); smack
+        specialize (H1 _ _ H2); crush
     | [H1: forall (d' : declaration_x) (st : symboltable),
            compile2_flagged_declaration _ ?d _ ->
            compile2_flagged_declaration_f _ ?d = Some _,
        H2: compile2_flagged_declaration _ ?d _ |- _] => 
-        specialize (H1 _ _ H2); clear H2; smack
+        specialize (H1 _ _ H2); clear H2; crush
     end.
   Qed.
 
@@ -1198,15 +1198,15 @@ Section Checks_Generator_Function_Completeness_Proof.
     intros;
     destruct p.
     match goal with
-    [H: compile2_flagged_procedure_body _ _ _ |- _] => inversion H; clear H; smack
+    [H: compile2_flagged_procedure_body _ _ _ |- _] => inversion H; clear H; crush
     end;
     repeat progress match goal with
     | [H: compile2_flagged_parameter_specifications _ _ |- _] =>
-        specialize (compile2_flagged_parameter_specifications_f_completeness _ _ H); clear H; smack
+        specialize (compile2_flagged_parameter_specifications_f_completeness _ _ H); clear H; crush
     | [H: compile2_flagged_stmt _ _ _ |- _] =>
-        specialize (compile2_flagged_stmt_f_completeness _ _ _ H); clear H; smack
+        specialize (compile2_flagged_stmt_f_completeness _ _ _ H); clear H; crush
     | [H: compile2_flagged_declaration _ _ _ |- _] => 
-        specialize (compile2_flagged_declaration_f_completeness _ _ _ H); clear H; smack
+        specialize (compile2_flagged_declaration_f_completeness _ _ _ H); clear H; crush
     end.
   Qed.
 
@@ -1224,7 +1224,7 @@ Lemma procedure_components_rel: forall st p p',
   compile2_flagged_stmt st (procedure_statements p) (procedure_statements_x p').
 Proof.
   intros.
-  inversion H; smack.
+  inversion H; crush.
 Qed.
 
 
@@ -1273,7 +1273,7 @@ Proof.
   unfold Symbol_Table_Module_X.SymTable_Procs.fetches.
   remember (beq_nat p0 p) as Beq.
   destruct Beq. 
-  + smack.
+  + crush.
   + specialize (IHcompile2_flagged_proc_declaration_map _ _ _ H1).
     auto.
 Qed.
@@ -1300,7 +1300,7 @@ Lemma symbol_table_var_rel: forall st st' x t,
       fetch_var_x x st' = t.
 Proof.
   intros.
-  inversion H; smack.
+  inversion H; crush.
 Qed.
 
 Lemma type_declaration_rel: forall tm tm' t td,
@@ -1311,9 +1311,9 @@ Lemma type_declaration_rel: forall tm tm' t td,
       compile2_flagged_type_declaration td td'.
 Proof.
   intros tm tm' t td H; revert t td.
-  induction H; smack.
+  induction H; crush.
   destruct (beq_nat t0 x).
-- inversion H; smack.
+- inversion H; crush.
 - apply IHcompile2_flagged_type_declaration_map; auto.
 Qed.
 
@@ -1324,9 +1324,9 @@ Lemma symbol_table_type_rel: forall st st' t td,
         fetch_type_x t st' = Some td' /\ compile2_flagged_type_declaration td td'.
 Proof.
   intros.
-  inversion H; smack.
+  inversion H; crush.
   unfold fetch_type, Symbol_Table_Module.fetch_type in H0; 
-  unfold fetch_type_x, Symbol_Table_Module_X.fetch_type; smack.
+  unfold fetch_type_x, Symbol_Table_Module_X.fetch_type; crush.
   apply type_declaration_rel with (tm := t0); auto.
 Qed.
 
@@ -1336,7 +1336,7 @@ Lemma symbol_table_exp_type_rel: forall st st' e t,
       fetch_exp_type_x e st' = t.
 Proof.
   intros.
-  inversion H; smack.  
+  inversion H; crush.  
 Qed.
 
 Lemma subtype_range_rel: forall st st' t l u,
@@ -1345,9 +1345,9 @@ Lemma subtype_range_rel: forall st st' t l u,
       extract_subtype_range_x st' t (Range_X l u).
 Proof.
   intros.
-  inversion H0; clear H0; smack.
-  specialize (symbol_table_type_rel _ _ _ _ H H6); clear H6; smack.
-  apply Extract_Range_X with (tn := tn) (td := x); smack.
+  inversion H0; clear H0; crush.
+  specialize (symbol_table_type_rel _ _ _ _ H H6); clear H6; crush.
+  apply Extract_Range_X with (tn := tn) (td := x); crush.
   destruct td; inversion H7; subst;
   inversion H2; auto.
 Qed.
@@ -1358,11 +1358,11 @@ Lemma index_range_rel: forall st st' t l u,
       extract_array_index_range_x st' t (Range_X l u).
 Proof.
   intros.
-  inversion H0; clear H0; smack.
-  specialize (symbol_table_type_rel _ _ _ _ H H3); clear H3; smack.
-  specialize (symbol_table_type_rel _ _ _ _ H H7); clear H7; smack.  
+  inversion H0; clear H0; crush.
+  specialize (symbol_table_type_rel _ _ _ _ H H3); clear H3; crush.
+  specialize (symbol_table_type_rel _ _ _ _ H H7); clear H7; crush.  
   apply Extract_Index_Range_X with (a_ast_num := a_ast_num) (tn := tn) (tm := tm) 
-                                   (typ := typ) (tn' := tn') (td := x0); smack.
+                                   (typ := typ) (tn' := tn') (td := x0); crush.
   inversion H2; auto.
   destruct td; inversion H8; subst;
   inversion H5; auto.

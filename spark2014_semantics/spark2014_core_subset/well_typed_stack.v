@@ -12,8 +12,8 @@ Lemma fetchG_split: forall s1 s2 x v,
   fetchG x (s1 ++ s2) = Some v ->
     fetchG x s1 = Some v \/ fetchG x s2 = Some v.
 Proof.
-  induction s1; smack.
-  destruct (fetch x a); smack.
+  induction s1; crush;eauto.
+  destruct (fetch x a); crush;eauto.
 Qed.
 
 Ltac apply_fetchG_split :=
@@ -34,11 +34,11 @@ Lemma well_typed_store_updated_by_undefined_value: forall st f x m t,
 Proof.
   intros.
   inversion H; subst.
-  constructor; smack.
+  constructor; crush;eauto.
   remember (beq_nat x0 x) as b.
-  destruct b; smack.
+  destruct b; crush;eauto.
   rewrite (beq_nat_eq _ _ Heqb).
-  exists m t; smack.
+  exists m t; crush;eauto.
   constructor.
 Qed.
 
@@ -57,12 +57,12 @@ Lemma well_typed_store_stack_merge: forall st f s,
       well_typed_stack st (f :: s).
 Proof.
   intros.
-  constructor; smack.
+  constructor; crush;eauto.
 - remember (fetch x f) as b.
-  destruct b; smack.
-  inversion H; smack.
-  inversion H0; smack.
-- inversion H0; smack.  
+  destruct b; crush;eauto.
+  inversion H; crush;eauto.
+  inversion H0; crush;eauto.
+- inversion H0; crush;eauto.  
 Qed.
 
 Ltac apply_well_typed_store_stack_merge :=
@@ -78,11 +78,11 @@ Lemma well_typed_stacks_merge: forall st s1 s2,
       well_typed_stack st (s1 ++ s2).
 Proof.
   intros.
-  constructor; smack.
+  constructor; crush;eauto.
 - apply_fetchG_split.
-  inversion H; smack.
-  inversion H0; smack.
-- inversion H; smack.
+  inversion H; crush;eauto.
+  inversion H0; crush;eauto.
+- inversion H; crush;eauto.
 Qed.
 
 Ltac apply_well_typed_stacks_merge :=
@@ -103,7 +103,7 @@ Lemma well_typed_store_stack_split: forall st f s,
     well_typed_stack st s /\ well_typed_store st (snd f).
 Proof.
   intros.
-  inversion H; subst; smack; clear H1.
+  inversion H; subst; crush;eauto; clear H1.
   constructor; intros. admit.
   admit. admit.
 Qed.
@@ -127,8 +127,8 @@ Lemma well_typed_store_updated_by_undefined_value': forall st f x m t,
       well_typed_value_in_store st (snd (push f x Undefined)).
 Proof.
   intros.
-  constructor; smack.
-  exists m t; smack; constructor.
+  constructor; crush;eauto.
+  exists m t; crush;eauto; constructor.
 Qed.
 
 Ltac apply_well_typed_store_updated_by_undefined_value' :=
@@ -145,7 +145,7 @@ Lemma well_typed_store_stack_merge': forall st f s,
       well_typed_value_in_stack st (f :: s).
 Proof.
   intros;
-  constructor; smack.
+  constructor; crush;eauto.
 Qed.
 
 Ltac apply_well_typed_store_stack_merge' :=
@@ -162,10 +162,10 @@ Lemma well_typed_store_merge': forall st s1 s2,
       well_typed_value_in_store st (s1 ++ s2).
 Proof.
   intros st s1;
-  induction s1; smack.
+  induction s1; crush;eauto.
   inversion H; subst.
   specialize (IHs1 _ H6 H0).
-  constructor; smack.
+  constructor; crush;eauto.
 Qed.
 
 Ltac apply_well_typed_store_merge' := 
@@ -182,7 +182,7 @@ Lemma well_typed_stacks_merge': forall st s1 s2,
       well_typed_value_in_stack st (s1 ++ s2).
 Proof.
   intros st s1; revert st;
-  induction s1; smack;
+  induction s1; crush;eauto;
   inversion H; subst;
   specialize (IHs1 _ _ H5 H0);
   constructor; auto.
@@ -219,12 +219,12 @@ Lemma well_typed_store_split': forall st s1 s2,
     well_typed_value_in_store st s1 /\ well_typed_value_in_store st s2.
 Proof.
   intros st s1;
-  induction s1; smack;
+  induction s1; crush;eauto;
   match goal with
   | [ |- well_typed_value_in_store _ nil] => constructor
-  | [H: well_typed_value_in_store _ _ |- _] => inversion H; subst; specialize (IHs1 _ H5); smack
+  | [H: well_typed_value_in_store _ _ |- _] => inversion H; subst; specialize (IHs1 _ H5); crush;eauto
   end;
-  constructor; smack.
+  constructor; crush;eauto.
 Qed.
 
 Ltac apply_well_typed_store_split' :=
@@ -242,11 +242,11 @@ Lemma well_typed_stack_split': forall st s1 s2,
     well_typed_value_in_stack st s1 /\ well_typed_value_in_stack st s2.
 Proof.
   intros st s1; revert st.
-  induction s1; smack;
+  induction s1; crush;eauto;
   match goal with
   | [|- well_typed_value_in_stack _ nil] => constructor
   | [H: well_typed_value_in_stack _ _ |- _] => 
-      inversion H; subst; specialize (IHs1 _ _ H4); smack
+      inversion H; subst; specialize (IHs1 _ _ H4); crush;eauto
   end;
   constructor; auto.
 Qed.
@@ -389,8 +389,8 @@ Lemma value_well_typed_with_matched_type: forall st t t' v,
 Proof.
   intros.
   inversion H; subst; inversion H3; subst.
-  destruct t; inversion H0; smack;
-  destruct t'; inversion H2; smack;
+  destruct t; inversion H0; crush;eauto;
+  destruct t'; inversion H2; crush;eauto;
   match goal with
   | [H: beq_nat _ _ = true |- _] => symmetry in H; rewrite (beq_nat_eq _ _ H); auto
   | [H: well_typed_value st _ _ |- _] => inversion H; subst
@@ -437,11 +437,11 @@ Proof.
   match goal with
   | [H: well_typed_value_in_store ?st _ |- _] => inversion H; subst
   end;
-  constructor; smack.
+  constructor; crush;eauto.
   
   symmetry in e0; rewrite (beq_nat_eq _ _ e0) in *.
   rewrite H0 in H3; inversion H3; subst.
-  exists x0 x1; smack.
+  exists x0 x1; crush;eauto.
 Qed.
 
 Ltac apply_storeUpdate_with_typed_value_preserve_typed_store :=
@@ -463,11 +463,11 @@ Lemma updateG_with_typed_value_preserve_typed_stack: forall st s s' x m t v,
           well_typed_value_in_stack st s'.
 Proof.
   intros st s s' x m t v; revert s' m t.
-  functional induction (updateG s x v); smack;
+  functional induction (updateG s x v); crush;eauto;
   match goal with
   | [H: well_typed_value_in_stack ?st _ |- _] => inversion H; subst
   end;
-  constructor; smack.
+  constructor; crush;eauto.
   apply_storeUpdate_with_typed_value_preserve_typed_store; auto.
 Qed.
 
@@ -484,28 +484,28 @@ Ltac apply_updateG_with_typed_value_preserve_typed_stack :=
 Lemma updated_array_select_eq: forall a i v,
   array_select (updateIndexedComp a i v) i = Some v.
 Proof.
-  induction a; smack.
+  induction a; crush;eauto.
   assert (HA: Zeq_bool i i = true).
   apply Zeq_is_eq_bool; auto.
   rewrite HA; auto.
   remember (Zeq_bool a1 i) as bx.
-  destruct bx; smack; rewrite <- Heqbx; auto.
+  destruct bx; crush;eauto; rewrite <- Heqbx; auto.
 Qed.
 
 Lemma updated_record_select_eq: forall r f v,
   record_select (updateSelectedComp r f v) f = Some v.
 Proof.
-  induction r; smack.
+  induction r; crush;eauto.
   rewrite <- beq_nat_refl; auto.
   remember (beq_nat a0 f) as bx.
-  destruct bx; smack; rewrite <- Heqbx; auto.
+  destruct bx; crush;eauto; rewrite <- Heqbx; auto.
 Qed.
 
 Lemma updated_array_select: forall a i v i1 v1,
   array_select (updateIndexedComp a i v) i1 = Some v1 ->
     i = i1 \/ (Zeq_bool i i1 = false /\ array_select a i1 = Some v1).
 Proof.
-  induction a; smack.
+  induction a; crush;eauto.
   remember (Zeq_bool i i1) as b.
   destruct b; inversion H.
   symmetry in Heqb; rewrite (Zeq_bool_eq _ _ Heqb); auto.
@@ -515,7 +515,7 @@ Proof.
   destruct b1, b2; subst;
   repeat progress match goal with
   | [H: true = Zeq_bool _ _ |- _] => 
-      symmetry in H; specialize (Zeq_bool_eq _ _ H); clear H; smack
+      symmetry in H; specialize (Zeq_bool_eq _ _ H); clear H; crush;eauto
   end.
   right. 
   assert(HA: Zeq_bool i i1 = Zeq_bool i1 i).
@@ -523,13 +523,13 @@ Proof.
     destruct b1, b2; auto;
     match goal with
     | [H: true = Zeq_bool _ _ |- _] => 
-        symmetry in H; specialize (Zeq_bool_eq _ _ H); clear H; smack
+        symmetry in H; specialize (Zeq_bool_eq _ _ H); clear H; crush;eauto
     end.
     assert (HA1: Zeq_bool i1 i1 = true). apply Zeq_is_eq_bool; auto. auto.
     apply Zeq_is_eq_bool; auto.
   assert(HA1: Zeq_bool i1 i1 = true). apply Zeq_is_eq_bool; auto. 
   rewrite HA1 in H; inversion H; subst. auto.
-  right. rewrite <- Heqb1 in H; smack.
+  right. rewrite <- Heqb1 in H; crush;eauto.
   unfold array_select in H.
   rewrite <- Heqb1 in H. fold array_select in H.
   specialize (IHa _ _ _ _ H); auto.
@@ -546,7 +546,7 @@ Lemma updated_record_select: forall r f v f1 v1,
   record_select (updateSelectedComp r f v) f1 = Some v1 ->
     f = f1 \/ (beq_nat f f1 = false /\ record_select r f1 = Some v1).
 Proof.
-  induction r; smack.
+  induction r; crush;eauto.
   remember (beq_nat f f1) as b.
   destruct b; inversion H.
   symmetry in Heqb; rewrite (beq_nat_true _ _ Heqb); auto.
@@ -556,7 +556,7 @@ Proof.
   destruct b1, b2; subst;
   repeat progress match goal with
   | [H: true = beq_nat _ _ |- _] => 
-      symmetry in H; specialize (beq_nat_true _ _ H); clear H; smack
+      symmetry in H; specialize (beq_nat_true _ _ H); clear H; crush;eauto
   end.
   right. 
   assert(HA: beq_nat f f1 = beq_nat f1 f).
@@ -564,7 +564,7 @@ Proof.
     destruct b1, b2; auto;
     match goal with
     | [H: true = beq_nat _ _ |- _] => 
-        symmetry in H; specialize (beq_nat_true _ _ H); clear H; smack
+        symmetry in H; specialize (beq_nat_true _ _ H); clear H; crush;eauto
     end.
     apply beq_nat_refl; auto.
     
@@ -594,19 +594,19 @@ Lemma arrayUpdate_with_typed_value_preserve_typed_array: forall st t t0 arrObj a
   well_typed_value st (Array_Type t) (ArrayV a1).
 Proof.
   intros.
-  unfold arrayUpdate in H1; smack.
+  unfold arrayUpdate in H1; crush;eauto.
 - inversion H5; subst.
-  apply TV_Array_Type with (ast_num:=a_ast_num) (tid:=tn) (tm:=tm) (typ:=t0) (l:=l) (u:=u); smack.
-  apply_updated_array_select; smack.
+  apply TV_Array_Type with (ast_num:=a_ast_num) (tid:=tn) (tm:=tm) (typ:=t0) (l:=l) (u:=u); crush;eauto.
+  apply_updated_array_select; crush;eauto.
   inversion H; subst. 
   apply_extract_array_index_range_x_unique; subst.
-  specialize (H13 _ _ H8); smack.
+  specialize (H13 _ _ H8); crush;eauto.
 
-  apply_updated_array_select; smack.
+  apply_updated_array_select; crush;eauto.
   rewrite updated_array_select_eq in H1; inversion H1; subst; auto.
   inversion H; subst.
-  specialize (H13 _ _ H8); smack.
-- apply TV_Array_Type with (ast_num:=a_ast_num) (tid:=tn) (tm:=tm) (typ:=t0) (l:=l) (u:=u); smack;
+  specialize (H13 _ _ H8); crush;eauto.
+- apply TV_Array_Type with (ast_num:=a_ast_num) (tid:=tn) (tm:=tm) (typ:=t0) (l:=l) (u:=u); crush;eauto;
   inversion H5; subst;
   remember (Zeq_bool i i0) as b;
   destruct b; inversion H0; subst; auto;
@@ -637,16 +637,16 @@ Lemma recordUpdate_with_typed_value_preserve_typed_array: forall st t t0 recObj 
   well_typed_value st (Record_Type t) (RecordV r1).
 Proof.
   intros.
-  unfold recordUpdate in H1; smack.
+  unfold recordUpdate in H1; crush;eauto.
 - apply TV_Record_Type with (ast_num:=r_ast_num) (tid:=tn) (fields:=fields); auto; intros.
-  apply_updated_record_select; smack.
+  apply_updated_record_select; crush;eauto.
   
   rewrite updated_record_select_eq in H0; inversion H0; subst.
   exists t0; auto.
 
   inversion H; subst. rewrite H2 in H9; inversion H9; subst.
   specialize (H10 _ _ H6); auto.
-- apply TV_Record_Type with (ast_num:=r_ast_num) (tid:=tn) (fields:=fields); smack.
+- apply TV_Record_Type with (ast_num:=r_ast_num) (tid:=tn) (fields:=fields); crush;eauto.
   remember (beq_nat f f0) as b.
   destruct b; inversion H0; subst.
   symmetry in Heqb; rewrite <- (beq_nat_true _ _ Heqb).
@@ -745,10 +745,10 @@ Lemma push_value_in_range_preserve_typed_store: forall st f x m t l u v,
 Proof.
   intros.
   constructor; auto.
-  exists m t; smack.
+  exists m t; crush;eauto.
   inversion H2; subst.
   destruct t;
-  inversion H1; smack.
+  inversion H1; crush;eauto.
   apply TV_Subtype with (l:=l) (u:=u); auto.
   apply TV_Derived_Type with (l:=l) (u:=u); auto.
   apply TV_Integer_Type with (l:=l) (u:=u); auto.
@@ -775,12 +775,12 @@ Lemma push_typed_value_preserve_typed_store: forall st f x m t t' v,
 Proof.
   intros.
   constructor; auto.
-  exists m t; smack.
+  exists m t; crush;eauto.
   inversion H; subst.
   inversion H5; subst.
-  destruct t; inversion H2; smack;
-  destruct t'; inversion H4; smack;
-  inversion H3; smack;
+  destruct t; inversion H2; crush;eauto;
+  destruct t'; inversion H4; crush;eauto;
+  inversion H3; crush;eauto;
   match goal with
   | [ |- well_typed_value _ _ Undefined ] => constructor
   | [H: beq_nat _ _ = _ |- _] => symmetry in H; rewrite <- (beq_nat_eq _ _ H); auto
@@ -828,7 +828,7 @@ Proof.
   remember (Normal f') as fx; revert st params args f' Heqfx.
   induction H; intros;
   match goal with
-  | [H: _ = Normal ?f' |- _] => inversion H; smack
+  | [H: _ = Normal ?f' |- _] => inversion H; crush;eauto
   end.
 - (* Copy_In_Mode_In_NoRangeCheck_X *)
   inversion H10; subst;
@@ -838,11 +838,11 @@ Proof.
 
   assert(HZ: param0.(parameter_mode) = param.(parameter_mode_x)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   assert(HZ1: (parameter_subtype_mark param0) = (parameter_subtype_mark_x param)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   
   inversion H5; subst;
@@ -861,7 +861,7 @@ Proof.
   assert(HA: well_typed_value st t v). 
     apply_well_typed_stack_infer.
     apply_well_typed_stack_rel.
-    apply_eval_expr_well_typed_value; smack.
+    apply_eval_expr_well_typed_value; crush;eauto.
   apply_push_typed_value_preserve_typed_store; auto.
 - (* Copy_In_Mode_In_Range_X *)
   inversion H12; subst;
@@ -871,11 +871,11 @@ Proof.
 
   assert(HZ: param0.(parameter_mode) = param.(parameter_mode_x)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   assert(HZ1: (parameter_subtype_mark param0) = (parameter_subtype_mark_x param)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   
   inversion H7; subst;
@@ -911,7 +911,7 @@ Proof.
     replace (expression_astnum_x
              (update_exterior_checks_exp arg_flagged (Do_Range_Check :: nil))) with 
             (expression_astnum_x arg_flagged) in H24.
-    apply_eval_expr_well_typed_value; smack. 
+    apply_eval_expr_well_typed_value; crush;eauto. 
     clear. destruct arg_flagged; auto.
   apply_push_value_in_range_preserve_typed_store; auto.
 - (* Copy_In_Mode_InOut_NoRange_X *)
@@ -922,11 +922,11 @@ Proof.
 
   assert(HZ: param0.(parameter_mode) = param.(parameter_mode_x)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   assert(HZ1: (parameter_subtype_mark param0) = (parameter_subtype_mark_x param)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   
   inversion H5; subst;
@@ -936,7 +936,7 @@ Proof.
      H3: parameter_mode_x ?a = _ |- _] => 
       rewrite H2 in H1; rewrite H3 in H1; inversion H1
   | [H: List.In _ (name_exterior_checks (update_exterior_checks_name _ _)) -> False |- _] =>
-      rewrite name_updated_exterior_checks in H; smack
+      rewrite name_updated_exterior_checks in H; crush;eauto
   | [H: parameter_subtype_mark ?x = parameter_subtype_mark_x ?y |- _] => rewrite H in *
   | _ => idtac
   end;
@@ -946,7 +946,7 @@ Proof.
     apply_well_typed_stack_infer.
     apply_well_typed_stack_rel.
     inversion H16; subst.
-    apply_eval_name_well_typed_value; smack.
+    apply_eval_name_well_typed_value; crush;eauto.
   apply_push_typed_value_preserve_typed_store; auto.    
   assert(HA: well_typed_value st t v). 
     apply_well_typed_stack_infer.
@@ -957,7 +957,7 @@ Proof.
     replace (name_astnum_x
              (update_exterior_checks_name n_flagged (Do_Range_Check_On_CopyOut :: nil))) with 
             (name_astnum_x n_flagged) in H26.
-    apply_eval_name_well_typed_value; smack. 
+    apply_eval_name_well_typed_value; crush;eauto. 
     clear. destruct n_flagged; auto.
   apply_push_typed_value_preserve_typed_store; auto.  
 - (* Copy_In_Mode_InOut_Range_X *)  
@@ -968,11 +968,11 @@ Proof.
 
   assert(HZ: param0.(parameter_mode) = param.(parameter_mode_x)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   assert(HZ1: (parameter_subtype_mark param0) = (parameter_subtype_mark_x param)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   
   inversion H7; subst;
@@ -982,7 +982,7 @@ Proof.
      H3: parameter_mode_x ?a = _ |- _] => 
       rewrite H2 in H1; rewrite H3 in H1; inversion H1
   | [H: List.In _ (name_exterior_checks (update_exterior_checks_name _ _)) -> False |- _] =>
-      rewrite name_updated_exterior_checks in H; smack
+      rewrite name_updated_exterior_checks in H; crush;eauto
   | [H: parameter_subtype_mark ?x = parameter_subtype_mark_x ?y |- _] => rewrite H in *
   | _ => idtac
   end;
@@ -1010,7 +1010,7 @@ Proof.
     replace (name_astnum_x
              (update_exterior_checks_name n_flagged (Do_Range_Check :: nil))) with 
             (name_astnum_x n_flagged) in H27.
-    apply_eval_name_well_typed_value; smack. 
+    apply_eval_name_well_typed_value; crush;eauto. 
     clear. destruct n_flagged; auto.
   apply_push_value_in_range_preserve_typed_store; auto.
 
@@ -1023,7 +1023,7 @@ Proof.
     replace (name_astnum_x
              (update_exterior_checks_name n_flagged (Do_Range_Check :: Do_Range_Check_On_CopyOut :: nil))) with 
             (name_astnum_x n_flagged) in H27.
-    apply_eval_name_well_typed_value; smack. 
+    apply_eval_name_well_typed_value; crush;eauto. 
     clear. destruct n_flagged; auto.
   apply_push_value_in_range_preserve_typed_store; auto.
 - (* Copy_In_Mode_Out_X *)
@@ -1034,11 +1034,11 @@ Proof.
   
   assert(HZ: param0.(parameter_mode) = param.(parameter_mode_x)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   assert(HZ1: (parameter_subtype_mark param0) = (parameter_subtype_mark_x param)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
 
   inversion H3; subst;
@@ -1081,7 +1081,7 @@ Proof.
   unfold fetch in H0.
   apply_well_typed_store_infer.
   inversion HZ; subst.
-  specialize (H2 _ _ H0); smack.
+  specialize (H2 _ _ H0); crush;eauto.
 Qed.
 
 Ltac apply_well_typed_value_in_store_fetch :=
@@ -1124,11 +1124,11 @@ Proof.
 
   assert(HZ: param0.(parameter_mode) = param.(parameter_mode_x)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   assert(HZ1: (parameter_subtype_mark param0) = (parameter_subtype_mark_x param)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   
   inversion H5; subst;
@@ -1138,14 +1138,14 @@ Proof.
      H2: parameter_mode_x ?a = _ |- _] => rewrite H2 in H1; inversion H1 
   | [H1: parameter_mode_x ?a = In ,
      H2: parameter_mode_x ?a = Out \/ parameter_mode_x ?a = In_Out |- _] => 
-      rewrite H1 in H2; clear - H2; smack
+      rewrite H1 in H2; clear - H2; crush;eauto
   | _ => idtac
   end; simpl in *;
   match goal with
   | [H: ~ List.In ?x (name_exterior_checks (update_exterior_checks_name _ (?x :: _))) |- _] =>
-      rewrite name_updated_exterior_checks in H; clear - H; smack
+      rewrite name_updated_exterior_checks in H; clear - H; crush;eauto
   | [H: ~ List.In ?x (name_exterior_checks (update_exterior_checks_name _ (_ :: ?x :: _))) |- _] =>
-      rewrite name_updated_exterior_checks in H; clear - H; smack
+      rewrite name_updated_exterior_checks in H; clear - H; crush;eauto
   | [H1: compile2_flagged_symbol_table ?st ?st',
      H2: fetch_exp_type ?e ?st = _,
      H3: fetch_exp_type_x ?e ?st' = _ |- _] =>
@@ -1183,11 +1183,11 @@ Proof.
 
   assert(HZ: param0.(parameter_mode) = param.(parameter_mode_x)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   assert(HZ1: (parameter_subtype_mark param0) = (parameter_subtype_mark_x param)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   
   inversion H8; subst;
@@ -1197,7 +1197,7 @@ Proof.
      H2: parameter_mode_x ?a = _ |- _] => rewrite H2 in H1; inversion H1 
   | [H1: parameter_mode_x ?a = In ,
      H2: parameter_mode_x ?a = Out \/ parameter_mode_x ?a = In_Out |- _] => 
-      rewrite H1 in H2; clear - H2; smack
+      rewrite H1 in H2; clear - H2; crush;eauto
   | _ => idtac
   end; simpl in *;
   match goal with
@@ -1208,9 +1208,9 @@ Proof.
   end;
   match goal with
   | [H: List.In ?x nil |- _] =>
-      clear - H; smack
+      clear - H; crush;eauto
   | [H: List.In ?x (name_exterior_checks (update_exterior_checks_name _ _)) |- _] =>
-      rewrite name_updated_exterior_checks in H; smack
+      rewrite name_updated_exterior_checks in H; crush;eauto
   | [H1: compile2_flagged_symbol_table ?st ?st',
      H2: fetch_exp_type ?e ?st = _,
      H3: fetch_exp_type_x ?e ?st' = _ |- _] =>
@@ -1243,7 +1243,7 @@ Proof.
 
   assert(HZ: param0.(parameter_mode) = param.(parameter_mode_x)).
   match goal with
-  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; smack
+  | [H: compile2_flagged_parameter_specification ?param0 ?param |- _] => inversion H; crush;eauto
   end.
   
   inversion H2; subst;
@@ -1311,7 +1311,7 @@ Proof.
      H2: initialization_expression_x ?x = _ |- _] => rewrite H1 in H2; inversion H2; subst
   end.
   constructor; auto.
-  exists m (object_nominal_subtype_x d); smack.
+  exists m (object_nominal_subtype_x d); crush;eauto.
   match goal with
   | [H1: fetch_exp_type_x ?e st = _, H2: fetch_exp_type_x ?e st = _ |- _] =>
       rewrite H1 in H2; inversion H2; subst
@@ -1321,10 +1321,10 @@ Proof.
   apply_well_typed_stack_rel.
   match goal with
   | [H: compile2_flagged_object_declaration ?st ?o ?d |- _] => 
-      inversion H; subst; simpl in *; smack
+      inversion H; subst; simpl in *; crush;eauto
   end.
 
-  apply_eval_expr_well_typed_value; smack.
+  apply_eval_expr_well_typed_value; crush;eauto.
   match goal with
   | [H1: fetch_exp_type_x ?e st = _, H2: fetch_exp_type_x ?e st = _ |- _] =>
       rewrite H1 in H2; inversion H2; subst; auto
@@ -1341,7 +1341,7 @@ Proof.
      H2: initialization_expression_x ?x = _ |- _] => rewrite H1 in H2; inversion H2; subst
   end.
   constructor; auto.
-  exists m0 (object_nominal_subtype_x d); smack.
+  exists m0 (object_nominal_subtype_x d); crush;eauto.
   match goal with
   | [H1: fetch_exp_type_x ?e st = _, H2: fetch_exp_type_x ?e st = _ |- _] =>
       rewrite H1 in H2; inversion H2; subst
@@ -1351,10 +1351,10 @@ Proof.
   apply_well_typed_stack_rel.  
   match goal with
   | [H: compile2_flagged_object_declaration ?st ?o ?d |- _] => 
-      inversion H; subst; simpl in *; smack
+      inversion H; subst; simpl in *; crush;eauto
   end.
 
-  apply_eval_expr_well_typed_value; smack.
+  apply_eval_expr_well_typed_value; crush;eauto.
   match goal with
   | [H1: fetch_exp_type_x ?e st = _, H2: fetch_exp_type_x ?e st = _ |- _] =>
       rewrite H1 in H2; inversion H2; subst; auto
@@ -1394,11 +1394,11 @@ Lemma cut_until_preserve_typed_stack: forall st s s' intact_s n,
       well_typed_value_in_stack st intact_s /\ well_typed_value_in_stack st s'.
 Proof.
   intros;
-  induction H; smack.
+  induction H; crush;eauto.
 - constructor.
-- inversion H0; subst; smack. 
+- inversion H0; subst; crush;eauto. 
   constructor; auto.
-- inversion H0; subst; smack.
+- inversion H0; subst; crush;eauto.
 Qed.
 
 Ltac apply_cut_until_preserve_typed_stack :=
@@ -1450,7 +1450,7 @@ Proof.
   inversion H4; subst. (*well_typed_stack_and_symboltable*)
   apply_well_typed_stack_infer.
   apply_well_typed_stack_rel.
-  apply_eval_expr_well_typed_value; smack.
+  apply_eval_expr_well_typed_value; crush;eauto.
   match goal with
   | [H1: fetch_exp_type_x ?x ?st = _, H2: fetch_exp_type_x ?x ?st = _ |- _] =>
       rewrite H1 in H2; inversion H2; subst
@@ -1474,7 +1474,7 @@ Proof.
   inversion H1; subst;
   inversion H17; subst.
 
-  specialize (range_constrainted_type_true _ _ _ _ H2); smack.
+  specialize (range_constrainted_type_true _ _ _ _ H2); crush;eauto.
   
   inversion H7; subst. (*well_typed_stack_and_symboltable*)
   apply_well_typed_stack_infer.
@@ -1482,7 +1482,7 @@ Proof.
   apply_well_typed_exp_preserve.
   rewrite update_exterior_checks_exp_astnum_eq in H16.
   specialize (eval_exp_ex_cks_stripped _ _ _ _ _ H); intros HZ3.
-  apply_eval_expr_well_typed_value; smack.
+  apply_eval_expr_well_typed_value; crush;eauto.
   apply_value_in_range_is_well_typed.
   apply_storeUpdate_with_typed_value_preserve_typed_stack.
   constructor; auto.

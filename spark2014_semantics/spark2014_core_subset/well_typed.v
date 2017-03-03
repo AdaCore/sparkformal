@@ -97,7 +97,7 @@ Definition type_match (t: type) (t': type) :=
 Lemma type_match_ref: forall t t',
   type_match t t' = type_match t' t.
 Proof.
-  destruct t, t'; smack;
+  destruct t, t'; crush;eauto;
   remember (beq_nat t t0) as b1;
   remember (beq_nat t0 t) as b2;
   destruct b1, b2; auto;
@@ -370,15 +370,15 @@ Lemma well_typed_store_infer: forall st s,
 Proof.
   intros st s; revert st.
   induction s; intros.
-- constructor; smack.
+- constructor; crush;eauto.
 - inversion H; subst.
   specialize (IHs _ H4).
-  constructor; smack.
+  constructor; crush;eauto.
   remember (beq_nat x0 x) as b.
-  destruct b; smack.
+  destruct b; crush;eauto.
   + rewrite (beq_nat_eq _ _ Heqb).
-    exists x1 x2; smack.
-  + inversion IHs; smack.
+    exists x1 x2; crush;eauto.
+  + inversion IHs; crush;eauto.
 Qed.
 
 Ltac apply_well_typed_store_infer := 
@@ -414,16 +414,16 @@ Lemma well_typed_stack_infer: forall st s,
 Proof.
   intros st s; revert st.
   induction s; intros.
-- constructor; smack.
+- constructor; crush;eauto.
 - inversion H; subst.
   specialize (IHs _ H4).
-  constructor; smack.
+  constructor; crush;eauto.
   remember (fetch x a) as y.
   destruct y.
   + inversion H0; subst.
     apply_well_typed_store_infer.
-    inversion HZ; smack.
-  + inversion IHs; smack.
+    inversion HZ; crush;eauto.
+  + inversion IHs; crush;eauto.
 Qed.
 
 Ltac apply_well_typed_stack_infer :=

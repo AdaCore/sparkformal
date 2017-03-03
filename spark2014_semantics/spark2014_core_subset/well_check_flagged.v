@@ -185,25 +185,25 @@ Lemma context_check_flags_in: forall st cks e e',
       compile2_flagged_exp st nil e (update_exp_check_flags e' (cks' ++ nil)).
 Proof.
   intros;
-  inversion H; smack;
+  inversion H; crush;eauto;
   match goal with
-  | [|- exists cks', ?cks = cks' ++ ?cks /\ _] => exists (@nil check_flag); smack
-  | [|- exists cks', ?ck :: ?cks = cks' ++ ?cks /\ _] => exists (ck :: nil); smack
-  | [|- exists cks', ?ck1 :: ?ck2 :: ?cks = cks' ++ ?cks /\ _] => exists (ck1 :: ck2 :: nil); smack (*Division*)
+  | [|- exists cks', ?cks = cks' ++ ?cks /\ _] => exists (@nil check_flag); crush;eauto
+  | [|- exists cks', ?ck :: ?cks = cks' ++ ?cks /\ _] => exists (ck :: nil); crush;eauto
+  | [|- exists cks', ?ck1 :: ?ck2 :: ?cks = cks' ++ ?cks /\ _] => exists (ck1 :: ck2 :: nil); crush;eauto (*Division*)
   | _ => idtac
   end;
   match goal with
-  | [|- compile2_flagged_exp _ _ _ _ ] => constructor; smack
+  | [|- compile2_flagged_exp _ _ _ _ ] => constructor; crush;eauto
   | _ => idtac
   end.
 - (* Name *)
   match goal with
-  | [H: compile2_flagged_name _ _ _ _ |- _] => inversion H; smack
+  | [H: compile2_flagged_name _ _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with
-  | [|- exists cks', ?cks = cks' ++ ?cks /\ _ ] => exists (@nil check_flag); smack
+  | [|- exists cks', ?cks = cks' ++ ?cks /\ _ ] => exists (@nil check_flag); crush;eauto
   end;
-  repeat progress constructor; smack.
+  repeat progress constructor; crush;eauto.
 Qed.
 
 Lemma context_check_flag_in: forall st ck e e',
@@ -211,10 +211,10 @@ Lemma context_check_flag_in: forall st ck e e',
     List.In ck (exp_check_flags e').
 Proof.
   intros;
-  inversion H; smack.
+  inversion H; crush;eauto.
 - (* Name *)
   match goal with
-  | [H: compile2_flagged_name _ _ _ _ |- _] => inversion H; smack
+  | [H: compile2_flagged_name _ _ _ _ |- _] => inversion H; crush;eauto
   end.  
 Qed.
 
@@ -233,7 +233,7 @@ Proof.
       well_check_flagged_name n')
     ); intros;
   match goal with
-  | [H: compile2_flagged_exp _ _ _ _ |- _] => inversion H; subst; constructor; smack
+  | [H: compile2_flagged_exp _ _ _ _ |- _] => inversion H; subst; constructor; crush;eauto
   | _ => idtac
   end;
   match goal with
@@ -242,7 +242,7 @@ Proof.
   try constructor.
   specialize (context_check_flags_in _ _ _ _ H8); intros HZ.
   destruct HZ as [cks HZ1].
-  apply WCF_Indexed_Component with (cks1:=cks) (cks2:=nil); smack.
+  apply WCF_Indexed_Component with (cks1:=cks) (cks2:=nil); crush;eauto.
 Qed.
 
 Lemma well_check_flagged_generated_name: forall n n' st,

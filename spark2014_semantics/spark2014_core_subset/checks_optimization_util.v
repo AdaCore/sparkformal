@@ -45,7 +45,7 @@ Lemma Le_Neg_Ge: forall x y,
 Proof.
   intros.
   apply Zplus_le_reg_l with (p := y). 
-  smack. (*omega*)
+  crush. (*omega*)
 Qed.
 
 Lemma Lt_Le_Bool_False: forall u v,
@@ -55,7 +55,7 @@ Proof.
   intros;
   apply Zge_le_bool;
   unfold Zge_bool; unfold Zlt in H;
-  smack.
+  crush.
 Qed.
 
 
@@ -68,7 +68,7 @@ Proof.
   destruct HZ as [HZ1 HZ2].
   split.
 - specialize (Zge_cases v l); intros HZ.
-  rewrite HZ1 in HZ; smack.
+  rewrite HZ1 in HZ; crush.
 - apply Zle_bool_imp_le; auto.  
 Qed.
 
@@ -83,11 +83,11 @@ Proof.
   symmetry in Heqb1, Heqb2.
   destruct b1, b2; inversion H.
 - specialize (Zle_cases v u); intros HZ;
-  rewrite Heqb2 in HZ; smack.
+  rewrite Heqb2 in HZ; crush.
 - specialize (Zge_cases v l); intros HZ;
-  rewrite Heqb1 in HZ; smack.
+  rewrite Heqb1 in HZ; crush.
 - specialize (Zge_cases v l); intros HZ;
-  rewrite Heqb1 in HZ; smack.  
+  rewrite Heqb1 in HZ; crush.  
 Qed.
 
 
@@ -104,7 +104,7 @@ Proof.
   destruct HZ as [HZ1 HZ2].
   split.
 - specialize (Zle_cases l v); intros HZ.
-  rewrite HZ1 in HZ; smack.
+  rewrite HZ1 in HZ; crush.
 - apply Zle_bool_imp_le; auto.  
 Qed.
 
@@ -119,11 +119,11 @@ Proof.
   symmetry in Heqb1, Heqb2.
   destruct b1, b2; inversion H.
 - specialize (Zle_cases v u); intros HZ;
-  rewrite Heqb2 in HZ; smack.
+  rewrite Heqb2 in HZ; crush.
 - specialize (Zle_cases l v); intros HZ;
-  rewrite Heqb1 in HZ; smack.
+  rewrite Heqb1 in HZ; crush.
 - specialize (Zle_cases l v); intros HZ;
-  rewrite Heqb1 in HZ; smack.  
+  rewrite Heqb1 in HZ; crush.  
 Qed.
 
 Lemma In_Bound_Refl: forall v,
@@ -141,7 +141,7 @@ Lemma in_bound_conflict: forall v bound,
       False.
 Proof.
   intros.
-  inversion H; inversion H0; smack.
+  inversion H; inversion H0; crush.
 Qed.
 
 Ltac apply_in_bound_conflict :=
@@ -162,7 +162,7 @@ Proof.
   | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
   end;
   repeat progress match goal with
-  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; crush
   end;
   constructor; apply andb_true_iff; split.
 - specialize (Zle_trans _ _ _ H3 H0); intros HZ1;
@@ -210,7 +210,7 @@ Proof.
   | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
   end;
   repeat progress match goal with
-  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; crush
   end;
   constructor; apply andb_true_iff; split.
 - specialize (Zplus_le_compat _ _ _ _ H0 H2); intros HZ1;
@@ -238,7 +238,7 @@ Proof.
   | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
   end;
   repeat progress match goal with
-  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; crush
   end;
   constructor; apply andb_true_iff; split.
 - specialize (Le_Neg_Ge _ _ H3); intros HZ1;
@@ -268,10 +268,10 @@ Proof.
   | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
   end;
   repeat progress match goal with
-  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; crush
   end;
   match goal with
-  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; smack
+  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; crush
   end;
   constructor.
 - specialize (Zplus_le_compat _ _ _ _ H0 H3); intros HZ1.
@@ -306,10 +306,10 @@ Proof.
   | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
   end;
   repeat progress match goal with
-  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; crush
   end;
   match goal with
-  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; smack
+  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; crush
   end;
   constructor.
 - specialize (Le_Neg_Ge _ _ H4); intros HZ1;
@@ -345,10 +345,10 @@ Proof.
   | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
   end;
  match goal with
-  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; crush
   end;
   match goal with
-  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; smack
+  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; crush
   end;
   constructor;
   [left | right];
@@ -378,12 +378,12 @@ Proof.
   intros.
   inversion H; clear H; subst.
   constructor.
-  specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H2); smack.
+  specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H2); crush.
   specialize (Le_Neg_Ge _ _ H0); intros HZ1.
   specialize (Le_Neg_Ge _ _ H1); intros HZ2.
   specialize (Zle_imp_le_bool  _ _ HZ1); intros HZ3.
   specialize (Zle_imp_le_bool  _ _ HZ2); intros HZ4.
-  smack.
+  crush.
 Qed.
 
 Lemma in_bound_value_neq_zero: forall v vBound,
@@ -396,16 +396,16 @@ Proof.
   | [H: in_bound _ _ _ |- _] => inversion H; clear H; subst
   end;
   match goal with
-  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
+  | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; crush
   end;
   match goal with
-  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; smack
+  | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; crush
   end;
   [ specialize (Zlt_le_trans _ _ _ H1 H0); intros HZ1 |
     specialize (Zle_lt_trans _ _ _ H2 H1); intros HZ1
   ];
   unfold Zeq_bool; 
-  destruct v; smack.
+  destruct v; crush.
 Qed.
 
 Ltac apply_in_bound_value_neq_zero :=
@@ -423,10 +423,10 @@ Lemma removed_check_flag_notin: forall ck cks cks',
  remove_check_flag ck cks = cks' ->
    ~(List.In ck cks').
 Proof.
-  induction cks; smack.
+  induction cks; crush.
   remember (beq_check_flag ck a) as b;
-  destruct b; smack.
-  destruct ck; smack.
+  destruct b; crush;eauto.
+  destruct ck; crush.
 Qed.
 
 Ltac apply_removed_check_flag_notin :=
@@ -443,10 +443,10 @@ Lemma remove_notin_check_flag: forall ck cks,
   ~(List.In ck cks) ->
     remove_check_flag ck cks = cks.
 Proof.
-  induction cks; smack.
+  induction cks; crush.
   remember (beq_check_flag ck a) as b;
-  destruct b; smack.
-  destruct a; destruct ck; smack.
+  destruct b; crush.
+  destruct a; destruct ck; crush.
 Qed.
 
 Ltac apply_remove_notin_check_flag :=
@@ -462,9 +462,9 @@ Lemma check_flag_in_reserve: forall ck ck' cks,
     List.In ck (remove_check_flag ck' cks) ->
       List.In ck cks.
 Proof.
-  induction cks; smack.
+  induction cks; crush.
   remember (beq_check_flag ck' a) as b;
-  destruct b; smack.  
+  destruct b; crush.  
 Qed.
 
 Ltac apply_check_flag_in_reserve :=
@@ -480,10 +480,10 @@ Lemma check_flag_in_reserve2: forall ck ck' cks,
     List.In ck cks ->
       List.In ck (remove_check_flag ck' cks).      
 Proof.
-  induction cks; smack.
-  remember (beq_check_flag ck' ck) as b; destruct b; smack.
-  destruct ck; destruct ck'; smack.
-  remember (beq_check_flag ck' a) as b; destruct b; smack.
+  induction cks; crush.
+  remember (beq_check_flag ck' ck) as b; destruct b; crush.
+  destruct ck; destruct ck'; crush.
+  remember (beq_check_flag ck' a) as b; destruct b; crush.
 Qed.
 
 Ltac apply_check_flag_in_reserve2 :=
@@ -505,7 +505,7 @@ Lemma in_bound_unique: forall v vBound b1 b2,
       b1 = b2.
 Proof.
   intros;
-  inversion H; inversion H0; smack.
+  inversion H; inversion H0; crush.
 Qed. 
 
 Ltac apply_in_bound_unique :=
@@ -522,7 +522,7 @@ Lemma sub_bound_unique: forall bound1 bound2 b1 b2,
       b1 = b2.
 Proof.
   intros;
-  inversion H; inversion H0; smack;
+  inversion H; inversion H0; crush;
   apply_in_bound_unique.
 Qed.
 
@@ -542,7 +542,7 @@ Lemma optimize_name_ast_num_eq: forall st n n' nBound,
     fetch_exp_type_x (name_astnum_x n) st = fetch_exp_type_x (name_astnum_x n') st.
 Proof.
   intros;
-  inversion H; smack.
+  inversion H; crush.
 Qed.
 
 Ltac apply_optimize_name_ast_num_eq :=
@@ -557,9 +557,9 @@ Lemma optimize_exp_ex_cks_eq: forall st e e' eBound,
     exp_exterior_checks e' = exp_exterior_checks e.
 Proof.
   intros;
-  inversion H; smack;
+  inversion H; crush;
   match goal with
-  | [H: optimize_name_x _ _ _ |- _] => inversion H; smack
+  | [H: optimize_name_x _ _ _ |- _] => inversion H; crush
   end.
 Qed.
 
@@ -575,7 +575,7 @@ Lemma optimize_name_ex_cks_eq: forall st n n' nBound,
     name_exterior_checks n' = name_exterior_checks n.
 Proof.
   intros;
-  inversion H; smack.
+  inversion H; crush.
 Qed.
 
 Ltac apply_optimize_name_ex_cks_eq :=
@@ -629,18 +629,18 @@ Lemma remove_check_on_binop_reserve: forall cks op v1 v2 v ck,
     do_flagged_checks_on_binop (remove_check_flag ck cks) op v1 v2 (Normal v).
 Proof.
   intros;
-  induction cks; smack;
+  induction cks; crush;
   match goal with
-  | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; crush
   end;
   match goal with
-  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; crush
   end;
   match goal with
   | [|- context[beq_check_flag _ Do_Overflow_Check]] => destruct (beq_check_flag ck Do_Overflow_Check); auto
   | [|- context[beq_check_flag _ Do_Division_Check]] => destruct (beq_check_flag ck Do_Division_Check); auto
   end;
-  apply Do_Checks_Binop with (v:=v4); smack.
+  apply Do_Checks_Binop with (v:=v4); crush.
 Qed.
 
 Lemma safe_remove_binop_check: forall cks op v1 v2 v ck v',
@@ -648,31 +648,31 @@ Lemma safe_remove_binop_check: forall cks op v1 v2 v ck v',
     do_flagged_check_on_binop ck op v1 v2 (Normal v') ->
       do_flagged_checks_on_binop (remove_check_flag ck cks) op v1 v2 v.
 Proof.
-  induction cks; smack;
+  induction cks; crush;eauto;
   match goal with
-  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with
-  | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with
-  | [H: do_flagged_check_on_binop ?a _ _ _ _ |- context[?a]] => destruct a; inversion H; smack
+  | [H: do_flagged_check_on_binop ?a _ _ _ _ |- context[?a]] => destruct a; inversion H; crush;eauto
   end;
   match goal with
-  | [H1: _ = _, H2: _ = _ |- _] => rewrite H1 in H2; inversion H2; smack
+  | [H1: _ = _, H2: _ = _ |- _] => rewrite H1 in H2; inversion H2; crush;eauto
   | _ => idtac
   end;
   match goal with
   | [H1: do_overflow_check _ _, 
      H2: do_overflow_check _ _ |- _] => inversion H1; inversion H2; clear H1 H2; subst; apply_in_bound_unique
   | [H1: do_division_check _ _ _,
-     H2: do_division_check _ _ _ |- _] => inversion H1; inversion H2; clear H1 H2; smack
+     H2: do_division_check _ _ _ |- _] => inversion H1; inversion H2; clear H1 H2; crush;eauto
   | _ => idtac
   end;
   solve
   [ apply Do_Checks_Binop_RTE; auto |
-    apply Do_Checks_Binop with (v:=v5); smack |
-    apply Do_Checks_Binop with (v:=v4); smack
+    apply Do_Checks_Binop with (v:=v5); crush;eauto |
+    apply Do_Checks_Binop with (v:=v4); crush;eauto
   ].
 Qed.
 
@@ -689,17 +689,17 @@ Lemma remove_check_on_unop_reserve: forall cks op v v' ck,
     do_flagged_checks_on_unop (remove_check_flag ck cks) op v (Normal v').
 Proof.
   intros;
-  induction cks; smack;
+  induction cks; crush;
   match goal with
-  | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; crush
   end;
   match goal with
-  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; crush
   end;
   match goal with
   | [|- context[beq_check_flag _ Do_Overflow_Check]] => destruct (beq_check_flag ck Do_Overflow_Check); auto
   end;
-  apply Do_Checks_Unop with (v':=v'0); smack.
+  apply Do_Checks_Unop with (v':=v'0); crush.
 Qed.
 
 Lemma safe_remove_unop_check: forall cks op v v' ck v'',
@@ -707,15 +707,15 @@ Lemma safe_remove_unop_check: forall cks op v v' ck v'',
     do_flagged_check_on_unop ck op v (Normal v'') ->
       do_flagged_checks_on_unop (remove_check_flag ck cks) op v v'.
 Proof.
-  induction cks; smack;
+  induction cks; crush;eauto;
   match goal with
-  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with
-  | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with
-  | [H: do_flagged_check_on_unop ?a _ _ _ |- context[?a]] => destruct a; inversion H; smack
+  | [H: do_flagged_check_on_unop ?a _ _ _ |- context[?a]] => destruct a; inversion H; crush;eauto
   end. 
   match goal with
   | [H1: Math.unary_minus _ = _, H2: Math.unary_minus _ = _ |- _] => rewrite H1 in H2; inversion H2; subst
@@ -741,10 +741,10 @@ Lemma do_overflow_checks_reserve: forall v cks v' ck,
     do_overflow_checks cks v v' ->  
       do_overflow_checks (remove_check_flag ck cks) v v'.
 Proof.
-  intros; inversion H0; smack;
-  inversion H1; smack.
+  intros; inversion H0; crush;eauto;
+  inversion H1; crush;eauto.
   repeat progress match goal with
-  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; crush;eauto
   end.
   match goal with
   | [|- context[beq_check_flag _ Do_Overflow_Check]] => destruct (beq_check_flag ck Do_Overflow_Check); auto
@@ -757,7 +757,7 @@ Lemma do_range_checks_reserve: forall cks v l u ck,
     do_range_checks (remove_check_flag ck cks) v l u (Normal (Int v)).
 Proof.
   intros; 
-  inversion H; smack;
+  inversion H; crush;eauto;
   match goal with
   | [|- context[beq_check_flag _ Do_Range_Check]] => destruct (beq_check_flag ck Do_Range_Check); auto
   end;
@@ -770,7 +770,7 @@ Lemma do_range_check_same_result: forall e eBound rBound e' v l u,
       do_range_checks (exp_exterior_checks e') v l u (Normal (Int v)).
 Proof.
   intros;
-  inversion H; smack;
+  inversion H; crush;eauto;
   rewrite exp_updated_exterior_checks;
   apply do_range_checks_reserve; auto.
 Qed.
@@ -792,8 +792,8 @@ Lemma optimize_overflow_check_reserve: forall vBound cks retBound cks',
       cks = cks'.
 Proof.
   intros;
-  inversion H0; smack;
-  apply_sub_bound_unique; smack.
+  inversion H0; crush;eauto;
+  apply_sub_bound_unique; crush;eauto.
 Qed.
 
 Ltac apply_optimize_overflow_check_reserve :=
@@ -812,14 +812,14 @@ Lemma optimize_range_check_reserve: forall v vBound vBound' e e',
 Proof.
   intros;
   match goal with
-  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; smack
+  | [H: optimize_range_check _ _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with
-  | [H: sub_bound _ _ _ |- _] => inversion H; smack
+  | [H: sub_bound _ _ _ |- _] => inversion H; crush;eauto
   end;
-  apply_In_Bound_Trans; smack;
+  apply_In_Bound_Trans; crush;eauto;
   repeat progress match goal with
-  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; crush;eauto
   end.
 Qed.
 
@@ -840,14 +840,14 @@ Lemma optimize_range_check_on_copy_out_reserve: forall v vBound vBound' e e',
 Proof.
   intros;
   match goal with
-  | [H: optimize_range_check_on_copy_out _ _ _ _ |- _] => inversion H; smack
+  | [H: optimize_range_check_on_copy_out _ _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with
-  | [H: sub_bound _ _ _ |- _] => inversion H; smack
+  | [H: sub_bound _ _ _ |- _] => inversion H; crush;eauto
   end;
-  apply_In_Bound_Trans; smack;
+  apply_In_Bound_Trans; crush;eauto;
   repeat progress match goal with
-  | [H: in_bound _ _ _ |- _] => inversion H; clear H; smack
+  | [H: in_bound _ _ _ |- _] => inversion H; clear H; crush;eauto
   end.
 Qed.
 
@@ -872,20 +872,20 @@ Lemma do_flagged_checks_on_binop_reserve: forall v1 v1Bound v2 v2Bound cks bound
 Proof.
   intros;
   match goal with
-  | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_checks_on_binop _ _ _ _ _ |- _] => inversion H; crush;eauto
   end.
 - match goal with 
-  | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; clear H; crush;eauto
   end;
   match goal with
-  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; crush;eauto
   | _ => idtac
   end; constructor; auto.
 - match goal with
-  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with 
-  | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; clear H; crush;eauto
   end;
   try (constructor; auto);
   match goal with
@@ -894,51 +894,51 @@ Proof.
   end;
   [ apply_Sub_Bound_Plus_Compat |
     apply_Sub_Bound_Minus_Compat |
-    apply_in_bound_value_neq_zero; smack
+    apply_in_bound_value_neq_zero; crush;eauto
   ];
-  apply_optimize_overflow_check_reserve; smack;
+  apply_optimize_overflow_check_reserve; crush;eauto;
   constructor; auto.
 - match goal with 
-  | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_rtc_binop _ _ _ _ _ |- _] => inversion H; clear H; crush;eauto
   end;
   match goal with
-  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; crush;eauto
   | _ => idtac
   end;
   try (apply Do_Checks_Binop with (v:=v); auto);
   destruct ck;
   match goal with
-  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_check_on_binop _ _ _ _ _ |- _] => inversion H; crush;eauto
   end;
-  try (apply_safe_remove_binop_check; smack);
+  try (apply_safe_remove_binop_check; crush;eauto);
   match goal with
-  | [H: do_overflow_check _ _ |- _] => inversion H; smack
+  | [H: do_overflow_check _ _ |- _] => inversion H; crush;eauto
   end.
   (*1*)
-  apply Do_Checks_Binop with (v:=(Int (v1 ÷ v2))); smack.
-  apply safe_remove_binop_check with (v':=(Int (v1 ÷ v2))); smack.
+  apply Do_Checks_Binop with (v:=(Int (v1 ÷ v2))); crush;eauto.
+  apply safe_remove_binop_check with (v':=(Int (v1 ÷ v2))); crush;eauto.
   constructor. constructor; auto.
-  apply_in_bound_value_neq_zero; smack.
+  apply_in_bound_value_neq_zero; crush;eauto.
   (*2*)
   match goal with
   | [H: do_flagged_check_on_binop _ Divide _ _ (Run_Time_Error _) |- _] => inversion H; subst
   end.
   match goal with
-  | [H: Math.binary_operation Divide _ _ = _ |- _] =>  unfold Math.binary_operation in H; smack
+  | [H: Math.binary_operation Divide _ _ = _ |- _] =>  unfold Math.binary_operation in H; crush;eauto
   end.
   match goal with
   | [H1: do_overflow_check _ _, 
      H2: do_overflow_check _ _ |- _] => inversion H1; inversion H2; clear H1 H2; subst; apply_in_bound_unique
   end.
   match goal with
-  | [H: do_division_check _ _ _ |- _] => inversion H; smack
+  | [H: do_division_check _ _ _ |- _] => inversion H; crush;eauto
   end.
-  apply_in_bound_value_neq_zero; smack.
+  apply_in_bound_value_neq_zero; crush;eauto.
   (*3*)
-  apply Do_Checks_Binop with (v:=(Int (v1 ÷ v2))); smack.
-  apply safe_remove_binop_check with (v':=(Int (v1 ÷ v2))); smack.
+  apply Do_Checks_Binop with (v:=(Int (v1 ÷ v2))); crush;eauto.
+  apply safe_remove_binop_check with (v':=(Int (v1 ÷ v2))); crush;eauto.
   constructor. constructor; auto.
-  apply_in_bound_value_neq_zero; smack.
+  apply_in_bound_value_neq_zero; crush;eauto.
 Qed.
 
 Ltac apply_do_flagged_checks_on_binop_reserve :=
@@ -959,20 +959,20 @@ Lemma do_flagged_checks_on_unop_reserve: forall v vBound op cks bound1 cks' v',
 Proof.
   intros;
   match goal with
-  | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_checks_on_unop _ _ _ _ |- _] => inversion H; crush;eauto
   end.
 - match goal with 
-  | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; clear H; crush;eauto
   end;
   match goal with
-  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; crush;eauto
   | _ => idtac
   end; constructor; auto.
 - match goal with
-  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with 
-  | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; clear H; crush;eauto
   end;
   match goal with
   | [H: optimize_overflow_check _ _ _ |- _] => inversion H; subst
@@ -984,16 +984,16 @@ Proof.
     apply Do_Checks_Unop_RTE; auto
   ].
 - match goal with 
-  | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_rtc_unop _ _ _ _ |- _] => inversion H; clear H; crush;eauto
   end;
   match goal with
-  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; smack
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; clear H; crush;eauto
   end;
   destruct ck;
   match goal with
-  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; smack
+  | [H: do_flagged_check_on_unop _ _ _ _ |- _] => inversion H; crush;eauto
   end;
-  apply_safe_remove_unop_check; smack.
+  apply_safe_remove_unop_check; crush;eauto.
 Qed.
 
 Ltac apply_do_flagged_checks_on_unop_reserve :=
@@ -1017,7 +1017,7 @@ Lemma binop_arithm_in_bound: forall op v1 v2 v v1Bound v2Bound vBound in_cks,
   in_bound v vBound true.
 Proof.
   intros.
-  inversion H3; clear H3; subst; smack.
+  inversion H3; clear H3; subst; crush;eauto.
 - inversion H12; clear H12; subst;
   inversion H2; clear H2; subst;
   inversion H5; clear H5; subst;
@@ -1072,10 +1072,10 @@ Proof.
   rewrite H4 in H0; inversion H0; subst.
   inversion H4; subst.
   
-  inversion H1; clear H1; smack.
-  inversion H10; smack.
+  inversion H1; clear H1; crush;eauto.
+  inversion H10; crush;eauto.
 - apply In_Bound_Unary_Minus_Compat; auto.
-- inversion H2; smack.  
+- inversion H2; crush;eauto.  
 Qed.
 
 Ltac apply_unop_arithm_in_bound :=
@@ -1095,13 +1095,13 @@ Lemma literal_checks_optimization_soundness: forall cks l v lBound cks',
       eval_literal_x cks' l v.
 Proof.
   intros;
-  inversion H; inversion H0; smack;
+  inversion H; inversion H0; crush;eauto;
   constructor;
   match goal with
-  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; smack
+  | [H: optimize_overflow_check _ _ _ |- _] => inversion H; crush;eauto
   end;
   match goal with
-  | [H: sub_bound _ _ _ |- _] => inversion H; clear H; smack
+  | [H: sub_bound _ _ _ |- _] => inversion H; clear H; crush;eauto
   end;
   specialize (do_overflow_checks_reserve _ _ _ Do_Overflow_Check H5 H1); auto.
 Qed.

@@ -9,7 +9,7 @@ Lemma extract_subtype_range_f_soundness: forall st t l u,
     extract_subtype_range_x st t (Range_X l u).
 Proof.
   intros;
-  functional induction extract_subtype_range_f st t; smack;
+  functional induction extract_subtype_range_f st t; crush;eauto;
   apply Extract_Range_X with (td:=td) (tn:=tn); auto.
 Qed.
 
@@ -19,7 +19,7 @@ Lemma extract_subtype_range_f_completeness: forall st t l u,
 Proof.
   intros;
   destruct H; auto;
-  unfold extract_subtype_range_f; smack.
+  unfold extract_subtype_range_f; crush;eauto.
 Qed.
 
 Lemma bound_of_type_f_soundness: forall st t bd,
@@ -27,7 +27,7 @@ Lemma bound_of_type_f_soundness: forall st t bd,
     bound_of_type st t bd.
 Proof.
   intros;
-  functional induction bound_of_type_f st t; smack;
+  functional induction bound_of_type_f st t; crush;eauto;
   try constructor;
   try apply Bound_Of_Composite_Type with (t1:=t0); auto;
   apply extract_subtype_range_f_soundness; auto.
@@ -49,7 +49,7 @@ Proof.
   match goal with
   | [H: subtype_num _ = Some _ |- _] => inversion H; subst
   end.
-  destruct H; smack.
+  destruct H; crush;eauto.
 Qed.
 
 Lemma bound_of_array_component_type_f_soundness: forall st t bd,
@@ -57,7 +57,7 @@ Lemma bound_of_array_component_type_f_soundness: forall st t bd,
     bound_of_array_component_type st t bd.
 Proof.
   intros;
-  functional induction bound_of_array_component_type_f st t; smack;
+  functional induction bound_of_array_component_type_f st t; crush;eauto;
   apply Array_Component_Value with (ast_num:=ast_num) (tn:=tn) (indexSubtypeMark:=indexSubtypeMark)
                                    (componentType:=componentType); auto;
   apply bound_of_type_f_soundness; auto.
@@ -70,7 +70,7 @@ Proof.
   intros;
   induction H; auto;
   specialize (bound_of_type_f_completeness _ _ _ H0); intro;
-  unfold bound_of_array_component_type_f; smack.
+  unfold bound_of_array_component_type_f; crush;eauto.
 Qed.
 
 Lemma bound_of_record_field_type_f_soundness: forall st t f bd,
@@ -78,7 +78,7 @@ Lemma bound_of_record_field_type_f_soundness: forall st t f bd,
     bound_of_record_field_type st t f bd.
 Proof.
   intros;
-  functional induction bound_of_record_field_type_f st t f; smack;
+  functional induction bound_of_record_field_type_f st t f; crush;eauto;
   apply Record_Field_Value with (ast_num:=ast_num) (tn:=tn) (fields:=fields) (ft:=ft); auto;
   apply bound_of_type_f_soundness; auto.
 Qed.
@@ -90,7 +90,7 @@ Proof.
   intros;
   induction H; auto;
   specialize (bound_of_type_f_completeness _ _ _ H1); intro;
-  unfold bound_of_record_field_type_f; smack.
+  unfold bound_of_record_field_type_f; crush;eauto.
 Qed.
 
 Lemma in_bound_f_soundness: forall v bd b,
@@ -98,7 +98,7 @@ Lemma in_bound_f_soundness: forall v bd b,
     in_bound v bd b.
 Proof.
   intros;
-  functional induction in_bound_f v bd; smack;
+  functional induction in_bound_f v bd; crush;eauto;
   remember ((l <=? v)%Z && (v <=? u)%Z) as b;
   destruct b; constructor; auto.
 Qed.
@@ -108,7 +108,7 @@ Lemma in_bound_f_completeness: forall v bd b,
     in_bound_f v bd = Some b.
 Proof.
   intros;
-  induction H; smack.  
+  induction H; crush;eauto.  
 Qed.
 
 Lemma sub_bound_f_soundness: forall bd1 bd2 b,
@@ -116,11 +116,11 @@ Lemma sub_bound_f_soundness: forall bd1 bd2 b,
     sub_bound bd1 bd2 b.
 Proof.
   intros.
-  functional induction sub_bound_f bd1 bd2; smack.
+  functional induction sub_bound_f bd1 bd2; crush;eauto.
   repeat progress constructor; auto. 
   constructor.
   remember ((u' <=? u)%Z && (u <=? v')%Z) as b1; destruct b1.
-  right. constructor. destruct ((u' <=? v)%Z && (v <=? v')%Z); smack.
+  right. constructor. destruct ((u' <=? v)%Z && (v <=? v')%Z); crush;eauto.
   left. constructor; auto.
 Qed.
 
@@ -145,7 +145,7 @@ Lemma optimize_overflow_check_f_soundness: forall bd cks bd' cks',
     optimize_overflow_check bd cks (bd', cks').
 Proof.
   intros;
-  functional induction optimize_overflow_check_f bd cks; smack;
+  functional induction optimize_overflow_check_f bd cks; crush;eauto;
   specialize (sub_bound_f_soundness _ _ _ e); intro;
   [destruct bd' | destruct bd]; inversion e;
   [ apply OOC_True; auto |
@@ -161,7 +161,7 @@ Proof.
   induction H; auto;
   specialize (sub_bound_f_completeness _ _ _ H); intro;
   unfold optimize_overflow_check_f;
-  [rewrite H1 | rewrite H0]; smack.
+  [rewrite H1 | rewrite H0]; crush;eauto.
 Qed.
 
 Lemma optimize_range_check_f_soundness: forall e bd1 bd2 e',
@@ -169,7 +169,7 @@ Lemma optimize_range_check_f_soundness: forall e bd1 bd2 e',
     optimize_range_check e bd1 bd2 e'.
 Proof.
   intros;
-  functional induction optimize_range_check_f e bd1 bd2; smack;
+  functional induction optimize_range_check_f e bd1 bd2; crush;eauto;
   specialize (sub_bound_f_soundness _ _ _ e0); intro;
   destruct bd1, bd2; inversion e0;
   [ apply ORC_True with (cks:=(remove_check_flag Do_Range_Check (exp_exterior_checks e))); auto |
@@ -184,7 +184,7 @@ Proof.
   intros;
   induction H; auto;
   specialize (sub_bound_f_completeness _ _ _ H); intro;
-  unfold optimize_range_check_f; smack.
+  unfold optimize_range_check_f; crush;eauto.
 Qed.
 
 Lemma optimize_range_check_on_copy_out_f_soundness: forall e bd1 bd2 e',
@@ -192,7 +192,7 @@ Lemma optimize_range_check_on_copy_out_f_soundness: forall e bd1 bd2 e',
     optimize_range_check_on_copy_out e bd1 bd2 e'.
 Proof.
   intros;
-  functional induction optimize_range_check_on_copy_out_f e bd1 bd2; smack;
+  functional induction optimize_range_check_on_copy_out_f e bd1 bd2; crush;eauto;
   specialize (sub_bound_f_soundness _ _ _ e0); intro;
   destruct bd1, bd2; inversion e0;
   [ apply ORCOCO_True with (cks:=(remove_check_flag Do_Range_Check_On_CopyOut (exp_exterior_checks e))); auto |
@@ -207,7 +207,7 @@ Proof.
   intros;
   induction H; subst;
   specialize (sub_bound_f_completeness _ _ _ H); intro;
-  unfold optimize_range_check_on_copy_out_f; smack.
+  unfold optimize_range_check_on_copy_out_f; crush;eauto.
 Qed.
 
 Lemma optimize_rtc_binop_f_soundness: forall op bd1 bd2 cks bd cks',
@@ -215,19 +215,19 @@ Lemma optimize_rtc_binop_f_soundness: forall op bd1 bd2 cks bd cks',
     optimize_rtc_binop op bd1 bd2 cks (bd, cks').
 Proof.
   intros;
-  functional induction optimize_rtc_binop_f op bd1 bd2 cks; smack.
+  functional induction optimize_rtc_binop_f op bd1 bd2 cks; crush;eauto.
 
   specialize (optimize_overflow_check_f_soundness _ _ _ _ e4); intros.
-  eapply O_RTC_Plus; smack.
+  eapply O_RTC_Plus; crush;eauto.
   
   specialize (optimize_overflow_check_f_soundness _ _ _ _ e4); intros.
-  eapply O_RTC_Minus; smack.  
+  eapply O_RTC_Minus; crush;eauto.  
   
   eapply O_RTC_Multiply; auto.
   
   eapply O_RTC_Divide_T; constructor; auto.
   eapply O_RTC_Divide_F; constructor; auto.
-  destruct op; inversion y; constructor; smack. 
+  destruct op; inversion y; constructor; crush;eauto. 
 Qed.
 
 Lemma optimize_rtc_binop_f_completeness: forall op bd1 bd2 cks bd cks',
@@ -246,7 +246,7 @@ Proof.
   unfold optimize_rtc_binop_f;
   try rewrite H; try rewrite H0; 
   try rewrite H1; try rewrite H2; auto.
-  destruct op; smack.
+  destruct op; crush;eauto.
 Qed.
 
 Lemma optimize_rtc_unop_f_soundness: forall op bd cks bd' cks',
@@ -254,11 +254,11 @@ Lemma optimize_rtc_unop_f_soundness: forall op bd cks bd' cks',
     optimize_rtc_unop op bd cks (bd', cks').
 Proof.
   intros;
-  functional induction optimize_rtc_unop_f op bd cks; smack.
+  functional induction optimize_rtc_unop_f op bd cks; crush;eauto.
   specialize (optimize_overflow_check_f_soundness _ _ _ _ e3); intros.
-  eapply O_RTC_Unary_Minus; smack.
+  eapply O_RTC_Unary_Minus; crush;eauto.
   destruct op; inversion y;
-  constructor; smack.
+  constructor; crush;eauto.
 Qed.
 
 Lemma optimize_rtc_unop_f_completeness: forall op bd cks bd' cks',
@@ -270,7 +270,7 @@ Proof.
   unfold optimize_rtc_unop_f.
   specialize (optimize_overflow_check_f_completeness _ _ _ _ H1); intros.
   rewrite H, H0, H2; auto. 
-  destruct op; smack.  
+  destruct op; crush;eauto.  
 Qed.
 
 Lemma extract_array_index_range_f_soundness: forall st t l u,
@@ -278,8 +278,8 @@ Lemma extract_array_index_range_f_soundness: forall st t l u,
     extract_array_index_range_x st t (Range_X l u).
 Proof.
   intros;
-  functional induction extract_array_index_range_f st t; smack;
-  econstructor; smack.
+  functional induction extract_array_index_range_f st t; crush;eauto;
+  econstructor; crush;eauto.
 Qed.
 
 Lemma extract_array_index_range_f_completeness: forall st t l u,
@@ -308,7 +308,7 @@ Lemma optimize_literal_f_soundness: forall l cks lbound cks',
     optimize_literal_x l cks (lbound, cks').
 Proof.
   intros;
-  functional induction optimize_literal_f l cks; smack;
+  functional induction optimize_literal_f l cks; crush;eauto;
   constructor; auto;
   apply optimize_overflow_check_f_soundness; auto.
 Qed.
@@ -337,7 +337,7 @@ Proof.
       (fun n: name_x => forall (n': name_x) (nbound: bound) (st: symboltable_x),
         optimize_name_f st n = Some (n', nbound) ->
         optimize_name_x st n (n', nbound))
-      ); smack.
+      ); crush;eauto.
   - (*1. literal *)
     remember (optimize_literal_f l i) as x.
     destruct x; inversion H; subst.
@@ -360,7 +360,7 @@ Proof.
     destruct p; inversion H1; subst.
     symmetry in Heqx1, Heqx2.
     specialize (H _ _ _ Heqx1); specialize (H0 _ _ _ Heqx2).
-    eapply O_Binary_Operation_X; smack.
+    eapply O_Binary_Operation_X; crush;eauto.
     apply optimize_rtc_binop_f_soundness; auto.
   - (* 4. unary expression *)
     remember (optimize_expression_f st e) as x.
@@ -371,14 +371,14 @@ Proof.
     destruct y; inversion H0; subst.
     destruct p; inversion H0; subst.
     symmetry in Heqx. specialize (H _ _ _ Heqx).
-    eapply O_Unary_Operation_X; smack.
+    eapply O_Unary_Operation_X; crush;eauto.
     apply optimize_rtc_unop_f_soundness; auto.
   - (* 5. identifier *)
     remember (fetch_exp_type_x a st) as x.
     destruct x; inversion H; subst.
     remember (bound_of_type_f st t) as y.
     destruct y; inversion H; subst.
-    eapply O_Identifier_X; smack.
+    eapply O_Identifier_X; crush;eauto.
     apply bound_of_type_f_soundness; auto.
   - (* 6. indexed component *)
     remember (optimize_name_f st n) as x1; 
@@ -413,7 +413,7 @@ Proof.
     remember (bound_of_record_field_type_f st t i) as y.
     destruct y; inversion H0; subst. 
     symmetry in Heqx1; specialize (H _ _ _ Heqx1).
-    eapply O_Selected_Component_X; smack.
+    eapply O_Selected_Component_X; crush;eauto.
     apply bound_of_record_field_type_f_soundness; auto.
 Qed.
 
@@ -504,7 +504,7 @@ Lemma optimize_name_f_soundness: forall st n n' nbound,
     optimize_name_x st n (n', nbound).
 Proof.
   intros st n.
-  induction n; smack.
+  induction n; crush;eauto.
   - remember (fetch_exp_type_x a st) as x.
     destruct x; inversion H; subst. clear H1.
     remember (bound_of_type_f st t) as y.
@@ -528,7 +528,7 @@ Proof.
     destruct z2; inversion H; subst. clear H1.
     remember (bound_of_array_component_type_f st t) as z3.
     destruct z3; inversion H; subst.
-    specialize (IHn n0 b); smack.
+    specialize (IHn n0 b); crush;eauto.
     apply O_Indexed_Component_X with (xBound:=b) (e':=e1) (u:=l) (v:=u) (t:=t) (u':=l0) (v':=u0); auto.
     apply optimize_expression_f_soundness; auto.
     apply extract_array_index_range_f_soundness; auto.
@@ -542,7 +542,7 @@ Proof.
     destruct t; inversion H; subst. clear H1.
     remember (bound_of_record_field_type_f st t i) as z.
     destruct z; inversion H; subst.
-    specialize (IHn n0 b); smack.
+    specialize (IHn n0 b); crush;eauto.
     apply O_Selected_Component_X with (xBound:=b) (t:=t); auto.
     apply bound_of_record_field_type_f_soundness; auto.
 Qed.
@@ -576,7 +576,7 @@ Lemma optimize_args_f_soundness: forall st params args args',
     optimize_args_x st params args args'.
 Proof.
   induction params; intros.
-  - destruct args; smack.
+  - destruct args; crush;eauto.
     constructor.
   - destruct args;
     inversion H; subst.
@@ -690,7 +690,7 @@ Proof.
   intros.
   induction H; subst.
   unfold is_range_constrainted_type.
-  destruct t; smack.
+  destruct t; crush;eauto.
 Qed.
 
 Lemma optimize_args_f_completeness: forall st params args args',
@@ -740,12 +740,12 @@ Proof.
     specialize (extract_subtype_range_f_completeness _ _ _ _ H); clear H;
     let HZ := fresh HZ in intro HZ 
   | _ => idtac
-  end; smack. 
+  end; crush;eauto. 
   destruct (is_range_constrainted_type t); auto.
   specialize (range_constrainted_type_true _ _ _ _ H3); intro HZ4.
   rewrite HZ4; auto.
   specialize (extract_subtype_range_f_completeness _ _ _ _ H3); intros HZ5.
-  smack.
+  crush;eauto.
 Qed.
 
 (** * optimize_statement_f *)  
@@ -790,7 +790,7 @@ Proof.
     destruct y; [ | inversion H]; subst.
     remember (optimize_statement_f st c2) as z.
     destruct z; inversion H; subst.
-    specialize (IHc1 s); specialize (IHc2 s0); smack.
+    specialize (IHc1 s); specialize (IHc2 s0); crush;eauto.
     apply O_If_X with (eBound:=b); auto.
     apply optimize_expression_f_soundness; auto.
   - remember (optimize_expression_f st e) as x.
@@ -798,7 +798,7 @@ Proof.
     destruct p.
     remember (optimize_statement_f st c) as y.
     destruct y; inversion H; subst.
-    specialize (IHc s); smack.
+    specialize (IHc s); crush;eauto.
     apply O_While_Loop_X with (eBound:=b); auto.
     apply optimize_expression_f_soundness; auto.
   - remember (fetch_proc_x p st) as x.
@@ -812,7 +812,7 @@ Proof.
     destruct x; [ | inversion H]; subst.
     remember (optimize_statement_f st c2) as y.
     destruct y; inversion H; subst.
-    specialize (IHc1 s); specialize (IHc2 s0); smack.
+    specialize (IHc1 s); specialize (IHc2 s0); crush;eauto.
     apply O_Sequence_X; auto.
 Qed.
 
@@ -855,7 +855,7 @@ Proof.
          optimize_statement_f ?st ?c = Some c',
     H2: optimize_statement_x ?st ?c _ |- _] => specialize (H1 _ H2)
   | _ => idtac
-  end; smack.
+  end; crush;eauto.
 Qed.
 
 (** * optimize_object_declaration_f *)  
@@ -884,7 +884,7 @@ Lemma optimize_object_declaration_f_completeness: forall st o o',
     optimize_object_declaration_f st o = Some o'.
 Proof.
   intros.
-  induction H; smack;
+  induction H; crush;eauto;
   match goal with
   | [H: extract_subtype_range_x _ _ _ |- _] => 
     specialize (range_constrainted_type_true _ _ _ _ H);
@@ -902,7 +902,7 @@ Proof.
     specialize (extract_subtype_range_f_completeness _ _ _ _ H); clear H;
     let HZ := fresh HZ in intro HZ 
   | _ => idtac
-  end; smack.
+  end; crush;eauto.
 Qed.
 
 
@@ -921,7 +921,7 @@ Proof.
       (fun p: procedure_body_x => forall (p': procedure_body_x) (st: symboltable_x),
         optimize_procedure_body_f st p = Some p' ->
         optimize_procedure_body_x st p p')
-      ); smack;
+      ); crush;eauto;
   try (constructor; auto).
  - remember (optimize_object_declaration_f st o) as x.
    destruct x; inversion H; subst.
@@ -959,10 +959,10 @@ Proof.
       (fun p: procedure_body_x => forall (p': procedure_body_x) (st: symboltable_x),
         optimize_procedure_body_x st p p' ->
         optimize_procedure_body_f st p = Some p')
-      ); smack;
+      ); crush;eauto;
   match goal with
-  | [H: optimize_declaration_x _ _ _ |- _] => inversion H; subst; smack
-  | [H: optimize_procedure_body_x _ _ _ |- _] => inversion H; subst; smack
+  | [H: optimize_declaration_x _ _ _ |- _] => inversion H; subst; crush;eauto
+  | [H: optimize_procedure_body_x _ _ _ |- _] => inversion H; subst; crush;eauto
   | _ => idtac
   end;
   match goal with 

@@ -1,6 +1,5 @@
 coq_makefile -o Makefile -R . spark $* \
 CpdtTactics.v \
-LibTactics.v \
 more_list.v \
 more_store.v \
 language_basics.v \

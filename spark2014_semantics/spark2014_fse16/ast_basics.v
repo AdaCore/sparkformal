@@ -1,8 +1,19 @@
+(** 
+_AUTHOR_
+
+<<
+Zhi Zhang
+Department of Computer and Information Sciences
+Kansas State University
+zhangzhi@ksu.edu
+>>
+*)
+
 Require Export ZArith.
 Require Export Coq.Lists.List.
 Require Export Coq.Bool.Bool.
 Require Export CpdtTactics.
-Require Export more_list.
+Require Export list_util.
 
 (** This file defines some basic data types and operations used for
     formalization of SPARK 2014 language;
@@ -83,7 +94,7 @@ Inductive mode: Type :=
 
 (** unary and binary operators *)
 Inductive unary_operator: Type :=      
-    | Unary_Plus: unary_operator
+(*  | Unary_Plus: unary_operator *)
     | Unary_Minus: unary_operator
     | Not: unary_operator.
 
@@ -99,7 +110,8 @@ Inductive binary_operator: Type :=
     | Plus: binary_operator
     | Minus: binary_operator
     | Multiply: binary_operator
-    | Divide: binary_operator.
+    | Divide: binary_operator
+    | Modulus: binary_operator.
 
 (** * Literals *)
 
@@ -162,15 +174,15 @@ Section LB_AuxiliaryFunctions.
     true = beq_type t t.
   Proof.
     intros; destruct t; 
-    crush; apply beq_nat_refl.
+    smack; apply beq_nat_refl.
   Qed.
   
   Lemma beq_type_eq: forall t1 t2,
     true = beq_type t1 t2 -> 
       t1 = t2.
   Proof.
-    intros; destruct t1, t2; crush;
-    specialize (beq_nat_eq _ _ H); crush.
+    intros; destruct t1, t2; smack;
+    specialize (beq_nat_eq _ _ H); smack.
   Qed.
 
 End LB_AuxiliaryFunctions.

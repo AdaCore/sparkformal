@@ -428,13 +428,14 @@ Inductive optProgram: symTabRT -> programRT -> programRT -> Prop :=
       optDecl st p.(declsRT) declsRT' ->
       optProgram st p (mkprogramRT declsRT' p.(mainRT)).
 
+Import Symbol_Table_Module_RT.
 
 Inductive optSymTab: symTabRT -> symTabRT -> Prop :=
   | OptSymTab: forall st st',
       (forall p n pb, 
         fetch_proc_rt p st = Some (n, pb) -> 
           exists pb', fetch_proc_rt p st' = Some (n, pb') /\ optProcBodyDecl st pb pb') ->
-      (forall p n pb, 
+      (forall p n pb', 
         fetch_proc_rt p st' = Some (n, pb') -> 
           exists pb, fetch_proc_rt p st = Some (n, pb) /\ optProcBodyDecl st pb pb') ->  
       (st.(vars) = st'.(vars) /\ st.(types) = st'.(types) /\ st.(exps) = st'.(exps) /\

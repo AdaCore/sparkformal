@@ -1632,7 +1632,7 @@ Proof.
   end;
   apply EvalCallRT_Args_RTE with (n0:=n0) (pb:=pb); auto.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H1 H16); intro HZ1.
-    destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H9 in HZ1; inversion HZ1; subst.
+    destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H14 in HZ1; inversion HZ1; subst.
     inversion HZ2; subst.
   apply_optArgs_copyin_soundness; auto.
 - (* 15. EvalCallRT_Decl_RTE *)
@@ -1644,7 +1644,7 @@ Proof.
   end;
   apply EvalCallRT_Decl_RTE with (n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1); auto.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H3 H18); intro HZ1.
-    destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H11 in HZ1; inversion HZ1; subst.
+    destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H16 in HZ1; inversion HZ1; subst.
     inversion HZ2; subst.
   apply_optArgs_copyin_soundness; auto.
 - (* 16. EvalCallRT_Body_RTE *)
@@ -1656,7 +1656,7 @@ Proof.
   end;
   apply EvalCallRT_Body_RTE with (n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1); auto.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H4 H19); intro HZ1.
-    destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H12 in HZ1; inversion HZ1; subst.
+    destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H17 in HZ1; inversion HZ1; subst.
     inversion HZ2; subst.
   apply_optArgs_copyin_soundness; auto.
 - (* 17. EvalCallRT *)
@@ -1917,7 +1917,7 @@ Proof.
   assert(HA: evalExpRT st (f :: s) (update_exterior_checks_exp e' (exp_exterior_checks eRT)) (OK (Int v))).
     apply eval_exp_ex_cks_added; auto.
   apply_optExp_soundness; auto.
-  apply EvalDeclRT_Var_Range_RTE with (e:=(update_exterior_checks_exp eRT (RangeCheck :: nil))) (v:=v) (l:=l) (u:=u); auto.
+  eapply EvalDeclRT_Var_Range_RTE with (e:=(update_exterior_checks_exp eRT (RangeCheck :: nil))) ; eauto.
   apply eval_exp_ex_cks_added; auto.
   rewrite exp_updated_exterior_checks; auto.
 - (* 6. EvalDeclRT_Var *)
@@ -1972,7 +1972,7 @@ Proof.
   assert(HA: evalExpRT st (f :: s) (update_exterior_checks_exp e' (exp_exterior_checks eRT)) (OK (Int v))).
     apply eval_exp_ex_cks_added; auto.
   apply_optExp_soundness; auto.
-  apply EvalDeclRT_Var with (e:=(update_exterior_checks_exp eRT (RangeCheck :: nil))) (l:=l) (u:=u); auto.
+  eapply EvalDeclRT_Var with (e:=(update_exterior_checks_exp eRT (RangeCheck :: nil))); eauto.
   apply eval_exp_ex_cks_added; auto.
   rewrite exp_updated_exterior_checks; auto.
 - (* 7. EvalDeclRT_Type *)  
@@ -2266,7 +2266,7 @@ Proof.
     apply_typed_value_in_bound.
     inversion H45; subst. 
     apply_optimize_range_check_on_copy_out_reserve; subst.
-    apply CopyOut_Mode_Out_Range_RTE_X with (v:=v0) (l:=u') (u:=v') (t:=t0); auto.
+    apply CopyOut_Mode_Out_Range_RTE_X with (v:=v0) (l:=l) (u:=u0) (t:=t0); auto.
     rewrite name_updated_exterior_checks in HZ4; rewrite HZ4; smack.
   + apply_storeUpdateRT_opt_completeness; apply_store_update_ex_cks_stripped.
     rewrite name_updated_exterior_checks in HZ4.
@@ -2281,7 +2281,7 @@ Proof.
     rewrite name_updated_exterior_checks; smack.
     apply_store_update_ex_cks_added.
 
-    apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=u') (u:=v'); auto.
+    apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=l) (u:=u0); auto.
     rewrite HZ4; smack.
   + assert(HA: well_typed_value_in_stack st' s'0). 
       rewrite update_exterior_checks_name_astnum_eq in H19. rewrite H19 in H34.
@@ -2304,7 +2304,7 @@ Proof.
     rewrite name_updated_exterior_checks; smack.
     apply_store_update_ex_cks_added.
     
-    apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=u') (u:=v') (s':=s'0); auto.
+    apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=l) (u:=u0) (s':=s'0); auto.
     rewrite HZ4; smack.
   + apply CopyOut_Mode_Out_nRTE_X with (v:=v); auto.
     rewrite HZ2; assumption.
@@ -2384,7 +2384,7 @@ Proof.
     inversion H47; subst;
     apply_optimize_range_check_on_copy_out_reserve; subst;
 
-    apply CopyOut_Mode_Out_Range_RTE_X with (v:=v0) (l:=u') (u:=v') (t:=t); auto;
+    apply CopyOut_Mode_Out_Range_RTE_X with (v:=v0) (l:=l) (u:=u0) (t:=t); auto;
     try (rewrite name_updated_exterior_checks); smack.
   + clear H H5 H7 H8.
     inversion H37; subst. (* optimize_expression_x st' (NameRT _ _ _) (NameRT _ _ n', _)*)
@@ -2408,13 +2408,13 @@ Proof.
     * apply CopyOut_Mode_Out_nRTE_X with (v:=Int v0); auto; simpl. smack.
       rewrite HZ6; repeat progress rewrite name_updated_exterior_checks; smack.
       repeat progress apply_store_update_ex_cks_added. 
-    * apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=u') (u:=v'); auto; simpl.
+    * apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=l) (u:=u0); auto; simpl.
       rewrite HZ6; rewrite name_updated_exterior_checks; smack.
       apply_store_update_ex_cks_added. 
     * apply CopyOut_Mode_Out_nRTE_X with (v:=Int v0); auto; simpl. smack.
       rewrite HZ6; rewrite name_updated_exterior_checks; smack.
       apply_store_update_ex_cks_added. 
-    * apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=u') (u:=v'); auto; simpl.
+    * apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=l) (u:=u0); auto; simpl.
       rewrite HZ6; smack.
   + clear H H5 H7 H8 H9.
     assert(HA: well_typed_value_in_stack st' s'0). simpl in *.
@@ -2445,13 +2445,13 @@ Proof.
     * apply CopyOut_Mode_Out_NoRange_X with (v:=Int v0) (s':=s'0); auto; simpl. smack.
       rewrite HZ6; repeat progress rewrite name_updated_exterior_checks; smack.
       repeat progress apply_store_update_ex_cks_added.
-    * apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=u') (u:=v') (s':=s'0); auto; simpl.
+    * apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=l) (u:=u0) (s':=s'0); auto; simpl.
       rewrite HZ6; rewrite name_updated_exterior_checks; smack.
       apply_store_update_ex_cks_added. 
     * apply CopyOut_Mode_Out_NoRange_X with (v:=Int v0) (s':=s'0); auto; simpl. smack.
       rewrite HZ6; rewrite name_updated_exterior_checks; smack.
       apply_store_update_ex_cks_added. 
-    * apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=u') (u:=v') (s':=s'0); auto; simpl.
+    * apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=l) (u:=u0) (s':=s'0); auto; simpl.
       rewrite HZ6; smack.
   + apply CopyOut_Mode_Out_Range_RTE_X with (v:=v) (l:=l) (u:=u) (t:=t0); auto.
     rewrite HZ3. rewrite name_updated_exterior_checks; smack.
@@ -2491,7 +2491,7 @@ Proof.
     inversion H47; subst;
     apply_optimize_range_check_on_copy_out_reserve; subst;
 
-    apply CopyOut_Mode_Out_Range_RTE_X with (v:=v0) (l:=u') (u:=v') (t:=t); auto;
+    apply CopyOut_Mode_Out_Range_RTE_X with (v:=v0) (l:=l) (u:=u0) (t:=t); auto;
     try (rewrite name_updated_exterior_checks); smack.
   + clear H H5 H7 H8.
     inversion H37; subst. (* optimize_expression_x st' (NameRT _ _ _) (NameRT _ _ n', _)*)
@@ -2515,13 +2515,13 @@ Proof.
     * apply CopyOut_Mode_Out_nRTE_X with (v:=Int v0); auto; simpl. smack.
       rewrite HZ6; repeat progress rewrite name_updated_exterior_checks; smack.
       repeat progress apply_store_update_ex_cks_added. 
-    * apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=u') (u:=v'); auto; simpl.
+    * apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=l) (u:=u0); auto; simpl.
       rewrite HZ6; rewrite name_updated_exterior_checks; smack.
       apply_store_update_ex_cks_added. 
     * apply CopyOut_Mode_Out_nRTE_X with (v:=Int v0); auto; simpl. smack.
       rewrite HZ6; rewrite name_updated_exterior_checks; smack.
       apply_store_update_ex_cks_added. 
-    * apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=u') (u:=v'); auto; simpl.
+    * apply CopyOut_Mode_Out_Range_nRTE_X with (v:=v0) (t:=t0) (l:=l) (u:=u0); auto; simpl.
       rewrite HZ6; smack.
   + clear H H5 H7 H8 H9.
     assert(HA: well_typed_value_in_stack st' s'0).
@@ -2552,13 +2552,13 @@ Proof.
     * apply CopyOut_Mode_Out_NoRange_X with (v:=Int v0) (s':=s'0); auto; simpl. smack.
       rewrite HZ6; repeat progress rewrite name_updated_exterior_checks; smack.
       repeat progress apply_store_update_ex_cks_added.
-    * apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=u') (u:=v') (s':=s'0); auto; simpl.
+    * apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=l) (u:=u0) (s':=s'0); auto; simpl.
       rewrite HZ6; rewrite name_updated_exterior_checks; smack.
       apply_store_update_ex_cks_added. 
     * apply CopyOut_Mode_Out_NoRange_X with (v:=Int v0) (s':=s'0); auto; simpl. smack.
       rewrite HZ6; rewrite name_updated_exterior_checks; smack.
       apply_store_update_ex_cks_added. 
-    * apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=u') (u:=v') (s':=s'0); auto; simpl.
+    * apply CopyOut_Mode_Out_Range_X with (v:=v0) (t:=t0) (l:=l) (u:=u0) (s':=s'0); auto; simpl.
       rewrite HZ6; smack.
 Qed.
 
@@ -3359,14 +3359,14 @@ Proof.
   | _ => idtac
   end.
 
-  apply EvalDeclRT_Var_Range_RTE with (e:=e'') (v:=v) (l:=l) (u:=u); auto.
-  apply eval_expr_value_reserve with (e:=e') (eBound:=(Interval u' v')) (rBound:=(Interval l u)); auto.
-  apply_optExp_completeness.
-  specialize (eval_exp_ex_cks_stripped _ _ _ _ _ HZ3); auto.
+  eapply EvalDeclRT_Var_Range_RTE with (e:=e'') (v:=v) (l:=u0) (u:=v0); auto.
+  + apply eval_expr_value_reserve with (1:=H15); auto.
+    apply_optExp_completeness.
+    specialize (eval_exp_ex_cks_stripped _ _ _ _ _ HZ3); auto.
   
-  apply_eval_expr_value_in_bound.
-  inversion H3; subst.
-  specialize (optimize_exp_ex_cks_eq _ _ _ _ H11); intro HZ4.
+  + apply_eval_expr_value_in_bound.
+    inversion H3; subst.
+    specialize (optimize_exp_ex_cks_eq _ _ _ _ H11); intro HZ4.
   rewrite exp_updated_exterior_checks in HZ4.
   apply_optimize_range_check_reserve; smack.
 - (* 6. EvalDeclRT_Var_Range_RTE *)
@@ -3420,11 +3420,11 @@ Proof.
     apply_optExp_completeness.
     specialize (exp_exterior_checks_beq_nil _ _ _ H26); intros HZ5. rewrite HZ5 in HZ4. assumption. smack.
     rewrite exp_updated_exterior_checks; auto.
-  + apply EvalDeclRT_Var with (e:=e'') (v:=v) (l:=l) (u:=u); auto.
-    apply_optExp_completeness.
-    specialize (eval_exp_ex_cks_stripped _ _ _ _ _ HZ3); auto.
-    specialize (optimize_exp_ex_cks_eq _ _ _ _ H11); intros HZ3.
-    rewrite exp_updated_exterior_checks in HZ3; auto.
+  + eapply EvalDeclRT_Var with (e:=e'');eauto.
+    * apply_optExp_completeness.
+      specialize (eval_exp_ex_cks_stripped _ _ _ _ _ HZ3); auto.
+    * specialize (optimize_exp_ex_cks_eq _ _ _ _ H11); intros HZ4.
+      rewrite exp_updated_exterior_checks in HZ4; eauto.
 - (* 7. Eval_Decl_Type_X *)  
   match goal with
   | [H: optDecl _ _ _ |- _] => inversion H; subst; auto

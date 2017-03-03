@@ -1119,9 +1119,9 @@ Proof.
 
     destruct H17; subst;
     [ apply SU_Indexed_Component_X with 
-        (arrObj:=(ArrayV a0)) (a:=a0) (i:=i) (l:=u') (u:=v') (t:=t1) (a1:=a1); smack | 
+        (arrObj:=(ArrayV a0)) (a:=a0) (i:=i) (l:=l) (u:=u0) (t:=t1) (a1:=a1); smack | 
       apply SU_Indexed_Component_X with 
-        (arrObj:=Undefined) (i:=i) (a:=nil) (l:=u') (u:=v') (t:=t1) (a1:=a1); smack
+        (arrObj:=Undefined) (i:=i) (a:=nil) (l:=l) (u:=u0) (t:=t1) (a1:=a1); smack
     ];
     [apply eval_exp_ex_cks_added; auto | | apply eval_exp_ex_cks_added; auto | ];
     rewrite exp_updated_exterior_checks;

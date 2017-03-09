@@ -18,14 +18,14 @@ Module STORE_PROP (V:ENTRY).
   (* The AST provided by gnat/sireum are supposed to have no two variables sharing
    the same name. This should imply that there are no duplication of name in stacks. *)
   (* intra-store *)
-  Definition NoDup (s : stack) := 
+  Definition NoDup (s : state) := 
     forall nme lvl sto (sto' sto'':store),
       frameG nme s = Some (lvl,sto) ->
       cuts_to nme sto = (sto',sto'') ->
       resides nme (List.tl sto'') = false.
 
   (* extra-store *)
-  Definition NoDup_G (s : stack) := 
+  Definition NoDup_G (s : state) := 
     forall nme lvl sto s' s'',
       frameG nme s = Some (lvl,sto) ->
       cut_until s lvl s' s'' ->
@@ -643,7 +643,7 @@ Module STORE_PROP (V:ENTRY).
     - intros sto' sto'' H.
       inversion H.
       right.
-      exists v s'.
+      exists v, s'.
       rewrite Nat.eqb_eq in e0.
       subst;auto.
     - intros sto' sto'' H.

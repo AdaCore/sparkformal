@@ -10,6 +10,7 @@ zhangzhi@ksu.edu
 *)
 
 Require Export list_util.
+Require Export store_util.
 Require Export values.
 Require Export environment.
 Require Export symboltable.
@@ -19,8 +20,9 @@ Module Entry_Value_Stored <: ENTRY.
   Definition T := value.
 End Entry_Value_Stored.
 
-Module STACK := STORE(Entry_Value_Stored).
+Module STACK := STORE_PROP(Entry_Value_Stored).
 Import STACK.
+Import STACK.ST.
 
 
 (** * Run-Time Check Evaluation *)

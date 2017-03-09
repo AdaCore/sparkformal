@@ -166,6 +166,73 @@ Module STORE(V:ENTRY).
     | nil => false
     end.
 
+
+
+  (* These three functions are used by Compcert compilation *)
+  Function frameG (x : idnum) (s : state): option frame :=
+    match s with
+    | f :: s' => if reside x f then Some f
+                 else frameG x s'
+    | nil => None
+    end.
+
+  Definition pop_frame (s:state) : option frame :=
+    match s with
+      | nil => None
+      | cons f _ => Some f
+    end.
+
+  Definition level_of_top (s:state): option scope_level :=
+    match pop_frame  s with
+      | Some (lvl,_) => Some lvl
+      | None => None
+    end.
+
+
+  (** [cut_until s n s' s''] means cutting the state s until to a frame 
+    whose corresponding procedure's nested declaration level is less 
+    than n, and s' is a state with all its frame's corresponding procedure's 
+    nested declaration level greater or equal n, and s'' is a state holds 
+    frames whose procedure's nested declaration levels are less than n, 
+    and s = s' ++ s'';
+   *)
+  Inductive cut_until: state -> scope_level -> state -> state -> Prop :=
+  | Cut_Until_Nil: forall n,
+      cut_until nil n nil nil
+  | Cut_Until_Head: forall f n s,
+      (level_of f) < n ->
+      cut_until (f :: s) n nil (f :: s) 
+  | Cut_Until_Tail: forall f n s s' s'',
+      ~ (level_of f < n) ->
+      cut_until s n s' s'' -> 
+      cut_until (f :: s) n (f :: s') s''.
+
+  Lemma cut_until_uniqueness: forall s n intact_s' s' intact_s'' s'',
+      cut_until s n intact_s' s' ->
+      cut_until s n intact_s'' s'' ->
+      intact_s' = intact_s'' /\ s' = s''.
+  Proof.
+    intros s n intact_s' s' intact_s'' s'' H; revert intact_s'' s''.
+    induction H; intros;
+    match goal with
+    | [H: cut_until nil _ _ _ |- _] => inversion H
+    | [H: cut_until (?f :: ?s) _ _ _ |- _] => inversion H
+    end; smack;
+    specialize (IHcut_until _ _ H8); smack.
+  Qed.
+
+  Lemma cut_until_spec1:
+    forall s pb_lvl s' s'' ,
+      cut_until s pb_lvl s'  s''
+      -> s' ++ s'' = s.
+  Proof.
+    intros s pb_lvl s' s'' H.
+    induction H;auto.
+    simpl.
+    rewrite IHcut_until.
+    reflexivity.
+  Qed.
+
   Inductive stack_eq_length : state -> state -> Prop :=
     | eqnil: stack_eq_length nil nil
     | eqncons: forall s s' f f',

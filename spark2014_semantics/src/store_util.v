@@ -15,6 +15,22 @@ Module STORE_PROP (V:ENTRY).
 (*   Functional Scheme updates_ind := Induction for ST.updates Sort Prop. *)
   Functional Scheme fetch_ind := Induction for fetch Sort Prop.
 
+  (* The AST provided by gnat/sireum are supposed to have no two variables sharing
+   the same name. This should imply that there are no duplication of name in stacks. *)
+  (* intra-store *)
+  Definition NoDup (s : stack) := 
+    forall nme lvl sto (sto' sto'':store),
+      frameG nme s = Some (lvl,sto) ->
+      cuts_to nme sto = (sto',sto'') ->
+      resides nme sto'' = false.
+
+  (* extra-store *)
+  Definition NoDup_G (s : stack) := 
+    forall nme lvl sto s' s'',
+      frameG nme s = Some (lvl,sto) ->
+      cut_until s lvl s' s'' ->
+      resideG nme s'' = false.
+
 
   Ltac rename_hyp1 h th :=
     match th with

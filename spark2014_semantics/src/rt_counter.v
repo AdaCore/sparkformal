@@ -174,7 +174,6 @@ Section Check_Count.
     end
 
   (** ** Check Counter for Procedure *)
-
   with count_procedure_body_check_flags (p: procBodyDeclRT): cks_infor_t :=
     match p with
     | mkprocBodyDeclRT n p params decls stmt =>
@@ -185,9 +184,13 @@ Section Check_Count.
                        )
     end.
 
-  Definition count_option_declaration_check_flags (x: option declRT): cks_infor_t :=
+  (** ** Check Counter for Program *)
+  Function count_program_check_flags (p: programRT): cks_infor_t :=
+    count_declaration_check_flags (p.(declsRT)).
+
+  Definition count_option_program_check_flags (x: option programRT): cks_infor_t :=
     match x with
-    | Some ast => count_declaration_check_flags ast
+    | Some p => count_program_check_flags p
     | None => cks_infor 0 0 0 0
     end.
 

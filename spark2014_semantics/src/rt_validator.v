@@ -10,6 +10,94 @@ zhangzhi@ksu.edu
 *)
 
 Require Export rt_gen.
+Require Export rt_opt_impl.
+
+(*
+(** * Run-Time Check Subset Specification *)
+
+  Inductive exp_rtc_subset: expRT -> expRT -> Prop :=
+    | LiteralRTSubset: forall n l n' l' in_cks ex_cks in_cks' ex_cks',
+        subset_of (in_cks ++ ex_cks) (in_cks' ++ ex_cks') = true ->
+        exp_rtc_subset (LiteralRT n l in_cks ex_cks) (LiteralRT n' l' in_cks' ex_cks')
+    | NameRTSubset: forall n n' nm nm',
+        name_rtc_subset nm nm' ->
+        exp_rtc_subset (NameRT n nm) (NameRT n' nm')
+    | BinExpRTSubset: forall n op e1 e2 in_cks ex_cks n' op' e1' e2' in_cks' ex_cks',
+        subset_of (in_cks ++ ex_cks) (in_cks' ++ ex_cks') = true ->
+        exp_rtc_subset e1 e1' ->
+        exp_rtc_subset e2 e2' ->
+        exp_rtc_subset (BinOpRT n op e1 e2 in_cks ex_cks) (BinOpRT n' op' e1' e2' in_cks' ex_cks')
+    | UnExpRTSubset: forall n op e in_cks ex_cks n' op' e' in_cks' ex_cks',
+        subset_of (in_cks ++ ex_cks) (in_cks' ++ ex_cks') = true ->
+        exp_rtc_subset e e' ->
+        exp_rtc_subset (UnOpRT n op e in_cks ex_cks) (UnOpRT n' op' e' in_cks' ex_cks')
+
+  with name_rtc_subset: nameRT -> nameRT -> Prop :=
+    | IdentifierRTSubset: forall n x ex_cks n' x' ex_cks',
+        subset_of ex_cks ex_cks' = true ->
+        name_rtc_subset (IdentifierRT n x ex_cks) (IdentifierRT n' x' ex_cks')
+    | IndexedComponentRTSubset: forall n x e ex_cks n' x' e' ex_cks',
+        subset_of ex_cks ex_cks' = true ->
+        name_rtc_subset x x' ->
+        exp_rtc_subset e e' ->
+        name_rtc_subset (IndexedComponentRT n x e ex_cks) (IndexedComponentRT n' x' e' ex_cks')
+    | SelectedComponentRTSubset: forall n x f ex_cks n' x' f' ex_cks',
+        subset_of ex_cks ex_cks' = true ->
+        name_rtc_subset x x' ->
+        name_rtc_subset (SelectedComponentRT n x f ex_cks) (SelectedComponentRT n' x' f' ex_cks').
+
+  Inductive args_rtc_subset: list expRT -> list expRT -> Prop :=
+    | ArgsNilSubset:
+        args_rtc_subset nil nil
+    | ArgsSubset: forall e1 e2 es1 es2,
+        exp_rtc_subset e1 e2 ->
+        args_rtc_subset es1 es2 ->
+        args_rtc_subset (e1 :: es1) (e2 :: es2).
+
+  Inductive stmt_rtc_subset: stmtRT -> stmtRT -> Prop :=
+    | NullRTSubset:
+        stmt_rtc_subset NullRT NullRT
+    | AssignRTSubset: forall n x e n' x' e',
+        name_rtc_subset x x' ->
+        exp_rtc_subset e e' ->
+        stmt_rtc_subset (AssignRT n x e) (AssignRT n' x' e')
+    | IfRTSubset: forall n e c1 c2 n' e' c1' c2',
+        exp_rtc_subset e e' ->
+        stmt_rtc_subset c1 c1' ->
+        stmt_rtc_subset c2 c2' ->
+        stmt_rtc_subset (IfRT n e c1 c2) (IfRT n' e' c1' c2')
+    | WhileRTSubset: forall n e c n' e' c',
+        exp_rtc_subset e e' ->
+        stmt_rtc_subset c c' ->
+        stmt_rtc_subset (WhileRT n e c) (WhileRT n' e' c')
+    | CallRTSubset: forall n p_n p args n' p_n' p' args',
+        args_rtc_subset args args' ->
+        stmt_rtc_subset (CallRT n p_n p args) (CallRT n' p_n' p' args')
+    | SeqRTSubset: forall n c1 c2 n' c1' c2',
+        stmt_rtc_subset c1 c1' ->
+        stmt_rtc_subset c2 c2' ->
+        stmt_rtc_subset (SeqRT n c1 c2) (SeqRT n' c1' c2').
+
+  Inductive typeDecl_rtc_subset: typeDeclRT -> typeDeclRT -> Prop :=
+    | SubtypeDeclRTSubset: forall n tn t l u n' tn' t' l' u',
+        typeDecl_rtc_subset (SubtypeDeclRT n tn t (RangeRT l u)) (SubtypeDeclRT n' tn' t' (RangeRT l' u'))
+    | DerivedTypeDeclRTSubset: forall n tn t l u n' tn' t' l' u',
+        typeDecl_rtc_subset (DerivedTypeDeclRT n tn t (RangeRT l u)) (DerivedTypeDeclRT n' tn' t' (RangeRT l' u'))
+    | IntegerTypeDeclRTSubset: forall n tn l u n' tn' l' u',
+        typeDecl_rtc_subset (IntegerTypeDeclRT n tn (RangeRT l u)) (IntegerTypeDeclRT n' tn' (RangeRT l' u')) 
+    | ArrayTypeDeclRTSubset: forall n tn tm t n' tn' tm' t',
+        typeDecl_rtc_subset (ArrayTypeDeclRT n tn tm t) (ArrayTypeDeclRT n' tn' tm' t')
+    | RecordTypeDeclRTSubset: forall n tn fs n' tn' fs',
+        typeDecl_rtc_subset (RecordTypeDeclRT n tn fs) (RecordTypeDeclRT n' tn' fs').
+
+  Inductive objDecl_rtc_subset: objDeclRT -> objDeclRT -> Prop :=
+    | ObjInitNoneSubset: forall n x t n' x' t',
+        objDecl_rtc_subset (mkobjDeclRT n x t None) (mkobjDeclRT n' x' t' None)
+    | ObjInitSomeSubset:
+        exp_rtc_subset 
+        objDecl_rtc_subset (mkobjDeclRT n x t (Some e)) (mkobjDeclRT n' x' t' (Some e'))
+*)
+
 
 (** * Run-Time Check Validator *) 
 
@@ -82,8 +170,7 @@ Section Check_Flags_Validator.
         end
      | Error => Error
     end.
-
-
+  
   (** ** Run-Time Check Validator for Expression *)
 
   Function exp_check_flags_validator (e_opt e_gnat e_cmp: expRT): return_message :=
@@ -319,5 +406,11 @@ Section Map_To_Source_Location.
 
 End Map_To_Source_Location.
 
+(** * help function *)
 
+Function optOProgramImpl (st: symTabRT) (f: option programRT): option programRT := 
+  match f with
+  | Some p => optProgramImpl st p
+  | None => None
+  end.
 

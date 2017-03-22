@@ -110,6 +110,7 @@ VFILES:=CpdtTactics.v\
   ast_util.v\
   values.v\
   environment.v\
+  store_util.v\
   symboltable_module.v\
   symboltable.v\
   eval.v\

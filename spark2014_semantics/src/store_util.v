@@ -32,6 +32,14 @@ Module STORE_PROP (V:ENTRY).
       resideG nme s'' = false.
 
 
+
+(** levels in the global stack match exactly their nesting levels. *)
+Inductive exact_levelG:  state -> Prop :=
+  | exact_levelG_nil: exact_levelG nil
+  | exact_levelG_cons: forall stk fr,
+      exact_levelG stk -> exact_levelG ((List.length stk, fr)::stk).
+
+
   Ltac rename_hyp1 h th :=
     match th with
     | in_bound _ _ _ => fresh "h_inbound"
@@ -64,6 +72,8 @@ Module STORE_PROP (V:ENTRY).
     | cut_until ?st ?s ?fr ?paramsprf ?args ?fr' => fresh "h_cut_until_" fr "_" fr'
     | cut_until ?st ?s ?fr ?paramsprf ?args _ => fresh "h_cut_until_" fr
     | cut_until ?st ?s ?fr ?paramsprf ?args _ => fresh "h_cut_until"
+    | exact_levelG ?CE => fresh "h_exct_lvl_" CE
+    | exact_levelG ?CE => fresh "h_exct_lvl"
     end.
 
 (*   Ltac rename_hyp ::= rename_hyp1. *)
@@ -703,5 +713,257 @@ Module STORE_PROP (V:ENTRY).
     - intros lvl sto H. 
       inversion H.
   Qed.
+
+  Lemma exact_levelG_sublist: forall x CE,
+      exact_levelG (x::CE)
+      -> exact_levelG CE.
+  Proof.
+    intros x CE H.
+    inversion H;cbn in *;auto.
+  Qed.
+
+Lemma cut_until_exact_levelG:
+  forall s pb_lvl s' s'' ,
+    exact_levelG s ->
+    (pb_lvl <= Datatypes.length s)%nat ->
+    cut_until s pb_lvl s'  s'' ->
+    pb_lvl = Datatypes.length s''.
+Proof.
+  intros s pb_lvl s' s'' h_exactlvlG.
+  revert pb_lvl s' s''.
+  induction h_exactlvlG;simpl;intros ? ? ? h_lt h_cut.
+  - inversion h_cut;subst;simpl in *.
+    omega.
+  - inversion h_lt;subst.
+    + clear h_lt.        
+      inversion h_cut;subst.
+      * reflexivity.
+      * simpl in *.
+        exfalso;omega.
+    + simpl in *.
+      inversion h_cut;subst;simpl in *.
+      * exfalso;omega.
+      * eapply IHh_exactlvlG;eauto.
+Qed.
+
+Lemma cut_until_exact_levelG_2:
+  forall s pb_lvl s' s'' ,
+    exact_levelG s ->
+    (pb_lvl > Datatypes.length s)%nat ->
+    cut_until s pb_lvl s'  s'' ->
+    Datatypes.length s = Datatypes.length s''.
+Proof.
+  intros s pb_lvl s' s'' h_exactlvlG.
+  destruct h_exactlvlG;simpl.
+  - intros H h_cut. inversion h_cut.
+    reflexivity.
+  - intros H h_cut. inversion h_cut;simpl in *;subst.
+    + reflexivity.
+    + exfalso;omega.
+Qed.
+
+Lemma exact_lvl_level_of_top:
+  forall l',
+    exact_levelG  l' ->
+    forall nme lvl_nme fr_nme,
+      frameG nme l' = Some (lvl_nme, fr_nme) -> 
+      exists top,
+        level_of_top l' = Some top /\
+        (lvl_nme <= top)%nat.
+Proof.
+  intros l' h_exct_lvl_l'.
+  induction h_exct_lvl_l';intros;subst.
+  - discriminate.
+  - cbn in H.
+    destruct (resides nme fr) eqn:heq.
+    + inversion H.
+      cbn.
+      eauto with arith.
+    + cbn.
+      exists (Datatypes.length stk);split;auto.
+      edestruct IHh_exct_lvl_l';eauto.
+      destruct H0 as [h h'].
+      destruct stk;cbn in h;try discriminate.
+      destruct f.
+      inversion h.
+      cbn.
+      inversion h_exct_lvl_l';subst.
+      auto with arith.
+Qed.
+
+Lemma nodup_G_cons :
+  forall a l nme ,
+    exact_levelG (a::l) ->
+    NoDup_G (a::l) -> resideG nme l = true -> reside nme a = false.
+Proof.
+  intros a l nme h__exact h_nodupG h_reside. 
+  destruct (reside nme a) eqn:?;auto.
+  specialize (h_nodupG nme (level_of a) (store_of a) (a::nil) l).
+  cbn in h_nodupG.
+  rewrite h_reside,Heqb in h_nodupG.
+  assert (Some a = Some (level_of a, store_of a)).
+  { destruct a;auto. }
+  specialize (h_nodupG H).
+  clear H.
+  assert (cut_until (a :: l) (level_of a) (a::nil) l).
+  { constructor 3.
+    - omega.
+    - destruct l.
+      + constructor 1.
+      + constructor 2.
+        inversion h__exact.
+        inversion H0.
+        subst.
+        cbn.
+        omega.  }
+  specialize (h_nodupG H).
+  discriminate.
+Qed.
+
+
+Lemma nodup_G_cons_2 :
+  forall a l nme ,
+    exact_levelG (a::l) ->
+    NoDup_G (a::l) -> reside nme a = true -> resideG nme l = false.
+Proof.
+  intros a l nme h__exact h_nodupG h_reside. 
+  destruct (resideG nme l) eqn:?;try discriminate;auto.
+
+  specialize (h_nodupG nme (level_of a) (store_of a) (a::nil) l).
+  cbn in h_nodupG.
+  rewrite h_reside,Heqb in h_nodupG.
+  assert (Some a = Some (level_of a, store_of a)).
+  { destruct a;auto. }
+  specialize (h_nodupG H).
+  clear H.
+  assert (cut_until (a :: l) (level_of a) (a::nil) l).
+  { constructor 3.
+    - omega.
+    - destruct l.
+      + constructor 1.
+      + constructor 2.
+        inversion h__exact.
+        inversion H0.
+        subst.
+        cbn.
+        omega.  }
+  specialize (h_nodupG H).
+  discriminate.
+Qed.
+
+Lemma stack_CE_NoDup_cons: forall l',
+    exact_levelG l' ->
+    NoDup_G l' ->
+    NoDup l' ->
+    forall l a,
+      l'= a::l ->
+      NoDup l.
+Proof.
+  intros l' H H0 H1 l a H2. 
+  red.
+  intros.
+  red in H1.
+  apply (H1 nme lvl sto sto' sto'').
+  - subst.
+    simpl.
+    red in H0.
+    assert (reside nme a = false).
+    { eapply nodup_G_cons;eauto.
+      eapply  frameG_resideG;eauto. }
+    rewrite H2.
+    assumption.
+  - assumption.
+Qed.
+
+
+
+Lemma stack_CE_NoDup_G_cons: forall l',
+    exact_levelG l' ->
+    forall l a,
+      l'= a::l ->
+      NoDup_G (a::l) -> NoDup_G l.
+Proof.
+  intros ? h_exct_lvl_l'.
+  induction h_exct_lvl_l';subst; intros; unfold NoDup_G in *;intros.
+  - inversion H.
+  - inversion H;subst.
+    remember (Datatypes.length l, fr) as a0.
+    assert (exact_levelG (a0 :: l)).
+    { subst a0.
+      constructor;auto. }
+    assert (reside nme a0 = false).
+    { eapply nodup_G_cons;eauto.
+      eapply  frameG_resideG;eauto. }
+
+    assert (frameG nme (a0 :: l) = Some (lvl, sto)).
+    { cbn.
+      rewrite H4.
+      auto. }
+
+    eapply H0 with (s':= a0 :: s');eauto.
+    constructor 3.
+    + pose proof exact_lvl_level_of_top (a0::l) as h.
+      specialize h with (1:=H3) (2:=H5).
+      destruct h as [top [h1 h2]].
+      enough (lvl <= level_of a0)%nat by omega.
+
+      assert (top = level_of a0).
+      { cbn in h1.
+        destruct a0;cbn.
+        inversion h1; reflexivity. }
+      subst top;auto with arith.
+    + assumption.
+Qed.
+
+
+Lemma stack_CE_NoDup_G_sublist: forall CE1 CE2,
+    exact_levelG (CE1 ++ CE2) ->
+    NoDup_G (CE1++CE2) ->
+    NoDup_G CE2.
+Proof.
+  induction CE1.
+  - intros CE2 H h_nodupG. simpl List.app in h_nodupG.
+    assumption.
+  - intros CE2 H h_nodupG. apply IHCE1.
+    { eapply exact_levelG_sublist;eauto. }
+    cbn in h_nodupG.
+    eapply stack_CE_NoDup_G_cons;eauto;cbn;auto.
+Qed.
+
+Lemma stack_CE_NoDup_sublist: forall CE1 CE2,
+    exact_levelG (CE1 ++ CE2) ->
+    NoDup_G (CE1++CE2) ->
+    NoDup (CE1++CE2) ->
+    NoDup CE2.
+Proof.
+  induction CE1.
+  - intros CE2 H H0 h_nodup.
+    simpl List.app in h_nodup.
+    assumption.
+  - intros CE2 H H0 h_nodup.
+    apply IHCE1.
+    + eapply exact_levelG_sublist;eauto.
+    + eapply stack_CE_NoDup_G_cons;eauto;reflexivity.
+    + cbn in h_nodup.
+      eapply stack_CE_NoDup_cons;eauto;cbn;auto.
+Qed.
+
+Lemma cut_until_exct_lvl:
+  forall CE lvl x,
+    exact_levelG ((lvl,x)::CE) ->
+    cut_until CE lvl nil CE.
+Proof.
+  intros CE lvl x h_exct_lvl.
+  destruct CE;cbn in *.
+  - constructor 1.
+  - constructor 2.
+    inversion h_exct_lvl;subst.
+    inversion H0.
+    cbn.
+    omega.
+Qed.
+
+
+
 
 End STORE_PROP.

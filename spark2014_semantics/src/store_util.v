@@ -1,5 +1,5 @@
 Require Import environment.
-Require Import Morphisms Relations SetoidList.
+Require Import FunInd Morphisms Relations SetoidList.
 
 (* Import STACK. *)
 
@@ -712,6 +712,116 @@ Inductive exact_levelG:  state -> Prop :=
       eapply IHo;eauto.
     - intros lvl sto H. 
       inversion H.
+  Qed.
+
+
+  Lemma reside_true_fetch_Some: forall id sto,
+      reside id sto = true -> 
+      exists x, fetch id sto = Some x.
+  Proof.
+    destruct sto.
+    induction s0;intros H.
+    - cbn in H. discriminate.
+    - unfold reside in H.
+      simpl store_of in H.
+      functional inversion H;subst.
+      + exists v.
+        cbn in H |- *.
+        now rewrite H3 in *|-*.
+      + destruct IHs0;auto.
+        exists x.
+        cbn.
+        now rewrite H4.
+  Qed.
+
+  Lemma resideG_true_fetchG_Some: forall id sto,
+      resideG id sto = true -> 
+      exists x, fetchG id sto = Some x.
+  Proof.
+    intros until 0.
+    induction sto.
+    - simpl.
+      intro abs; discriminate.
+    - intro heq_resideG.
+      functional inversion heq_resideG;subst.
+      + apply reside_true_fetch_Some in H2.
+        destruct H2.
+        exists x.
+        cbn in * |- *.
+        now rewrite H in *|-*.
+      + destruct IHsto;auto.
+        exists x.
+        cbn.
+        apply reside_false_fetch_none in H3.
+        now rewrite H3.
+  Qed.
+
+  Lemma fetchG_Some_frameG_Some: forall id s x,
+      fetchG id s = Some x ->
+      exists lvl fr, frameG id s = Some (lvl,fr).
+  Proof.
+    intros id s.
+    functional induction fetchG id s;intros.
+    - inversion H;subst.
+      cbn.
+      erewrite fetch_ok;eauto.
+      destruct f;eauto.
+    - specialize IHo with (1:=H).
+      destruct IHo as [x0 H0 ].
+      destruct H0 as [x1 H1 ].
+      exists x0, x1.
+      cbn.
+      erewrite fetch_ok_none;eauto.
+    - discriminate.
+  Qed.
+
+
+  Lemma exact_levelG_frameG_lt_lgth: forall s,
+      exact_levelG s -> 
+      forall nme lvl sto ,
+        frameG nme s = Some (lvl, sto) ->
+        (lvl < Datatypes.length s)%nat.
+  Proof.
+    induction 1.
+    - intros nme lvl sto heq_frameG.
+      cbn in heq_frameG.
+      discriminate.
+    - rename H into h_exct_lvl.
+      intros nme lvl sto heq_frameG. 
+      cbn.
+      functional inversion heq_frameG;subst;auto with arith.
+      assert (lvl < length stk).
+      { eapply IHexact_levelG;eauto. }
+      auto with arith.
+  Qed.
+
+
+  Lemma exact_lvl_lvl_of_top: forall l,
+      exact_levelG l ->
+      forall n, level_of_top l = Some n ->
+                S n = Datatypes.length l.
+  Proof.
+    induction 1;simpl; intros n H0.
+    - cbv in H0.
+      discriminate.
+    - unfold level_of_top in H0.
+      simpl in H0.
+      now inversion H0.
+  Qed.
+
+  Lemma exact_levelG_frameG_le_top:
+    forall s lvl sto,
+      exact_levelG ((lvl,sto)::s)
+      -> forall nme lvl' sto',
+        frameG nme ((lvl,sto)::s) = Some (lvl', sto')
+        -> (lvl' <= lvl)%nat.
+  Proof.
+    intros s lvl sto h_exct_lvl nme lvl' sto' h_frameG.
+    inversion h_exct_lvl;subst.
+    rename H0 into h_exct_lvl_s.
+    specialize exact_levelG_frameG_lt_lgth with (1:=h_exct_lvl) (2:=h_frameG);intro h.
+    simpl in h.
+    auto with arith.
   Qed.
 
   Lemma exact_levelG_sublist: forall x CE,

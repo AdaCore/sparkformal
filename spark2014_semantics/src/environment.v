@@ -9,6 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
+Require Import FunInd.
 Require Export values.
 
 (** for any valid variable x, it has an in/out mode, type and value 

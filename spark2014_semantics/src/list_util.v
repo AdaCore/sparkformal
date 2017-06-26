@@ -1,4 +1,4 @@
-Require Import List.
+Require Import List FunInd.
 
 Lemma length_invnil : forall A (l:list A), length l = 0 -> l = nil.
 Proof.

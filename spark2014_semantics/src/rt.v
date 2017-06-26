@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Import Coq.Bool.Bool.
+Require Import FunInd Coq.Bool.Bool.
 Require Import Coq.Lists.List.
 
 (** * Run-Time Checks *)

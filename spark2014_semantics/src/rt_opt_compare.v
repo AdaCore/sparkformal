@@ -88,19 +88,19 @@ Section Check_Optimization_Comparison.
 
   (** ** Check Flags Validator For Expression *)
 
-  Function exp_check_optimization_compare (e_opt e_gnat e_cmp: expression_x): return_message :=
+  Function exp_check_optimization_compare (e_opt e_gnat e_cmp: expRT): return_message :=
     match e_opt, e_gnat, e_cmp with
-    | E_Literal_X ast_num l in_cks ex_cks, E_Literal_X ast_num' l' in_cks' ex_cks', E_Literal_X ast_num'' l'' in_cks'' ex_cks'' =>
+    | LiteralRT ast_num l in_cks ex_cks, LiteralRT ast_num' l' in_cks' ex_cks', LiteralRT ast_num'' l'' in_cks'' ex_cks'' =>
         check_optimization_compare ast_num (in_cks ++ ex_cks) (in_cks' ++ ex_cks') (in_cks'' ++ ex_cks'')
-    | E_Name_X ast_num n, E_Name_X ast_num' n', E_Name_X ast_num'' n'' =>
+    | NameRT ast_num n, NameRT ast_num' n', NameRT ast_num'' n'' =>
         name_check_optimization_compare n n' n''
-    | E_Binary_Operation_X ast_num op e1 e2 in_cks ex_cks, E_Binary_Operation_X ast_num' op' e1' e2' in_cks' ex_cks', 
-                                                           E_Binary_Operation_X ast_num'' op'' e1'' e2'' in_cks'' ex_cks'' =>
+    | BinOpRT ast_num op e1 e2 in_cks ex_cks, BinOpRT ast_num' op' e1' e2' in_cks' ex_cks', 
+                                                           BinOpRT ast_num'' op'' e1'' e2'' in_cks'' ex_cks'' =>
         conj_message (check_optimization_compare ast_num (in_cks ++ ex_cks) (in_cks' ++ ex_cks') (in_cks'' ++ ex_cks''))
                      (conj_message (exp_check_optimization_compare e1 e1' e1'')
                                    (exp_check_optimization_compare e2 e2' e2''))
-     | E_Unary_Operation_X ast_num op e in_cks ex_cks, E_Unary_Operation_X ast_num' op' e' in_cks' ex_cks',
-                                                       E_Unary_Operation_X ast_num'' op'' e'' in_cks'' ex_cks'' =>
+     | UnOpRT ast_num op e in_cks ex_cks, UnOpRT ast_num' op' e' in_cks' ex_cks',
+                                                       UnOpRT ast_num'' op'' e'' in_cks'' ex_cks'' =>
         conj_message (check_optimization_compare ast_num (in_cks ++ ex_cks) (in_cks' ++ ex_cks') (in_cks'' ++ ex_cks''))
                      (exp_check_optimization_compare e e' e'')
      | _, _, _ => Error
@@ -108,24 +108,24 @@ Section Check_Optimization_Comparison.
 
   (** ** Check Flags Validator For Name *)
 
-  with name_check_optimization_compare (n_opt n_gnat n_cmp: name_x): return_message :=
+  with name_check_optimization_compare (n_opt n_gnat n_cmp: nameRT): return_message :=
     match n_opt, n_gnat, n_cmp with
-    | E_Identifier_X ast_num x ex_cks, E_Identifier_X ast_num' x' ex_cks', E_Identifier_X ast_num'' x'' ex_cks'' =>
+    | IdentifierRT ast_num x ex_cks, IdentifierRT ast_num' x' ex_cks', IdentifierRT ast_num'' x'' ex_cks'' =>
         check_optimization_compare ast_num ex_cks ex_cks' ex_cks''
-    | E_Indexed_Component_X ast_num x e ex_cks, E_Indexed_Component_X ast_num' x' e' ex_cks', 
-                                                E_Indexed_Component_X ast_num'' x'' e'' ex_cks'' =>
+    | IndexedComponentRT ast_num x e ex_cks, IndexedComponentRT ast_num' x' e' ex_cks', 
+                                                IndexedComponentRT ast_num'' x'' e'' ex_cks'' =>
         conj_message (check_optimization_compare ast_num ex_cks ex_cks' ex_cks'')
                      (conj_message (name_check_optimization_compare x x' x'')
                                    (exp_check_optimization_compare e e' e'')
                      )
-    | E_Selected_Component_X ast_num x f ex_cks, E_Selected_Component_X ast_num' x' f' ex_cks',
-                                                 E_Selected_Component_X ast_num'' x'' f'' ex_cks'' =>
+    | SelectedComponentRT ast_num x f ex_cks, SelectedComponentRT ast_num' x' f' ex_cks',
+                                                 SelectedComponentRT ast_num'' x'' f'' ex_cks'' =>
         conj_message (check_optimization_compare ast_num ex_cks ex_cks' ex_cks'')
                      (name_check_optimization_compare x x' x'')
     | _, _, _ => Error
     end.
 
-  Function args_check_optimization_compare (es_opt es_gnat es_cmp: list expression_x): return_message :=
+  Function args_check_optimization_compare (es_opt es_gnat es_cmp: list expRT): return_message :=
     match es_opt, es_gnat, es_cmp with
     | nil, nil, nil => OK
     | (e1 :: es_opt'), (e2 :: es_gnat'), (e3 :: es_cmp') =>
@@ -137,62 +137,62 @@ Section Check_Optimization_Comparison.
 
   (** ** Check Flags Validator For Statement *)
 
-  Function stmt_check_optimization_compare (c_opt c_gnat c_cmp: statement_x): return_message :=
+  Function stmt_check_optimization_compare (c_opt c_gnat c_cmp: stmtRT): return_message :=
     match c_opt, c_gnat, c_cmp with
-    | S_Null_X, S_Null_X, S_Null_X => OK
-    | S_Assignment_X ast_num x e, S_Assignment_X ast_num' x' e', S_Assignment_X ast_num'' x'' e'' =>
+    | NullRT, NullRT, NullRT => OK
+    | AssignRT ast_num x e, AssignRT ast_num' x' e', AssignRT ast_num'' x'' e'' =>
         conj_message (name_check_optimization_compare x x' x'')
                      (exp_check_optimization_compare e e' e'')
-    | S_If_X ast_num e c1 c2, S_If_X ast_num' e' c1' c2', S_If_X ast_num'' e'' c1'' c2'' =>
+    | IfRT ast_num e c1 c2, IfRT ast_num' e' c1' c2', IfRT ast_num'' e'' c1'' c2'' =>
         conj_message (exp_check_optimization_compare e e' e'')
                      (conj_message (stmt_check_optimization_compare c1 c1' c1'')
                                    (stmt_check_optimization_compare c2 c2' c2''))
-    | S_While_Loop_X ast_num e c, S_While_Loop_X ast_num' e' c', S_While_Loop_X ast_num'' e'' c'' =>
+    | WhileRT ast_num e c, WhileRT ast_num' e' c', WhileRT ast_num'' e'' c'' =>
         conj_message (exp_check_optimization_compare e e' e'')
                      (stmt_check_optimization_compare c c' c'')
-    | S_Procedure_Call_X ast_num p_ast_num p args, S_Procedure_Call_X ast_num' p_ast_num' p' args', 
-                                                   S_Procedure_Call_X ast_num'' p_ast_num'' p'' args'' =>
+    | CallRT ast_num p_ast_num p args, CallRT ast_num' p_ast_num' p' args', 
+                                                   CallRT ast_num'' p_ast_num'' p'' args'' =>
         (args_check_optimization_compare args args' args'')
-    | S_Sequence_X ast_num c1 c2, S_Sequence_X ast_num' c1' c2', S_Sequence_X ast_num'' c1'' c2'' =>
+    | SeqRT ast_num c1 c2, SeqRT ast_num' c1' c2', SeqRT ast_num'' c1'' c2'' =>
         conj_message (stmt_check_optimization_compare c1 c1' c1'')
                      (stmt_check_optimization_compare c2 c2' c2'')
     | _, _, _ => Error
     end.
 
-  Function type_decl_check_optimization_compare (t_opt t_gnat t_cmp: type_declaration_x): return_message :=
+  Function type_decl_check_optimization_compare (t_opt t_gnat t_cmp: typeDeclRT): return_message :=
     match t_opt, t_gnat, t_cmp with
-    | Subtype_Declaration_X ast_num tn t (Range_X l u), Subtype_Declaration_X ast_num' tn' t' (Range_X l' u'),
-      Subtype_Declaration_X ast_num'' tn'' t'' (Range_X l'' u'') =>
+    | SubtypeDeclRT ast_num tn t (RangeRT l u), SubtypeDeclRT ast_num' tn' t' (RangeRT l' u'),
+      SubtypeDeclRT ast_num'' tn'' t'' (RangeRT l'' u'') =>
         OK
-    | Derived_Type_Declaration_X ast_num tn t (Range_X l u), Derived_Type_Declaration_X ast_num' tn' t' (Range_X l' u'),
-      Derived_Type_Declaration_X ast_num'' tn'' t'' (Range_X l'' u'') =>
+    | DerivedTypeDeclRT ast_num tn t (RangeRT l u), DerivedTypeDeclRT ast_num' tn' t' (RangeRT l' u'),
+      DerivedTypeDeclRT ast_num'' tn'' t'' (RangeRT l'' u'') =>
         OK
-    | Integer_Type_Declaration_X ast_num tn (Range_X l u), Integer_Type_Declaration_X ast_num' tn' (Range_X l' u'),
-      Integer_Type_Declaration_X ast_num'' tn'' (Range_X l'' u'') =>  
+    | IntegerTypeDeclRT ast_num tn (RangeRT l u), IntegerTypeDeclRT ast_num' tn' (RangeRT l' u'),
+      IntegerTypeDeclRT ast_num'' tn'' (RangeRT l'' u'') =>  
         OK
-    | Array_Type_Declaration_X ast_num tn tm t, Array_Type_Declaration_X ast_num' tn' tm' t',
-      Array_Type_Declaration_X ast_num'' tn'' tm'' t'' =>
+    | ArrayTypeDeclRT ast_num tn tm t, ArrayTypeDeclRT ast_num' tn' tm' t',
+      ArrayTypeDeclRT ast_num'' tn'' tm'' t'' =>
         OK
-    | Record_Type_Declaration_X ast_num tn fs, Record_Type_Declaration_X ast_num' tn' fs',
-      Record_Type_Declaration_X ast_num'' tn'' fs'' =>
+    | RecordTypeDeclRT ast_num tn fs, RecordTypeDeclRT ast_num' tn' fs',
+      RecordTypeDeclRT ast_num'' tn'' fs'' =>
         OK
     | _, _, _ => 
         Error
     end.
 
-  Function object_decl_check_optimization_compare (o_opt o_gnat o_cmp: object_declaration_x): return_message :=
+  Function object_decl_check_optimization_compare (o_opt o_gnat o_cmp: objDeclRT): return_message :=
     match o_opt, o_gnat, o_cmp with
-    | mkobject_declaration_x ast_num x t None, mkobject_declaration_x ast_num' x' t' None, 
-      mkobject_declaration_x ast_num'' x'' t'' None =>
+    | mkobjDeclRT ast_num x t None, mkobjDeclRT ast_num' x' t' None, 
+      mkobjDeclRT ast_num'' x'' t'' None =>
         OK
-    | mkobject_declaration_x ast_num x t (Some e), mkobject_declaration_x ast_num' x' t' (Some e'),
-      mkobject_declaration_x ast_num'' x'' t'' (Some e'') =>
+    | mkobjDeclRT ast_num x t (Some e), mkobjDeclRT ast_num' x' t' (Some e'),
+      mkobjDeclRT ast_num'' x'' t'' (Some e'') =>
         exp_check_optimization_compare e e' e''
     | _, _, _ => 
         Error
     end.
 
-  Function object_decls_check_optimization_compare (os_opt os_gnat os_cmp: list object_declaration_x): return_message :=
+  Function object_decls_check_optimization_compare (os_opt os_gnat os_cmp: list objDeclRT): return_message :=
     match os_opt, os_gnat, os_cmp with
     | nil, nil, nil => OK
     | o1 :: os_opt', o2 :: os_gnat', o3 :: os_cmp' => 
@@ -201,14 +201,14 @@ Section Check_Optimization_Comparison.
     | _, _, _ => Error
     end.
 
-  Function param_spec_check_optimization_compare (param_opt param_gnat param_cmp: parameter_specification_x): return_message :=
+  Function param_spec_check_optimization_compare (param_opt param_gnat param_cmp: paramSpecRT): return_message :=
     match param_opt, param_gnat, param_cmp with
-    | mkparameter_specification_x ast_num x m t, mkparameter_specification_x ast_num' x' m' t',
-      mkparameter_specification_x ast_num'' x'' m'' t'' =>
+    | mkparamSpecRT ast_num x m t, mkparamSpecRT ast_num' x' m' t',
+      mkparamSpecRT ast_num'' x'' m'' t'' =>
         OK
     end.
 
-  Function param_specs_check_optimization_compare (params_opt params_gnat params_cmp: list parameter_specification_x): return_message :=
+  Function param_specs_check_optimization_compare (params_opt params_gnat params_cmp: list paramSpecRT): return_message :=
     match params_opt, params_gnat, params_cmp with
     | nil, nil, nil => OK
     | param1 :: params_opt', param2 :: params_gnat', param3 :: params_cmp' => 
@@ -219,38 +219,38 @@ Section Check_Optimization_Comparison.
 
   (** ** Check Flags Validator For Declaration *)
 
-  Function declaration_check_optimization_compare (d_opt d_gnat d_cmp: declaration_x): return_message :=
+  Function declaration_check_optimization_compare (d_opt d_gnat d_cmp: declRT): return_message :=
     match d_opt, d_gnat, d_cmp with
-    | D_Null_Declaration_X, D_Null_Declaration_X, D_Null_Declaration_X => OK
-    | D_Type_Declaration_X ast_num t, D_Type_Declaration_X ast_num' t', D_Type_Declaration_X ast_num'' t'' => 
+    | NullDeclRT, NullDeclRT, NullDeclRT => OK
+    | TypeDeclRT ast_num t, TypeDeclRT ast_num' t', TypeDeclRT ast_num'' t'' => 
         type_decl_check_optimization_compare t t' t''
-    | D_Object_Declaration_X ast_num o, D_Object_Declaration_X ast_num' o', D_Object_Declaration_X ast_num'' o'' =>
+    | ObjDeclRT ast_num o, ObjDeclRT ast_num' o', ObjDeclRT ast_num'' o'' =>
         object_decl_check_optimization_compare o o' o''
-    | D_Procedure_Body_X ast_num p, D_Procedure_Body_X ast_num' p', D_Procedure_Body_X ast_num'' p'' =>
+    | ProcBodyDeclRT ast_num p, ProcBodyDeclRT ast_num' p', ProcBodyDeclRT ast_num'' p'' =>
         procedure_body_check_optimization_compare p p' p''
-    | D_Seq_Declaration_X ast_num d1 d2, D_Seq_Declaration_X ast_num' d1' d2', D_Seq_Declaration_X ast_num'' d1'' d2'' =>
+    | SeqDeclRT ast_num d1 d2, SeqDeclRT ast_num' d1' d2', SeqDeclRT ast_num'' d1'' d2'' =>
         conj_message (declaration_check_optimization_compare d1 d1' d1'')
                      (declaration_check_optimization_compare d2 d2' d2'')
     | _, _, _ => Error
     end
 
-  with procedure_body_check_optimization_compare (p_opt p_gnat p_cmp: procedure_body_x): return_message :=
+  with procedure_body_check_optimization_compare (p_opt p_gnat p_cmp: procBodyDeclRT): return_message :=
     match p_opt, p_gnat, p_cmp with
-    | mkprocedure_body_x ast_num p params decls stmt, mkprocedure_body_x ast_num' p' params' decls' stmt',
-      mkprocedure_body_x ast_num'' p'' params'' decls'' stmt'' =>
+    | mkprocBodyDeclRT ast_num p params decls stmt, mkprocBodyDeclRT ast_num' p' params' decls' stmt',
+      mkprocBodyDeclRT ast_num'' p'' params'' decls'' stmt'' =>
         conj_message (param_specs_check_optimization_compare params params' params'')
                      (conj_message (declaration_check_optimization_compare decls decls' decls'')
                                    (stmt_check_optimization_compare stmt stmt' stmt''))
     end.
 
-  (** compile2_flagged_declaration_f (st: symboltable) (d: declaration): option declaration_x, 
+  (** compile2_flagged_declaration_f (st: symboltable) (d: declaration): option declarationRT, 
       compile2_flagged_declaration_f function computes the expected ast with desired checks, which
       is used to compare with the ast with checks generated by gnatpro frontend;
       x: is the expected ast tree, y: is gnatpro generated ast tree;
       this function is used for test demo;
   *)
-  Definition checks_optimization_compare (opt_ast_option: option declaration_x) (gnat_ast: declaration_x) 
-                              (cmp_ast_option: option declaration_x): return_message :=
+  Definition checks_optimization_compare (opt_ast_option: option declRT) (gnat_ast: declRT) 
+                              (cmp_ast_option: option declRT): return_message :=
     match opt_ast_option, cmp_ast_option with
     | Some opt_ast, Some cmp_ast => declaration_check_optimization_compare opt_ast gnat_ast cmp_ast
     | _, _ => Error
@@ -277,7 +277,7 @@ Section Map_To_Source_Location.
     | Error' : return_message'
     | Mismatch': list diff_message' -> return_message'.
 
-  Function wrap_messages_with_source_location (st: symboltable) (msgs: list diff_message): option (list diff_message') :=
+  Function wrap_messages_with_source_location (st: Symbol_Table_Module.symboltable) (msgs: list diff_message): option (list diff_message') :=
     match msgs with
     | nil => Some nil
     | (diff ast_num opt_cks gnat_cks cmp_cks a) :: msgs' =>
@@ -291,7 +291,7 @@ Section Map_To_Source_Location.
         end
     end.
 
-  Definition map_to_source_location (st: symboltable) (bugInfor: return_message): return_message' :=
+  Definition map_to_source_location (st: Symbol_Table_Module.symboltable) (bugInfor: return_message): return_message' :=
     match bugInfor with
     | OK    => OK'
     | Error => Error'

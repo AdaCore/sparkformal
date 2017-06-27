@@ -249,6 +249,25 @@ Inductive exact_levelG:  state -> Prop :=
         assumption.
   Qed.
 
+  Lemma reside_false_fetch_none: forall (id : idnum) (fr : frame), reside id fr = false <-> fetch id fr = None.
+  Proof.
+    intros id fr. 
+    unfold reside, fetch in *.
+    symmetry.
+    apply fetches_ok_none.
+  Qed.
+
+  Lemma fetch_ok_some: forall id sto,
+      reside id sto = true -> 
+      exists v, fetch id sto = Some v.
+  Proof.
+    intros id sto H. 
+    destruct (fetch id sto) eqn:heq.
+    - eauto.
+    - apply reside_false_fetch_none in heq.
+      now rewrite H in heq.
+  Qed.
+
   Lemma updates_ok_same: forall sto id v sto',
       updates sto id v = Some sto'
       -> fetches id sto' = Some v.
@@ -554,13 +573,6 @@ Inductive exact_levelG:  state -> Prop :=
       eapply IHo; eauto.
   Qed.
 
-  Lemma reside_false_fetch_none: forall (id : idnum) (fr : frame), reside id fr = false <-> fetch id fr = None.
-  Proof.
-    intros id fr. 
-    unfold reside, fetch in *.
-    symmetry.
-    apply fetches_ok_none.
-  Qed.
 
   Lemma resideG_false_fetchG_none: forall (id : idnum) (sto : state), resideG id sto = false -> fetchG id sto = None.
   Proof.
@@ -623,6 +635,18 @@ Inductive exact_levelG:  state -> Prop :=
     split;intro h.
     - apply frameG_resideG_2;auto.
     - apply frameG_resideG_1;auto.
+  Qed.
+
+
+  Lemma fetchG_ok_some: forall id sto,
+      resideG id sto = true -> 
+      exists v, fetchG id sto = Some v.
+  Proof.
+    intros id sto H. 
+    destruct (fetchG id sto) eqn:heq.
+    - eauto.
+    - apply fetchG_ok_none_iff in heq.
+      now rewrite H in heq.
   Qed.
 
   

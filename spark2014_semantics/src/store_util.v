@@ -1098,6 +1098,36 @@ Proof.
 Qed.
 
 
+Lemma nodupG_fetch_cons: forall fr CE id δ,
+    exact_levelG (fr :: CE) ->
+    NoDup_G (fr :: CE) ->
+    fetchG id CE = Some δ ->
+    fetch id fr = None.
+Proof.
+  intros fr CE id δ H H0 H1. 
+  destruct (fetch id fr) eqn:heq;auto.
+  assert (reside id fr=false) as heq_reside.
+  { eapply nodup_G_cons;eauto.
+    eapply fetchG_ok;eauto. }
+  assert (reside id fr=true) as heq_reside'.
+  { eapply fetch_ok;eauto. }
+  rewrite heq_reside in heq_reside';discriminate.
+Qed.
+
+Lemma nodupG_fetchG_cons: forall fr CE id δ,
+    exact_levelG (fr :: CE) ->
+    NoDup_G (fr :: CE) ->
+    fetchG id CE = Some δ ->
+    fetchG id (fr :: CE) = Some δ.
+Proof.
+  intros fr CE id δ H H0 H1. 
+  destruct fr.
+  specialize nodupG_fetch_cons with (1:=H) (2:=H0) (3:=H1);intro h.
+  cbn in *.
+  rewrite h.
+  assumption.
+Qed.
+
 
 
 End STORE_PROP.

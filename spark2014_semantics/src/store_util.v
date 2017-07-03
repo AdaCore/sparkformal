@@ -1128,6 +1128,262 @@ Proof.
   assumption.
 Qed.
 
+Lemma updateG_ok_others_frameG: forall stk id v stk',
+      updateG stk id v = Some stk' ->
+      forall id' lvl sto,
+        id<>id' ->
+        frameG id' stk = Some (lvl,sto) -> 
+        exists sto', frameG id' stk' = Some (lvl,sto').
+Proof.
+  intros until v.
+  functional induction (updateG stk id v);simpl;intros;try discriminate.
+  all: try match goal with
+  | H:Some _ = Some _ |- _ => rename H into heq_Some
+  end.
+  all: try match goal with
+  | H:_ <> _ |- _ => rename H into hneq
+  end.
+  - inversion heq_Some; clear heq_Some; subst.
+    simpl.
+    pose proof update_ok_others_reside _ _ _ _ e0 _ hneq as heq_reside.
+    rewrite <- heq_reside.
+    destruct (reside id' f) as [heq_Some' | ] eqn:h.
+    + match goal with
+      | H:Some _ = Some _ |- _ => inversion H;subst
+      end.
+      unfold update in e0.
+      cbn in *.
+      destruct (updates sto x v) eqn:heq.
+      * inversion e0.
+        eauto.
+      * discriminate.
+    + rewrite H1.
+      eauto.
+  - inversion heq_Some;subst;clear heq_Some.
+    destruct (reside id' f) eqn:h.
+    + inversion H1;subst.
+      cbn in *.
+      rewrite h.
+      eauto.
+    + cbn in *.
+      rewrite h.
+      eapply IHo;eauto.
+Qed.
+
+Lemma updateG_ok_frameG_others : forall stk id v stk' sto_id  lvl_id,
+    updateG stk id v = Some stk' ->
+    frameG id stk = Some (lvl_id,sto_id) ->
+    forall id' lvl sto_id' sto'_id',
+      frameG id' stk = Some (lvl,sto_id') -> 
+      frameG id' stk' = Some (lvl,sto'_id') ->
+      lvl <> lvl_id ->
+      sto_id' = sto'_id'.
+Proof.
+  intros until v.
+  functional induction (updateG stk id v);simpl;try (now (intros;try discriminate));rename x into id.
+  - rename e0 into heq_update.
+    intros stk' sto_id lvl_id heq_Some heq_Some0 id' lvl sto_id' sto'_id' heq_Some1 heq_frameG hneq. 
+    inversion heq_Some;simpl.
+    assert (reside id f = true) as heq_reside.
+    { eapply update_ok_same_reside_orig; eauto. }
+    rewrite heq_reside in heq_Some0.
+    inversion heq_Some0;subst.
+    assert (reside id' (lvl_id, sto_id) = false) as heq_reside0.
+    { cbn in *.
+      destruct (resides id' sto_id);auto.
+      exfalso.
+      inversion heq_Some1.
+      now apply hneq. }
+    rewrite heq_reside0 in heq_Some1.
+    unfold update in heq_update.
+    cbn in heq_update.
+    functional inversion heq_frameG;subst.
+    + exfalso.
+      apply hneq.
+      destruct (updates sto_id id v);try discriminate.
+      now inversion heq_update.
+    + rewrite X in heq_Some1.
+      now inversion heq_Some1.
+  -rename e0 into heq_update.
+   intros stk' sto_id lvl_id heq_Some heq_Some0 id' lvl sto_id' sto'_id' heq_Some1 heq_frameG hneq. 
+    assert (reside id f = false) as heq_reside.
+    { apply reside_false_fetch_none.
+      rewrite <- update_ok_none;eauto. }
+    rewrite heq_reside in heq_Some0.
+    inversion heq_Some;subst.
+    destruct (reside id' f) eqn:heq.
+   + inversion heq_Some1;subst.
+      cbn in heq_frameG.
+      cbn in heq.
+      rewrite heq in heq_frameG.
+      now inversion  heq_frameG.
+    + eapply IHo ;eauto.
+      cbn in heq_frameG.
+      now rewrite heq in heq_frameG.
+Qed.
+
+Lemma exact_lvl_frameG_same_lvl : forall stk,
+    exact_levelG stk ->
+    forall id id' lvl sto_id sto_id',
+      frameG id stk = Some (lvl,sto_id) ->
+      frameG id' stk = Some (lvl,sto_id') ->
+      sto_id = sto_id'.
+Proof.
+  intros stk h_exct_lvl_stk.
+  induction h_exct_lvl_stk.
+  - intros id id' lvl sto_id sto_id' heq_frameG heq_frameG0.
+    functional inversion heq_frameG.
+  - intros id id' lvl sto_id sto_id' heq_frameG heq_frameG0.
+    functional inversion heq_frameG;functional inversion heq_frameG0;subst;auto.
+    + exfalso.
+      apply exact_levelG_frameG_lt_lgth in X.
+      * omega.
+      * assumption.
+    + exfalso.
+      apply  exact_levelG_frameG_lt_lgth in X.
+      * omega.
+      * assumption.
+    + eapply IHh_exct_lvl_stk;eauto.
+Qed.
+
+Lemma updateG_spec_1 : forall stk id v stk',
+    updateG stk id v = Some stk' ->
+    exists stk1 sto sto' stk2 ,
+      stk = stk1 ++ (sto::stk2)
+      /\ stk' = stk1 ++ (sto'::stk2)
+      /\ update sto id v = Some sto'
+      /\ (forall sto1, List.In sto1 stk1 -> reside id sto1 = false)
+      /\ frameG id stk = Some sto.
+Proof.
+  intros stk id v. 
+  functional induction (updateG stk id v).
+  - rename e0 into heq_update_f_x.
+    intros stk' heq_Some. 
+    inversion heq_Some;subst;clear heq_Some.
+    exists nil, f, f' , s';repeat split;auto.
+    + intros sto1 hIn. 
+      inversion hIn.
+    + cbn.
+      erewrite update_ok_same_reside_orig;eauto.
+  - rename e0 into heq_update_f_x.
+    rename e1 into heq_updateG_s'_x.
+    intros stk' heq_Some.
+    inversion heq_Some;subst;clear heq_Some.
+    specialize IHo with (1:=heq_updateG_s'_x).
+    destruct IHo as [stk1 [sto [sto' [stk2 [heq_s' [heq_s'' [heq_update_x_v [h_forall heq_frameG]]]]]]]].
+    subst.
+    exists (f::stk1), sto, sto', stk2;repeat split;auto.
+    + intros sto1 hIn. 
+      cbn in hIn.
+      destruct hIn.
+      * subst.
+        apply update_ok_none in heq_update_f_x.
+        now apply fetch_ok_none.
+      * now apply h_forall.
+    + cbn.
+      assert (reside x f = false) as heq_reside.
+      { destruct (reside x f) eqn:heq;auto.
+        apply fetch_ok_some in heq.
+        destruct heq as [ x0 heq_fetch_x_f].
+        rewrite update_ok_none in heq_update_f_x.
+        rewrite heq_update_f_x in heq_fetch_x_f.
+        discriminate. }
+      now rewrite heq_reside.
+  - discriminate.
+  - discriminate.
+Qed.
+
+
+Lemma exact_levelG_sublist2:
+  forall (CE1 CE2 : list frame), exact_levelG (CE1 ++ CE2) -> exact_levelG CE2.
+Proof.
+  induction CE1.
+  - now intro.
+  - intros CE2 H.
+    specialize exact_levelG_sublist with (1:=H).
+    intro.
+    apply IHCE1.
+    assumption.
+Qed.
+
+Lemma exact_levelG_frameG_unique_lvl: forall stk1 stk2 lvl sto_id1 id sto_id2,
+      exact_levelG (stk1 ++ (lvl, sto_id1) :: stk2) ->
+      frameG id (stk1 ++ (lvl, sto_id1) :: stk2) = Some (lvl, sto_id2) ->
+      sto_id1 = sto_id2.
+Proof.
+  induction stk1.
+  - intros stk2 lvl sto_id1 id sto_id2 h_exct_lvl heq_frameG. 
+    cbn in *.
+    destruct (resides id sto_id1) eqn:heq.
+    + now inversion heq_frameG.
+    + exfalso.
+      assert (exact_levelG stk2) as h_exct_lvl_stk2.
+      { now eapply exact_levelG_sublist;eauto. }
+      specialize exact_lvl_level_of_top with (1:=h_exct_lvl_stk2)(2:=heq_frameG) as h_ex.
+      destruct h_ex as [top [heq_level_of_top h_le]].
+      specialize exact_lvl_lvl_of_top with (1:=h_exct_lvl_stk2)(2:=heq_level_of_top);intro.
+      inversion h_exct_lvl;subst.
+      omega.
+  - intros stk2 lvl sto_id1 id sto_id2 h_exct_lvl heq_frameG.
+    eapply IHstk1.
+    + cbn in h_exct_lvl.
+      now eapply exact_levelG_sublist;eauto. 
+    + functional inversion heq_frameG;subst.
+      * exfalso.
+        assert (exact_levelG ((lvl, sto_id1) :: stk2)).
+        { eapply exact_levelG_sublist2;eauto. }
+        eapply exact_lvl_lvl_of_top in H.
+        all:swap 1 2.
+        cbn.
+        reflexivity.
+        eapply exact_lvl_lvl_of_top in h_exct_lvl.
+        all:swap 1 2.
+        cbn.
+        reflexivity.
+        simpl Datatypes.length in *.
+        rewrite app_length in h_exct_lvl.
+        simpl Datatypes.length in *.
+        fold frame in *. (* omega fails to unify some terms otherwise *)
+        omega.
+      * eauto.
+Qed.
+
+Lemma updateG_ok_others_frameG_orig: forall stk id v stk',
+      updateG stk id v = Some stk' ->
+      forall id' lvl sto,
+        id<>id' ->
+        frameG id' stk' = Some (lvl,sto) -> 
+        exists sto', frameG id' stk = Some (lvl,sto').
+Proof.
+  intros until v.
+  functional induction (updateG stk id v);simpl;try now (intros;try discriminate).
+  - rename e0 into heq_update_f_x.
+    intros stk' heq_Some id' lvl sto hneq heq_frameG.
+    inversion heq_Some;subst;simpl.
+    pose proof update_ok_others_reside _ _ _ _ heq_update_f_x _ hneq as heq_reside.
+    rewrite heq_reside.
+    simpl in heq_frameG.
+    destruct (reside id' f') eqn:h.
+    + inversion heq_frameG;subst.
+      unfold update in heq_update_f_x.
+      cbn in *.
+      destruct (updates (store_of f) x v) eqn:heq.
+      * inversion heq_update_f_x.
+        destruct f;simpl in *.
+        eauto.
+      * discriminate.
+    + rewrite heq_frameG.
+      eauto.
+  - rename e0 into heq_update_f_x.
+    rename e1 into heq_updateG_s'_x.
+    intros stk' heq_Some id' lvl sto H0 heq_frameG.
+    inversion heq_Some;subst;simpl.
+    simpl in *. 
+    destruct (reside id' f) eqn:h.
+    + inversion heq_frameG.
+      eauto.
+    + eapply IHo;eauto.
+Qed.
 
 
 End STORE_PROP.

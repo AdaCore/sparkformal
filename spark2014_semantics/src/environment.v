@@ -115,7 +115,7 @@ Module STORE(V:ENTRY).
   
   Definition cut_to (x: idnum) (f: frame) := cuts_to x (store_of f).
 
-  Definition update (f: frame) (x: idnum) (v: V): option frame := 
+  Function update (f: frame) (x: idnum) (v: V): option frame := 
     match updates (store_of f) x v with 
     | Some s => Some (level_of f, s)
     | None => None 

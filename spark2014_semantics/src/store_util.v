@@ -11,7 +11,7 @@ Require Import FunInd Morphisms Relations SetoidList.
 Module STORE_PROP (V:ENTRY).
   Module ST := STORE(V).
   Include ST.
-  Functional Scheme update_ind := Induction for ST.update Sort Prop.
+  (* Functional Scheme update_ind := Induction for ST.update Sort Prop. *)
 (*   Functional Scheme updates_ind := Induction for ST.updates Sort Prop. *)
   Functional Scheme fetch_ind := Induction for fetch Sort Prop.
 
@@ -1385,5 +1385,58 @@ Proof.
     + eapply IHo;eauto.
 Qed.
 
+Lemma nodup_cons:
+  forall (f : ST.frame) (s' : list ST.frame),
+    NoDup s' -> NoDup (f::nil) -> NoDup (f :: s').
+Proof.
+  intros f s' h_nodup_s' h.
+  red.
+  intros nme lvl sto sto' sto'' h_frameG h_cut.
+  functional inversion h_frameG;subst.
+  - rename H3 into h_reside.
+    eapply h;eauto.
+    unfold frameG.
+    rewrite h_reside.
+    reflexivity.
+  - eapply h_nodup_s';eauto.
+Qed.
+
+
+Lemma update_nodup:
+  forall (x : idnum) (v : V) (f : ST.frame) (s' : list ST.frame) 
+    (f' : ST.frame), ST.update f x v = Some f' -> NoDup (f::nil) -> NoDup (f'::nil).
+Proof.
+  intros x v f s' f' h_update h_nodup_fs'.
+  red.
+  intros nme lvl sto sto' sto'' h_frameG h_cut.
+  red in h_nodup_fs'.
+  destruct f.
+  assert (exists f_prfx, cuts_to nme s0 = (f_prfx, sto'')).
+  { admit. }
+  destruct H as [f_prfx h_cut_s0].
+  eapply h_nodup_fs' with  (lvl:=lvl) (2:=h_cut_s0).
+  cbn.
+  assert (resides nme s0 = true).
+  { functional inversion h_update;subst.
+    apply update_ok_same_reside_orig in h_update.
+    
+    eapply updates_ok_same_resides_orig;eauto.
+    unfold update in h_update.
+    
+
+  eapply 
+  functional inversion h_frameG;subst.
+    all:swap 1 2.
+    * functional inversion X.
+    * 
+  
+
+
+Qed.
+
+Lemma stack_NoDup_prefix: forall CE1 CE2 : list frame,
+    exact_levelG (CE1 ++ CE2) -> NoDup_G (CE1 ++ CE2) -> NoDup (CE1 ++ CE2) -> NoDup CE1.
+Proof.
+Qed.
 
 End STORE_PROP.

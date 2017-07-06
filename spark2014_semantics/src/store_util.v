@@ -1401,7 +1401,44 @@ Proof.
   - eapply h_nodup_s';eauto.
 Qed.
 
-
+Lemma update_spec_1 : forall fr id v fr',
+    updates fr id v = Some fr' -> 
+    exists fr1 v0 fr2,
+      fr = fr1 ++ (id, v0)::fr2
+      /\ resides id fr1 = false.
+Proof.
+  intros fr id v.
+  functional induction (updates fr id v).
+  -  apply beq_nat_true in e0.
+     subst.
+     intros fr' heq_Some. 
+     inversion heq_Some.
+     subst.
+     exists nil.
+     cbn;eauto.
+  - intros fr' heq_Some. 
+    inversion heq_Some; subst;clear heq_Some.
+    specialize IHo with (1:=e1).
+    destruct IHo as [fr1 [v0 [fr2 [h1 h2]]]].
+    subst.
+    exists ((y, v') :: fr1), v0 , fr2;split;auto.
+    cbn.
+    now rewrite e0.
+  - intros;discriminate.
+  - intros;discriminate.
+Qed.
+    
+(*
+Lemma update_spec_1 : forall fr id v fr',
+    updates fr id v = Some fr' -> 
+    exists fr1 v0 fr2,
+      fr = fr1 ++ (id, v0)::fr2.
+Lemma update_nodup:
+  forall nme (f : ST.frame),
+    cuts_to nme f = (sto1, sto2) ->
+    forall x v f', ST.update f x v = Some f' ->
+                   exists sto1', cuts_to nme f = (sto1', sto2).
+         
 Lemma update_nodup:
   forall (x : idnum) (v : V) (f : ST.frame) (s' : list ST.frame) 
     (f' : ST.frame), ST.update f x v = Some f' -> NoDup (f::nil) -> NoDup (f'::nil).
@@ -1438,5 +1475,5 @@ Lemma stack_NoDup_prefix: forall CE1 CE2 : list frame,
     exact_levelG (CE1 ++ CE2) -> NoDup_G (CE1 ++ CE2) -> NoDup (CE1 ++ CE2) -> NoDup CE1.
 Proof.
 Qed.
-
+*)
 End STORE_PROP.

@@ -12,26 +12,38 @@ Module STORE_PROP (V:ENTRY).
   Module ST := STORE(V).
   Include ST.
   (* Functional Scheme update_ind := Induction for ST.update Sort Prop. *)
-(*   Functional Scheme updates_ind := Induction for ST.updates Sort Prop. *)
+ (* Functional Scheme updates_ind := Induction for ST.updates Sort Prop. *)
   Functional Scheme fetch_ind := Induction for fetch Sort Prop.
+
+  Definition eq_fst {A} {B} (x y:A*B) := fst x = fst y.
 
   (* The AST provided by gnat/sireum are supposed to have no two variables sharing
    the same name. This should imply that there are no duplication of name in stacks. *)
   (* intra-store *)
-  Definition NoDup (s : state) := 
+  Definition NoDup_obs (s : state) := 
     forall nme lvl sto (sto' sto'':store),
       frameG nme s = Some (lvl,sto) ->
       cuts_to nme sto = (sto',sto'') ->
       resides nme (List.tl sto'') = false.
 
+  Definition NoDup (s : state) := 
+    forall lvl sto, List.In (lvl,sto) s -> NoDupA eq_fst sto.
+
+
   (* extra-store *)
-  Definition NoDup_G (s : state) := 
+  Definition non_empty_intersection_list {A} {B} (l1 l2:list (A*B)) :=
+    exists e, InA eq_fst e l1 /\ InA eq_fst e l2.
+  
+  Definition non_empty_intersection_frame (fr1 fr2:frame) :=
+    non_empty_intersection_list (snd fr1) (snd fr2).
+
+  Definition NoDup_G := NoDupA non_empty_intersection_frame.
+
+  Definition NoDup_G_obs (s : state) := 
     forall nme lvl sto s' s'',
       frameG nme s = Some (lvl,sto) ->
       cut_until s lvl s' s'' ->
       resideG nme s'' = false.
-
-
 
 (** levels in the global stack match exactly their nesting levels. *)
 Inductive exact_levelG:  state -> Prop :=
@@ -925,161 +937,140 @@ Proof.
       auto with arith.
 Qed.
 
+Lemma resides_spec: forall nme a,
+    resides nme a = true ->
+    exists v, InA eq_fst (nme,v) a.
+Proof.
+  intros nme a. 
+  functional induction resides nme a;simpl;try discriminate.
+  - intros _.
+    exists v;eauto.
+    apply Nat.eqb_eq in e0.
+    subst.
+    constructor.
+    reflexivity.
+  - intros h.
+    apply Nat.eqb_neq in e0.
+    specialize (IHb h).
+    destruct IHb as [v' hInA].
+    exists v';auto.
+Qed.
+
+Lemma reside_spec: forall nme a,
+    reside nme a = true ->
+    exists v, InA eq_fst (nme,v) (store_of a).
+Proof.
+  intros nme a H.
+  unfold reside in *.
+  now apply resides_spec.
+Qed.
+
+Lemma InA_eq_fst_snd_indep:forall A B (nme:A) (v v':B) x,
+    InA eq_fst (nme, v') x -> 
+    InA eq_fst (nme, v) x.
+Proof.
+  intros A B nme v v' x h.
+  induction h.
+  - constructor;auto.
+  - subst.
+    constructor 2;auto.
+Qed.
+
+Lemma reside_resideG_inters: forall nme l a,
+    resideG nme l = true ->
+    reside nme a = true ->
+    InA non_empty_intersection_frame a l.
+Proof.
+  intros nme l.
+  functional induction resideG nme l;try now (intros;discriminate).
+  - intros a _ h_reside_a.
+    constructor 1.
+    red.
+    specialize reside_spec with (1:=e0) as [v h].
+    specialize reside_spec with (1:=h_reside_a) as [v' h'].
+    exists (nme,v);split;auto.
+    eapply InA_eq_fst_snd_indep;eauto.
+  - intros a H H0.
+    constructor 2.
+    auto.
+Qed.
+
+
 Lemma nodup_G_cons :
   forall a l nme ,
-    exact_levelG (a::l) ->
     NoDup_G (a::l) -> resideG nme l = true -> reside nme a = false.
 Proof.
-  intros a l nme h__exact h_nodupG h_reside. 
+  intros a l nme h_nodupG h_reside. 
   destruct (reside nme a) eqn:?;auto.
-  specialize (h_nodupG nme (level_of a) (store_of a) (a::nil) l).
-  cbn in h_nodupG.
-  rewrite h_reside,Heqb in h_nodupG.
-  assert (Some a = Some (level_of a, store_of a)).
-  { destruct a;auto. }
-  specialize (h_nodupG H).
-  clear H.
-  assert (cut_until (a :: l) (level_of a) (a::nil) l).
-  { constructor 3.
-    - omega.
-    - destruct l.
-      + constructor 1.
-      + constructor 2.
-        inversion h__exact.
-        inversion H0.
-        subst.
-        cbn.
-        omega.  }
-  specialize (h_nodupG H).
-  discriminate.
+  exfalso.
+  inversion h_nodupG;subst.
+  apply H1.  
+  unfold non_empty_intersection_frame.
+  clear H1 H2.
+  eapply reside_resideG_inters;eauto.
 Qed.
 
 
 Lemma nodup_G_cons_2 :
   forall a l nme ,
-    exact_levelG (a::l) ->
     NoDup_G (a::l) -> reside nme a = true -> resideG nme l = false.
-Proof.
-  intros a l nme h__exact h_nodupG h_reside. 
-  destruct (resideG nme l) eqn:?;try discriminate;auto.
-
-  specialize (h_nodupG nme (level_of a) (store_of a) (a::nil) l).
-  cbn in h_nodupG.
-  rewrite h_reside,Heqb in h_nodupG.
-  assert (Some a = Some (level_of a, store_of a)).
-  { destruct a;auto. }
-  specialize (h_nodupG H).
-  clear H.
-  assert (cut_until (a :: l) (level_of a) (a::nil) l).
-  { constructor 3.
-    - omega.
-    - destruct l.
-      + constructor 1.
-      + constructor 2.
-        inversion h__exact.
-        inversion H0.
-        subst.
-        cbn.
-        omega.  }
-  specialize (h_nodupG H).
-  discriminate.
+  intros a l nme h_nodupG h_reside. 
+  destruct (resideG nme l) eqn:?;auto.
+  exfalso.
+  inversion h_nodupG;subst.
+  apply H1.  
+  unfold non_empty_intersection_frame.
+  clear H1 H2.
+  eapply reside_resideG_inters;eauto.
 Qed.
 
-Lemma stack_CE_NoDup_cons: forall l',
-    exact_levelG l' ->
-    NoDup_G l' ->
-    NoDup l' ->
-    forall l a,
-      l'= a::l ->
-      NoDup l.
+
+Lemma stack_NoDup_cons: forall l a,
+    NoDup (a::l) -> NoDup l.
 Proof.
-  intros l' H H0 H1 l a H2. 
-  red.
-  intros.
-  red in H1.
-  apply (H1 nme lvl sto sto' sto'').
-  - subst.
-    simpl.
-    red in H0.
-    assert (reside nme a = false).
-    { eapply nodup_G_cons;eauto.
-      eapply  frameG_resideG;eauto. }
-    rewrite H2.
-    assumption.
-  - assumption.
+  intros l a h_nodup. 
+  unfold NoDup in *.
+  intros lvl sto H.
+  eapply h_nodup.
+  constructor 2.
+  eassumption.
 Qed.
 
 
 
-Lemma stack_CE_NoDup_G_cons: forall l',
-    exact_levelG l' ->
-    forall l a,
-      l'= a::l ->
-      NoDup_G (a::l) -> NoDup_G l.
+Lemma stack_NoDup_G_cons: forall l a,
+    NoDup_G (a::l) -> NoDup_G l.
 Proof.
-  intros ? h_exct_lvl_l'.
-  induction h_exct_lvl_l';subst; intros; unfold NoDup_G in *;intros.
-  - inversion H.
-  - inversion H;subst.
-    remember (Datatypes.length l, fr) as a0.
-    assert (exact_levelG (a0 :: l)).
-    { subst a0.
-      constructor;auto. }
-    assert (reside nme a0 = false).
-    { eapply nodup_G_cons;eauto.
-      eapply  frameG_resideG;eauto. }
-
-    assert (frameG nme (a0 :: l) = Some (lvl, sto)).
-    { cbn.
-      rewrite H4.
-      auto. }
-
-    eapply H0 with (s':= a0 :: s');eauto.
-    constructor 3.
-    + pose proof exact_lvl_level_of_top (a0::l) as h.
-      specialize h with (1:=H3) (2:=H5).
-      destruct h as [top [h1 h2]].
-      enough (lvl <= level_of a0)%nat by omega.
-
-      assert (top = level_of a0).
-      { cbn in h1.
-        destruct a0;cbn.
-        inversion h1; reflexivity. }
-      subst top;auto with arith.
-    + assumption.
+  intros l a h_nodupG.
+  red in h_nodupG.
+  inversion h_nodupG;auto.
 Qed.
 
 
-Lemma stack_CE_NoDup_G_sublist: forall CE1 CE2,
-    exact_levelG (CE1 ++ CE2) ->
+Lemma stack_NoDup_G_sublist: forall CE1 CE2,
     NoDup_G (CE1++CE2) ->
     NoDup_G CE2.
 Proof.
   induction CE1.
-  - intros CE2 H h_nodupG. simpl List.app in h_nodupG.
+  - intros CE2 h_nodupG. simpl List.app in h_nodupG.
     assumption.
-  - intros CE2 H h_nodupG. apply IHCE1.
-    { eapply exact_levelG_sublist;eauto. }
+  - intros CE2 h_nodupG. apply IHCE1.
     cbn in h_nodupG.
-    eapply stack_CE_NoDup_G_cons;eauto;cbn;auto.
+    eapply stack_NoDup_G_cons;eauto;cbn;auto.
 Qed.
 
-Lemma stack_CE_NoDup_sublist: forall CE1 CE2,
-    exact_levelG (CE1 ++ CE2) ->
-    NoDup_G (CE1++CE2) ->
+Lemma stack_NoDup_sublist: forall CE1 CE2,
     NoDup (CE1++CE2) ->
     NoDup CE2.
 Proof.
   induction CE1.
-  - intros CE2 H H0 h_nodup.
+  - intros CE2 h_nodup. 
     simpl List.app in h_nodup.
     assumption.
-  - intros CE2 H H0 h_nodup.
+  - intros CE2 h_nodup. 
     apply IHCE1.
-    + eapply exact_levelG_sublist;eauto.
-    + eapply stack_CE_NoDup_G_cons;eauto;reflexivity.
-    + cbn in h_nodup.
-      eapply stack_CE_NoDup_cons;eauto;cbn;auto.
+    cbn in h_nodup.
+    eapply stack_NoDup_cons;eauto;cbn;auto.
 Qed.
 
 Lemma cut_until_exct_lvl:
@@ -1099,31 +1090,24 @@ Qed.
 
 
 Lemma nodupG_fetch_cons: forall fr CE id δ,
-    exact_levelG (fr :: CE) ->
     NoDup_G (fr :: CE) ->
     fetchG id CE = Some δ ->
     fetch id fr = None.
 Proof.
-  intros fr CE id δ H H0 H1. 
-  destruct (fetch id fr) eqn:heq;auto.
-  assert (reside id fr=false) as heq_reside.
-  { eapply nodup_G_cons;eauto.
-    eapply fetchG_ok;eauto. }
-  assert (reside id fr=true) as heq_reside'.
-  { eapply fetch_ok;eauto. }
-  rewrite heq_reside in heq_reside';discriminate.
+  intros fr CE id δ H H0. 
+  apply fetchG_ok in H0.
+  eapply nodup_G_cons in H0;eauto.
+  now apply reside_false_fetch_none.
 Qed.
 
 Lemma nodupG_fetchG_cons: forall fr CE id δ,
-    exact_levelG (fr :: CE) ->
     NoDup_G (fr :: CE) ->
     fetchG id CE = Some δ ->
     fetchG id (fr :: CE) = Some δ.
 Proof.
-  intros fr CE id δ H H0 H1. 
-  destruct fr.
-  specialize nodupG_fetch_cons with (1:=H) (2:=H0) (3:=H1);intro h.
-  cbn in *.
+  intros fr CE id δ H H0. 
+  specialize nodupG_fetch_cons with (1:=H) (2:=H0) as h.
+  cbn.
   rewrite h.
   assumption.
 Qed.
@@ -1390,21 +1374,19 @@ Lemma nodup_cons:
     NoDup s' -> NoDup (f::nil) -> NoDup (f :: s').
 Proof.
   intros f s' h_nodup_s' h.
-  red.
-  intros nme lvl sto sto' sto'' h_frameG h_cut.
-  functional inversion h_frameG;subst.
-  - rename H3 into h_reside.
-    eapply h;eauto.
-    unfold frameG.
-    rewrite h_reside.
-    reflexivity.
+  red in h, h_nodup_s' |- *.
+  intros lvl sto h_in.
+  inversion h_in;subst.
+  - eapply h;eauto.
+    now constructor 1.
   - eapply h_nodup_s';eauto.
 Qed.
 
-Lemma update_spec_1 : forall fr id v fr',
+Lemma updates_spec_1 : forall fr id v fr',
     updates fr id v = Some fr' -> 
     exists fr1 v0 fr2,
       fr = fr1 ++ (id, v0)::fr2
+      /\ fr' = fr1 ++ (id, v)::fr2
       /\ resides id fr1 = false.
 Proof.
   intros fr id v.
@@ -1415,35 +1397,146 @@ Proof.
      inversion heq_Some.
      subst.
      exists nil.
-     cbn;eauto.
+     do 2 eexists;cbn;repeat split;eauto.
   - intros fr' heq_Some. 
     inversion heq_Some; subst;clear heq_Some.
     specialize IHo with (1:=e1).
-    destruct IHo as [fr1 [v0 [fr2 [h1 h2]]]].
+    destruct IHo as [fr1 [v0 [fr2 [h1 [h2 h3]]]]].
     subst.
     exists ((y, v') :: fr1), v0 , fr2;split;auto.
     cbn.
-    now rewrite e0.
+    rewrite e0.
+    cbn;repeat split;eauto.
   - intros;discriminate.
   - intros;discriminate.
-Qed.
-    
-(*
-Lemma update_spec_1 : forall fr id v fr',
-    updates fr id v = Some fr' -> 
-    exists fr1 v0 fr2,
-      fr = fr1 ++ (id, v0)::fr2.
-Lemma update_nodup:
-  forall nme (f : ST.frame),
-    cuts_to nme f = (sto1, sto2) ->
-    forall x v f', ST.update f x v = Some f' ->
-                   exists sto1', cuts_to nme f = (sto1', sto2).
+Qed.    
          
-Lemma update_nodup:
-  forall (x : idnum) (v : V) (f : ST.frame) (s' : list ST.frame) 
-    (f' : ST.frame), ST.update f x v = Some f' -> NoDup (f::nil) -> NoDup (f'::nil).
+Lemma NoDup_hd:
+  forall (f : ST.frame) (s : list ST.frame), NoDup (f :: s) -> NoDup (f :: nil).
 Proof.
-  intros x v f s' f' h_update h_nodup_fs'.
+  intros f s h_nodup_fs'.
+  unfold NoDup in *.
+  intros lvl sto H. 
+  inversion H;subst.
+  + eapply h_nodup_fs'.
+    constructor 1.
+    reflexivity.
+  + inversion H0.
+Qed.        
+
+Lemma update_nodup: forall x v f s f',
+    ST.update f x v = Some f' ->
+    NoDup (f::s) -> NoDup (f'::s).
+Proof.
+  intros x v f s f' h_update h_nodup_fs'.
+  functional inversion h_update.
+  clear h_update.
+  subst.
+  specialize updates_spec_1 with (1:=H0);intros [fr [v0 [fr2 [h1 [h2 h3]]]]];subst.
+  apply nodup_cons.
+  - eapply stack_NoDup_cons with (a:=f);eauto.
+  - assert (NoDup ((ST.level_of f, fr ++ (x, v0) :: fr2) :: nil)).
+    { rewrite <- h1.
+      match goal with
+      | |- NoDup (?X::nil) => replace X with f by (destruct f;auto)
+      end.
+      eapply NoDup_hd;eauto. }
+
+    Lemma foo:
+      forall (fr fr2 : list (idnum * V)) (x : idnum) (v : V) lvl (v0 : V),
+        NoDup ((lvl, fr ++ (x, v0) :: fr2) :: nil) ->
+        NoDup ((lvl, fr ++ (x, v) :: fr2) :: nil).
+    Proof.
+      unfold NoDup.
+      intros fr fr2 x v lvl v0 H lvl0 sto H0.
+      inversion H0.
+      all:swap 1 2.
+      { inversion H1. }
+      inversion H1;subst.
+      clear H1.
+      specialize H with lvl0 (fr ++ (x, v0) :: fr2).
+      assert (List.In (lvl0, fr ++ (x, v0) :: fr2) ((lvl0, fr ++ (x, v0) :: fr2) :: nil)).
+      { now constructor. }
+      specialize H with (1:=H1).
+      assert (equivlistA eq_fst (fr ++ (x, v) :: fr2) (fr ++ (x, v0) :: fr2)).
+      { admit. }
+      rewrite H2.
+      induction fr.
+      all:swap 1 2.
+      - intros fr2 x v lvl v0 H. 
+        eapply nodup_cons.
+        + admit.
+        + red in H |- *.
+          intros lvl0 sto H0. 
+          specialize H with lvl0 sto.
+          inversion H0;clear H0.
+          all:swap 1 2.
+          * inversion H1.
+          * inversion H1;clear H1;subst.
+            specialize H with 
+            constructor.
+            
+          assert (NoDupA eq_fst ((a :: fr) ++ (x, v0) :: fr2)).
+          { eapply H;eauto.
+
+      - intros fr2 lvl v0 H;simpl in*.
+        unfold NoDup in *.
+        intros lvl0 sto H0. 
+        inversion H0.
+        + inversion H1; clear H1 H0;subst.
+          eapply H.
+          
+          
+        
+      intros nme lvl0 sto sto' sto'' H H0. 
+
+      Definition isomorph_frame := #.
+      Definition isomorph_store sto1 sto2: Prop :=
+        forall nme lvl fr1,
+          frameG nme sto1 = Some (lvl,fr1) ->
+          exists fr2, frameG nme sto2 = Some (lvl,fr2)
+                 /\ exists fr2_1 fr2_2, cuts_to nme fr2 = (fr2_1 , fr2_2).
+            
+          
+      
+      .
+      assert (forall nme sto1 sto2,
+                 isomorph_store sto1 sto2 -> 
+                 frameG nme ((lvl, sto1) :: nil) = Some (lvl0, sto) ->
+                 exists sto',
+                   frameG nme ((lvl, sto2) :: nil) = Some (lvl0, sto') /\
+                   isomorph_store sto sto').
+      
+      
+      
+    destruct f;cbn in *;subst.
+    unfold NoDup in h_nodup_fs' |- *.
+    intros nme lvl sto0 sto1 sto2 h_frameG h_cuts.
+    functional inversion h_frameG;try discriminate.
+    subst.
+    clear h_frameG.
+    assert (resides nme (fr ++ (x, v0) :: fr2) = true) as heq.
+    { admit. }
+    assert (frameG nme ((lvl, fr ++ (x, v0) :: fr2) :: s) = Some (lvl, fr ++ (x, v0) :: fr2)) as h_frameG2.
+    { cbn.
+      now rewrite heq. }
+
+    specialize h_nodup_fs' with (1:=h_frameG2).
+    assert (exists sto' sto'', cuts_to nme (fr ++ (x, v0) :: fr2) = (sto', sto'')) as heq_cuts.
+    { admit. }
+    destruct heq_cuts as [sto' [sto'' h_cuts2]].
+    specialize h_nodup_fs' with (1:=h_cuts2).
+
+    specialize cuts_to_decomp with (1:=h_cuts);intro heq_sto'''.
+    specialize cuts_to_fst with (1:=h_cuts);intro heq_reside_sto'.
+    specialize cuts_to_snd with (1:=h_cuts);intro heq_reside_sto''.
+    destruct heq_reside_sto'' as [hnil | h_ex].
+    + now subst.
+    + destruct h_ex  as [v' [sto''' heq_sto2]];subst.
+      cbn.
+    cbn.
+    rewrite heq.
+    reflexivity.
   red.
   intros nme lvl sto sto' sto'' h_frameG h_cut.
   red in h_nodup_fs'.

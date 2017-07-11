@@ -1424,6 +1424,107 @@ Proof.
   + inversion H0.
 Qed.        
 
+
+Lemma NoDupA_eqlistA_compat: forall A (eqA : A -> A -> Prop) x y,
+    Equivalence eqA ->
+    eqlistA eqA x y -> NoDupA eqA x <-> NoDupA eqA y .
+Proof.
+  intros A eqA x y H H0. 
+  induction H0.
+  - reflexivity.
+  - split.
+    + intros H2. 
+      inversion H2;subst.
+      apply NoDupA_cons.
+      all: swap 1 2.
+      * apply IHeqlistA;auto.
+      * intro abs.
+        apply H5.
+        specialize InA_compat with (1:=H) as h_compat.
+        do 2 red in h_compat.
+        specialize h_compat with (1:=H0).
+        red in h_compat.
+        apply eqlistA_equivlistA in H1;auto.
+        specialize h_compat with (1:=H1).
+        apply h_compat;auto.
+    + intros H2. 
+      inversion H2;subst.
+      apply NoDupA_cons.
+      all: swap 1 2.
+      * apply IHeqlistA;auto.
+      * intro abs.
+        apply H5.
+        specialize InA_compat with (1:=H) as h_compat.
+        do 2 red in h_compat.
+        specialize h_compat with (1:=H0).
+        red in h_compat.
+        apply eqlistA_equivlistA in H1;auto.
+        specialize h_compat with (1:=H1).
+        apply h_compat;auto.
+Qed.              
+
+Lemma eq_fst_equiv A B: Equivalence (@eq_fst A B).
+Proof.
+  split.
+  - red.
+    intros x. 
+    reflexivity.
+  - red.
+    intros x y H. 
+    symmetry.
+    assumption.
+  - red.
+    intros x y z H H0. 
+    transitivity (fst y);auto.
+Qed.
+
+Add Parametric Morphism  (A B:Type):
+  (NoDupA (@eq_fst A B)) with signature ((eqlistA eq_fst) ==> iff) as NoDupA_eqlistA_eq_fst_morph.
+Proof.
+  intros x y H. 
+  apply NoDupA_eqlistA_compat.
+  - apply eq_fst_equiv.
+  - assumption.
+Qed.
+
+Lemma eqlistA_eqA_replace:forall A (eqA:A -> A -> Prop) l1 l2 x x',
+    Equivalence eqA ->
+    eqA x x' ->
+    eqlistA eqA (l1 ++ x :: l2) (l1 ++ x' :: l2).
+Proof.
+  intros A eqA l1 l2 x x' H H0. 
+  apply eqlistA_app;auto.
+  - reflexivity.
+  - apply eqlistA_cons.
+    + assumption.
+    + reflexivity.
+Qed.
+
+Lemma NoDup_eq_fst_elt:
+  forall (fr fr2 : list (idnum * V)) (x : idnum) (v : V) lvl (v0 : V),
+    NoDup ((lvl, fr ++ (x, v0) :: fr2) :: nil) ->
+    NoDup ((lvl, fr ++ (x, v) :: fr2) :: nil).
+Proof.
+  unfold NoDup.
+  intros fr fr2 x v lvl v0 H lvl0 sto H0.
+  inversion H0.
+  all:swap 1 2.
+  { inversion H1. }
+  inversion H1;subst.
+  clear H1.
+  specialize H with lvl0 (fr ++ (x, v0) :: fr2).
+  assert (List.In (lvl0, fr ++ (x, v0) :: fr2) ((lvl0, fr ++ (x, v0) :: fr2) :: nil)).
+  { now constructor. }
+  specialize H with (1:=H1).
+  assert (eqlistA eq_fst (fr ++ (x, v) :: fr2) (fr ++ (x, v0) :: fr2)).
+  { apply eqlistA_eqA_replace;auto.
+    - apply eq_fst_equiv.
+    - red.
+      reflexivity. }
+  rewrite H2.
+  assumption.
+Qed.
+
 Lemma update_nodup: forall x v f s f',
     ST.update f x v = Some f' ->
     NoDup (f::s) -> NoDup (f'::s).
@@ -1441,132 +1542,96 @@ Proof.
       | |- NoDup (?X::nil) => replace X with f by (destruct f;auto)
       end.
       eapply NoDup_hd;eauto. }
-
-    Lemma foo:
-      forall (fr fr2 : list (idnum * V)) (x : idnum) (v : V) lvl (v0 : V),
-        NoDup ((lvl, fr ++ (x, v0) :: fr2) :: nil) ->
-        NoDup ((lvl, fr ++ (x, v) :: fr2) :: nil).
-    Proof.
-      unfold NoDup.
-      intros fr fr2 x v lvl v0 H lvl0 sto H0.
-      inversion H0.
-      all:swap 1 2.
-      { inversion H1. }
-      inversion H1;subst.
-      clear H1.
-      specialize H with lvl0 (fr ++ (x, v0) :: fr2).
-      assert (List.In (lvl0, fr ++ (x, v0) :: fr2) ((lvl0, fr ++ (x, v0) :: fr2) :: nil)).
-      { now constructor. }
-      specialize H with (1:=H1).
-      assert (equivlistA eq_fst (fr ++ (x, v) :: fr2) (fr ++ (x, v0) :: fr2)).
-      { admit. }
-      rewrite H2.
-      induction fr.
-      all:swap 1 2.
-      - intros fr2 x v lvl v0 H. 
-        eapply nodup_cons.
-        + admit.
-        + red in H |- *.
-          intros lvl0 sto H0. 
-          specialize H with lvl0 sto.
-          inversion H0;clear H0.
-          all:swap 1 2.
-          * inversion H1.
-          * inversion H1;clear H1;subst.
-            specialize H with 
-            constructor.
-            
-          assert (NoDupA eq_fst ((a :: fr) ++ (x, v0) :: fr2)).
-          { eapply H;eauto.
-
-      - intros fr2 lvl v0 H;simpl in*.
-        unfold NoDup in *.
-        intros lvl0 sto H0. 
-        inversion H0.
-        + inversion H1; clear H1 H0;subst.
-          eapply H.
-          
-          
-        
-      intros nme lvl0 sto sto' sto'' H H0. 
-
-      Definition isomorph_frame := #.
-      Definition isomorph_store sto1 sto2: Prop :=
-        forall nme lvl fr1,
-          frameG nme sto1 = Some (lvl,fr1) ->
-          exists fr2, frameG nme sto2 = Some (lvl,fr2)
-                 /\ exists fr2_1 fr2_2, cuts_to nme fr2 = (fr2_1 , fr2_2).
-            
-          
-      
-      .
-      assert (forall nme sto1 sto2,
-                 isomorph_store sto1 sto2 -> 
-                 frameG nme ((lvl, sto1) :: nil) = Some (lvl0, sto) ->
-                 exists sto',
-                   frameG nme ((lvl, sto2) :: nil) = Some (lvl0, sto') /\
-                   isomorph_store sto sto').
-      
-      
-      
-    destruct f;cbn in *;subst.
-    unfold NoDup in h_nodup_fs' |- *.
-    intros nme lvl sto0 sto1 sto2 h_frameG h_cuts.
-    functional inversion h_frameG;try discriminate.
-    subst.
-    clear h_frameG.
-    assert (resides nme (fr ++ (x, v0) :: fr2) = true) as heq.
-    { admit. }
-    assert (frameG nme ((lvl, fr ++ (x, v0) :: fr2) :: s) = Some (lvl, fr ++ (x, v0) :: fr2)) as h_frameG2.
-    { cbn.
-      now rewrite heq. }
-
-    specialize h_nodup_fs' with (1:=h_frameG2).
-    assert (exists sto' sto'', cuts_to nme (fr ++ (x, v0) :: fr2) = (sto', sto'')) as heq_cuts.
-    { admit. }
-    destruct heq_cuts as [sto' [sto'' h_cuts2]].
-    specialize h_nodup_fs' with (1:=h_cuts2).
-
-    specialize cuts_to_decomp with (1:=h_cuts);intro heq_sto'''.
-    specialize cuts_to_fst with (1:=h_cuts);intro heq_reside_sto'.
-    specialize cuts_to_snd with (1:=h_cuts);intro heq_reside_sto''.
-    destruct heq_reside_sto'' as [hnil | h_ex].
-    + now subst.
-    + destruct h_ex  as [v' [sto''' heq_sto2]];subst.
-      cbn.
-    cbn.
-    rewrite heq.
-    reflexivity.
-  red.
-  intros nme lvl sto sto' sto'' h_frameG h_cut.
-  red in h_nodup_fs'.
-  destruct f.
-  assert (exists f_prfx, cuts_to nme s0 = (f_prfx, sto'')).
-  { admit. }
-  destruct H as [f_prfx h_cut_s0].
-  eapply h_nodup_fs' with  (lvl:=lvl) (2:=h_cut_s0).
-  cbn.
-  assert (resides nme s0 = true).
-  { functional inversion h_update;subst.
-    apply update_ok_same_reside_orig in h_update.
-    
-    eapply updates_ok_same_resides_orig;eauto.
-    unfold update in h_update.
-    
-
-  eapply 
-  functional inversion h_frameG;subst.
-    all:swap 1 2.
-    * functional inversion X.
-    * 
-  
-
-
+    eapply NoDup_eq_fst_elt;eauto.
 Qed.
 
 Lemma stack_NoDup_prefix: forall CE1 CE2 : list frame,
-    exact_levelG (CE1 ++ CE2) -> NoDup_G (CE1 ++ CE2) -> NoDup (CE1 ++ CE2) -> NoDup CE1.
+    NoDup (CE1 ++ CE2) -> NoDup CE1.
 Proof.
+  intros CE1 CE2 H. 
+  unfold NoDup in *.
+  intros lvl sto H0. 
+  eapply H.
+  eapply in_or_app;eauto.
 Qed.
-*)
+
+
+Lemma NoDup_G_eq_fst_elt: forall x, NoDup_G (x :: nil).
+Proof.
+  unfold NoDup_G.
+  intros x. 
+  constructor.
+  - intro abs.
+    inversion abs.
+  - constructor.
+Qed.
+
+Lemma update_nodup_G: forall s x v f f',
+    ST.update f x v = Some f' ->
+    NoDup_G (f::s) -> NoDup_G (f'::s).
+Proof.
+  intros s x v f f' H H0. 
+  constructor.
+  - intro abs.
+    assert ( InA non_empty_intersection_frame f s).
+    { 
+
+      Lemma update_InA_non_empty_inters_compat: forall  f x v s f',
+          ST.update f x v = Some f' ->
+          InA non_empty_intersection_frame f' s ->
+          InA non_empty_intersection_frame f s.
+      Proof.
+        intros f x v s f' hupdate.
+        functional inversion hupdate;subst;clear hupdate.
+        remember (ST.store_of f) as sf.
+        revert Heqsf H0.
+        functional induction ST.updates sf x v; try now(intros;subst;discriminate).
+        - intros Heqsf H0 H. 
+          inversion H0;subst;clear H0.
+          replace f with (ST.level_of f, ST.store_of f) by (destruct f;auto).
+          rewrite <- Heqsf.
+          inversion H;subst.
+          + constructor 1.
+            repeat red in H0 |- *.
+            cbn in H0 |- *.
+            inversion H0 as [e [he1 he2]].
+            exists e.
+            split;auto.
+            inversion he1;subst.
+            * constructor 1.
+              assumption.
+            * constructor 2;auto.
+          + constructor 2;auto.
+            
+            
+        - intros;subst.
+          rewrite H0 in e.
+          discriminate.
+          
+      Qed.
+
+
+    inversion H0.
+    contradiction.
+  
+  
+
+  functional inversion h_update.
+  clear h_update.
+  subst.
+  specialize updates_spec_1 with (1:=H0);intros [fr [v0 [fr2 [h1 [h2 h3]]]]];subst.
+  apply nodup_cons.
+  - eapply stack_NoDup_cons with (a:=f);eauto.
+  - assert (NoDup ((ST.level_of f, fr ++ (x, v0) :: fr2) :: nil)).
+    { rewrite <- h1.
+      match goal with
+      | |- NoDup (?X::nil) => replace X with f by (destruct f;auto)
+      end.
+      eapply NoDup_hd;eauto. }
+    eapply NoDup_eq_fst_elt;eauto.
+Qed.
+
+
+
+
 End STORE_PROP.

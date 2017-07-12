@@ -463,11 +463,17 @@ Inductive exact_levelG:  state -> Prop :=
     - discriminate.
   Qed.
 
-  Lemma update_ok_others_reside: forall frm id v frm',
+  Lemma update_ok_reside: forall frm id v frm',
       update frm id v = Some frm' ->
-      forall id', id<>id' -> reside id' frm = reside id' frm'.
+      forall id', reside id' frm = reside id' frm'.
   Proof.
-    intros ? ? ? ? heq_update_frm_id ? hneq. 
+    intros ? ? ? ? heq_update_frm_id ?.
+    destruct (Nat.eq_dec id id').
+    { subst.
+      erewrite update_ok_same_reside_orig with (1:=heq_update_frm_id).
+      erewrite update_ok_same_reside with (1:=heq_update_frm_id).
+      reflexivity. }
+    rename n into hneq.
     pose proof update_ok_others _ _ _ _ heq_update_frm_id _ hneq.
     destruct (fetch id' frm) eqn:heq_fetch.
     - apply fetch_ok in heq_fetch.
@@ -1129,7 +1135,7 @@ Proof.
   end.
   - inversion heq_Some; clear heq_Some; subst.
     simpl.
-    pose proof update_ok_others_reside _ _ _ _ e0 _ hneq as heq_reside.
+    specialize update_ok_reside with (1:=e0) as heq_reside.
     rewrite <- heq_reside.
     destruct (reside id' f) as [heq_Some' | ] eqn:h.
     + match goal with
@@ -1344,7 +1350,7 @@ Proof.
   - rename e0 into heq_update_f_x.
     intros stk' heq_Some id' lvl sto hneq heq_frameG.
     inversion heq_Some;subst;simpl.
-    pose proof update_ok_others_reside _ _ _ _ heq_update_f_x _ hneq as heq_reside.
+    specialize update_ok_reside with (1:=heq_update_f_x) as heq_reside.
     rewrite heq_reside.
     simpl in heq_frameG.
     destruct (reside id' f') eqn:h.
@@ -1478,6 +1484,9 @@ Proof.
     transitivity (fst y);auto.
 Qed.
 
+
+Existing Instance eq_fst_equiv.
+
 Add Parametric Morphism  (A B:Type):
   (NoDupA (@eq_fst A B)) with signature ((eqlistA eq_fst) ==> iff) as NoDupA_eqlistA_eq_fst_morph.
 Proof.
@@ -1566,6 +1575,200 @@ Proof.
   - constructor.
 Qed.
 
+
+Instance eqlistA_eq_fst_releq A B: Equivalence (@eqlistA (A*B) eq_fst).
+Proof.
+  apply eqlistA_equiv.
+  apply eq_fst_equiv.
+Qed.
+
+Lemma update_InA_eqlistA: forall  f x v f',
+    ST.updates f x v = Some f' ->
+    eqlistA eq_fst f f'.
+Proof.
+  intros f x v.
+  functional induction ST.updates f x v; try now(intros;subst;discriminate).
+  - intros f' H. 
+    inversion H.
+    constructor.
+    + reflexivity.
+    + reflexivity.
+  - intros f' H. 
+    inversion H;subst;clear H.
+    constructor 2.
+    + reflexivity.
+    + auto.
+Qed.
+    
+Instance eq_InA_eq_fst_proper A B : Proper (@eq_fst A B ==> (eqlistA eq_fst) ==> iff) (@InA (A*B) eq_fst).
+Proof.
+  repeat red.
+  intros x y H x0 y0 H0. 
+  split;intro h.
+  - eapply InA_compat;eauto.
+    + apply eq_fst_equiv.
+    + now symmetry.
+    + apply eqlistA_equivlistA;auto.
+      * apply eq_fst_equiv.
+      * now symmetry.
+  - eapply InA_compat;eauto.
+    + apply eq_fst_equiv.
+    + apply eqlistA_equivlistA;auto.
+      * apply eq_fst_equiv.
+Qed.
+
+
+Lemma updates_eqlistA_compat2:
+  forall x y : list (idnum * V),
+    eqlistA eq_fst x y ->
+    forall (y0 : idnum) (y1 : V) (s : ST.store),
+      ST.updates x y0 y1 = Some s ->
+      exists s', ST.updates y y0 y1 = Some s' /\ eqlistA eq_fst s s'.
+Proof.
+  intros x y heq_list.
+  induction heq_list.
+  - intros y0 y1 s H. 
+    functional inversion H.
+  - intros y0 y1 s H0. 
+    functional inversion H0;subst.
+    + apply Nat.eqb_eq in H7;subst.
+      destruct x'.
+      inversion H;cbn in H1;subst;clear H.
+      exists (((i, y1) :: l')).
+      split.
+      * cbn in *.
+        rewrite Nat.eqb_refl in H0 |- *.
+        reflexivity.
+      * constructor 2.
+        -- reflexivity.
+        -- assumption.
+    + destruct x'.
+      inversion H;cbn in H1;subst;clear H.
+      specialize IHheq_list with (1:=X).
+      destruct IHheq_list as [s' [heq_updates h_eqivlist]].
+      exists ((i, t) :: s').
+      split.
+      * cbn.
+        rewrite H7.
+        rewrite heq_updates.
+        reflexivity.
+      * constructor 2.
+        -- reflexivity.
+        -- assumption.
+Qed.
+
+
+Inductive option_rel {A} (R:relation A) : relation (option A) :=
+  OR_none: option_rel R None None
+| OR_some: forall x y, R x y -> option_rel R (Some x) (Some y).
+
+Instance updates_proper : Proper ((eqlistA eq_fst) ==> eq ==> eq ==> option_rel (eqlistA eq_fst)) (@ST.updates).
+Proof.
+  repeat red.
+  intros x y H x0 y0 H0 x1 y1 H1. 
+  subst.
+  destruct (ST.updates x y0 y1) eqn:heq1;
+  destruct (ST.updates y y0 y1) eqn:heq2.
+  - apply update_InA_eqlistA in heq1.
+    apply update_InA_eqlistA in heq2.
+    constructor 2.
+    transitivity x.
+    + now symmetry.
+    + now transitivity y.
+  - specialize updates_eqlistA_compat2 with (1:=H)(2:=heq1) as habs.
+    destruct habs as [s' [h1 h2]].
+    rewrite h1 in heq2;discriminate.
+  - symmetry in H.
+    specialize updates_eqlistA_compat2 with (1:=H)(2:=heq2) as habs.
+    destruct habs as [s' [h1 h2]].
+    rewrite h1 in heq1;discriminate.
+  - constructor 1.
+Qed.
+
+
+
+Lemma non_empty_inters_compat:
+  forall (A B : Type) (f' f'' : list (A * B)),
+    non_empty_intersection_list f' f'' ->
+    forall f : list (A * B), eqlistA eq_fst f f' -> non_empty_intersection_list f f''.
+Proof.
+  intros A B f' f'' H f H0. 
+  unfold non_empty_intersection_list in *.
+  destruct H as [e [hInA_f' hInA_f'']].
+  exists e.
+  split;auto.
+  rewrite H0.
+  assumption.
+Qed.
+
+
+Lemma non_empty_inters_compat2:
+  forall (A B : Type) (f' f'' : list (A * B)),
+    non_empty_intersection_list f'' f' ->
+    forall f : list (A * B), eqlistA eq_fst f f' -> non_empty_intersection_list f'' f.
+Proof.
+  intros A B f' f'' H f H0. 
+  unfold non_empty_intersection_list in *.
+  destruct H as [e [hInA_f' hInA_f'']].
+  exists e.
+  split;auto.
+  rewrite H0.
+  assumption.
+Qed.
+
+Lemma eqlist_eq_fst_InA_non_empty_inters_compat A B: forall s (f f':list (A*B)),
+    InA non_empty_intersection_list f' s ->
+    eqlistA eq_fst f f' ->
+    InA non_empty_intersection_list f s.
+Proof.
+  intros s f f' H.
+  revert f.
+  induction H.
+  - intros f H0.
+    constructor 1.
+    eapply non_empty_inters_compat;eauto.
+  - intros f H0.
+    constructor 2.
+    auto.
+Qed.
+      
+
+Lemma eqlist_eq_fst_InA_non_empty_inters_frame_compat : forall s f f',
+    InA non_empty_intersection_frame f' s ->
+    eqlistA eq_fst (snd f) (snd f') ->
+    InA non_empty_intersection_frame f s.
+Proof.
+  intros s f f' H.
+  revert f.
+  induction H.
+  - intros f H0.
+    unfold non_empty_intersection_frame in *.
+    destruct f,f';cbn in *.
+    constructor 1.
+    eapply non_empty_inters_compat;eauto.
+  - intros f H0.
+    unfold non_empty_intersection_frame in *.
+    destruct f,f';cbn in *.
+    constructor 2.
+    auto.
+Qed.
+      
+
+Lemma update_InA_non_empty_inters_compat: forall  f x v s f',
+    ST.update f x v = Some f' ->
+    InA non_empty_intersection_frame f' s ->
+    InA non_empty_intersection_frame f s.
+Proof.
+  intros f x v s f' hupdate.
+  functional inversion hupdate;subst;clear hupdate.
+  eapply update_InA_eqlistA in H0.
+  destruct f.
+  intros H.
+  cbn in *.
+  unfold non_empty_intersection_frame.
+  eapply eqlist_eq_fst_InA_non_empty_inters_frame_compat;eauto.
+Qed.
+
 Lemma update_nodup_G: forall s x v f f',
     ST.update f x v = Some f' ->
     NoDup_G (f::s) -> NoDup_G (f'::s).
@@ -1574,64 +1777,160 @@ Proof.
   constructor.
   - intro abs.
     assert ( InA non_empty_intersection_frame f s).
-    { 
-
-      Lemma update_InA_non_empty_inters_compat: forall  f x v s f',
-          ST.update f x v = Some f' ->
-          InA non_empty_intersection_frame f' s ->
-          InA non_empty_intersection_frame f s.
-      Proof.
-        intros f x v s f' hupdate.
-        functional inversion hupdate;subst;clear hupdate.
-        remember (ST.store_of f) as sf.
-        revert Heqsf H0.
-        functional induction ST.updates sf x v; try now(intros;subst;discriminate).
-        - intros Heqsf H0 H. 
-          inversion H0;subst;clear H0.
-          replace f with (ST.level_of f, ST.store_of f) by (destruct f;auto).
-          rewrite <- Heqsf.
-          inversion H;subst.
-          + constructor 1.
-            repeat red in H0 |- *.
-            cbn in H0 |- *.
-            inversion H0 as [e [he1 he2]].
-            exists e.
-            split;auto.
-            inversion he1;subst.
-            * constructor 1.
-              assumption.
-            * constructor 2;auto.
-          + constructor 2;auto.
-            
-            
-        - intros;subst.
-          rewrite H0 in e.
-          discriminate.
-          
-      Qed.
-
-
+    { eapply update_InA_non_empty_inters_compat;eauto. }
     inversion H0.
     contradiction.
-  
-  
+  - inversion H0.
+    assumption.
+Qed.
 
-  functional inversion h_update.
-  clear h_update.
-  subst.
-  specialize updates_spec_1 with (1:=H0);intros [fr [v0 [fr2 [h1 [h2 h3]]]]];subst.
-  apply nodup_cons.
-  - eapply stack_NoDup_cons with (a:=f);eauto.
-  - assert (NoDup ((ST.level_of f, fr ++ (x, v0) :: fr2) :: nil)).
-    { rewrite <- h1.
-      match goal with
-      | |- NoDup (?X::nil) => replace X with f by (destruct f;auto)
-      end.
-      eapply NoDup_hd;eauto. }
-    eapply NoDup_eq_fst_elt;eauto.
+Lemma update_nodup_G2: forall s f f',
+    eqlistA eq_fst (snd f) (snd f') ->
+    NoDup_G (f::s) -> NoDup_G (f'::s).
+Proof.
+  intros s f f' H H0. 
+  constructor.
+  - intro abs.
+    assert ( InA non_empty_intersection_frame f s).
+    { eapply eqlist_eq_fst_InA_non_empty_inters_frame_compat;eauto. }
+    inversion H0.
+    contradiction.
+  - inversion H0.
+    assumption.
+Qed.
+
+Definition equiv_frame {A B C} (f f':A*list (B*C)):= eqlistA eq_fst (snd f) (snd f').
+Definition equiv_stack {A B C} := (eqlistA (@equiv_frame A B C)).
+
+Instance eq_frame_equiv A B C:
+  Equivalence (@equiv_frame A B C).
+Proof.
+  unfold equiv_frame.
+  split.
+  - red.
+    intros x. 
+    reflexivity.
+  - red.
+    intros x y H.
+    symmetry.
+    assumption.
+  - red.
+    intros x y z H H0 .
+    transitivity (snd y);auto.
+Qed.
+
+Instance eq_stack_equiv A B C:
+  Equivalence (@equiv_stack A B C).
+Proof.
+  apply eqlistA_equiv.
+  apply eq_frame_equiv.
+Qed.
+
+Lemma eqlist_eq_fst_InA_non_empty_inters_frame_compat2 : forall s s' f f',
+    InA non_empty_intersection_frame f' s' ->
+    equiv_frame f f' ->
+    equiv_stack s s' ->
+    InA non_empty_intersection_frame f s.
+Proof.
+  intros s s' f f' H.
+  revert f s.
+  induction H.
+  - intros f s H0 H1.
+    unfold non_empty_intersection_frame in *.
+    destruct f,f';cbn in *.
+    inversion H1;subst.
+    constructor 1.
+    eapply non_empty_inters_compat;eauto.
+    eapply non_empty_inters_compat2;eauto.
+  - intros f s H0 H1. 
+    unfold non_empty_intersection_frame in *.
+    destruct f,f';cbn in *.
+    inversion H1;subst.
+    constructor 2.
+    auto.
 Qed.
 
 
+Instance InA_proper : Proper (equiv_frame ==> equiv_stack ==> iff) (InA non_empty_intersection_frame).
+Proof.
+  repeat red.
+  intros x y H x0 y0 H0. 
+  split.
+  - intros H1.
+    eapply eqlist_eq_fst_InA_non_empty_inters_frame_compat2;eauto.
+    + symmetry.
+      assumption.
+    + symmetry.
+      assumption.
+  - intros H1. 
+    eapply eqlist_eq_fst_InA_non_empty_inters_frame_compat2;eauto.
+Qed.
 
+
+Lemma eqivlistA_nodup_G: forall s s',
+    equiv_stack s s' ->
+    NoDup_G s -> NoDup_G s'.
+Proof.
+  intros s s' H H0. 
+  induction H.
+  - red. 
+    constructor 1.
+  - red.
+    inversion H0;subst.
+    eapply update_nodup_G2;eauto.
+    constructor.
+    + intro abs.
+      rewrite <- H1 in abs.
+      contradiction.
+    + apply IHeqlistA.
+      assumption.
+Qed.
+
+Instance NoDup_G_proper : Proper (equiv_stack ==> iff) NoDup_G.
+Proof.
+  repeat red.
+  intros x y H. 
+  split;intro.
+  - eapply eqivlistA_nodup_G;eauto.
+  - eapply eqivlistA_nodup_G;eauto.
+    symmetry;auto.
+Qed.
+
+Lemma updateG_eqlist: forall x v s s',
+    updateG s x v = Some s' ->
+    equiv_stack s s'.
+Proof.
+  intros x v s s' H. 
+  revert s' H.
+  functional induction (updateG s x v);cbn;try now (intros;discriminate).
+  - intros s'0 H. 
+    inversion H;subst;clear H.
+    red.
+    constructor.
+    + red.
+      functional inversion e0;subst.
+      eapply update_InA_eqlistA;eauto.
+    + reflexivity.
+  - intros s'0 H.
+    inversion H;subst;clear H.
+    constructor.
+    + reflexivity.
+    + apply IHo.
+      assumption.
+Qed.
+
+Lemma updateG_nodup_G: forall x v s s',
+    updateG s x v = Some s' ->
+    NoDup_G s -> NoDup_G s'.
+Proof.
+  intros x v s s' H H0. 
+  eapply eqivlistA_nodup_G;eauto.
+  eapply updateG_eqlist;eauto.
+Qed.
+
+Lemma equiv_stack_lgth A B C s s':@equiv_stack A B C s s' -> length s = length s'.
+Proof.
+  induction 1;cbn;auto.
+Qed.
 
 End STORE_PROP.

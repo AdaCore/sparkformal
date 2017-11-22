@@ -49,7 +49,7 @@ missing verification. Our interest in getting better assurance on this part of
 the technology is not theoretical: that's a part where we repeatedly had errors
 in the past, leading to missing verifications.
 
-# 2. Contents
+# 3. Contents
 
 spark83_semantics - papers on earlier work on formalization of the previous
 SPARK version, prior to SPARK 2014

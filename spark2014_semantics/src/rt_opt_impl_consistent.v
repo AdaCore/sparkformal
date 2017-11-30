@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export rt_opt_impl.
+Require Export FunInd rt_opt_impl.
 
 (**********************************************)
 (** *             helper lemmas               *)

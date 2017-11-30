@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export rt_gen.
+Require Export FunInd rt_gen.
 Require Export rt_gen_util.
 Require Export rt_opt_util.
 Require Export well_typed.

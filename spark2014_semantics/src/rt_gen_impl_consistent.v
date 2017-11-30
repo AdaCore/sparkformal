@@ -9,7 +9,7 @@ zhangzhi@ksu.edu
 >>
 *)
 
-Require Export rt_gen_impl.
+Require Export FunInd rt_gen_impl.
 
 (* ***************************************************************
                  Semantics Equivalence Proof

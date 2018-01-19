@@ -610,24 +610,24 @@ Inductive evalStmt: symTab -> state -> stmt -> Ret state -> Prop :=
         evalExp st s b (OK (Bool false)) ->
         evalStmt st s (While n b c) (OK s)
     | EvalCall_Args_RTE: forall p st n0 pb s args msg n pn,
-        fetch_proc p st = Some (n0, pb) ->
+        fetch_proc p st = Some (n, pb) ->
         copyIn st s (newFrame n) (procedure_parameter_profile pb) args (RTE msg) ->
-        evalStmt st s (Call n pn p args) (RTE msg)
+        evalStmt st s (Call n0 pn p args) (RTE msg)
     | EvalCall_Decl_RTE: forall p st n0 pb s args f intact_s s1 msg n pn,
-        fetch_proc p st = Some (n0, pb) ->
+        fetch_proc p st = Some (n, pb) ->
         copyIn st s (newFrame n) (procedure_parameter_profile pb) args (OK f) ->
         cutUntil s n intact_s s1 -> (* s = intact_s ++ s1 *)
         evalDecl st s1 f (procedure_declarative_part pb) (RTE msg) ->
-        evalStmt st s (Call n pn p args) (RTE msg)
+        evalStmt st s (Call n0 pn p args) (RTE msg)
     | EvalCall_Body_RTE: forall p st n0 pb s args f intact_s s1 f1 msg n pn,
-        fetch_proc p st = Some (n0, pb) ->
+        fetch_proc p st = Some (n, pb) ->
         copyIn st s (newFrame n) (procedure_parameter_profile pb) args (OK f) ->
         cutUntil s n intact_s s1 -> (* s = intact_s ++ s1 *)
         evalDecl st s1 f (procedure_declarative_part pb) (OK f1) ->
         evalStmt st (f1 :: s1) (procedure_statements pb) (RTE msg) ->
-        evalStmt st s (Call n pn p args) (RTE msg)
+        evalStmt st s (Call n0 pn p args) (RTE msg)
     | EvalCall: forall p st n0 pb s args f intact_s s1 f1 s2 locals_section params_section s3 s4 n pn,
-        fetch_proc p st = Some (n0, pb) ->
+        fetch_proc p st = Some (n, pb) ->
         copyIn st s (newFrame n) (procedure_parameter_profile pb) args (OK f) ->
         cutUntil s n intact_s s1 -> (* s = intact_s ++ s1 *)
         evalDecl st s1 f (procedure_declarative_part pb) (OK f1) ->          
@@ -635,7 +635,7 @@ Inductive evalStmt: symTab -> state -> stmt -> Ret state -> Prop :=
         s2 = (n, locals_section ++ params_section) :: s3 -> (* extract parameters from local frame *)
         List.length (store_of f) = List.length params_section ->
         copyOut st (intact_s ++ s3) (n, params_section) (procedure_parameter_profile pb) args s4 ->
-        evalStmt st s (Call n pn p args) s4
+        evalStmt st s (Call n0 pn p args) s4
     | EvalSeq_RTE: forall st s c1 msg n c2,
         evalStmt st s c1 (RTE msg) ->
         evalStmt st s (Seq n c1 c2) (RTE msg)

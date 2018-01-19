@@ -1203,7 +1203,7 @@ Proof.
   end.
   specialize (procedure_components_rel _ _ _ H5); smack.
   apply_copyInRT_soundness.
-  apply EvalCall_Args_RTE with (n0:=n1) (pb:=pb0); smack.
+  apply EvalCall_Args_RTE with (n:=n1)(n0:=n0) (pb:=pb0); smack.
 - (* Procedure Call Decls RTE *)
   inversion H3; subst.
   specialize (symbol_table_procedure_rel_backward _ _ _ _ _ H4 H); smack.
@@ -1214,7 +1214,7 @@ Proof.
   specialize (procedure_components_rel _ _ _ H7); smack.
   apply_copyInRT_soundness.
   apply_toDeclRT_soundness.
-  apply EvalCall_Decl_RTE with (n0:=n1) (pb:=pb0) (f:=f) (intact_s:=intact_s) (s1:=s1); smack.
+  apply EvalCall_Decl_RTE with (n:=n1)(n0:=n0) (pb:=pb0) (f:=f) (intact_s:=intact_s) (s1:=s1); smack.
 - (* Procedure Call Body RTE *)
   inversion H4; subst.
   specialize (symbol_table_procedure_rel_backward _ _ _ _ _ H5 H); smack.
@@ -1225,7 +1225,7 @@ Proof.
   specialize (procedure_components_rel _ _ _ H8); smack.
   apply_copyInRT_soundness.
   apply_toDeclRT_soundness.
-  apply EvalCall_Body_RTE with (n0:=n1) (pb:=pb0) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1); smack.
+  apply EvalCall_Body_RTE with (n:=n1)(n0:=n0) (pb:=pb0) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1); smack.
 - (* Procedure Call *)
   inversion H7; subst.
   specialize (symbol_table_procedure_rel_backward _ _ _ _ _ H8 H); smack.
@@ -1238,8 +1238,8 @@ Proof.
   apply_copyOutRT_soundness.
   apply_toDeclRT_soundness.
   specialize (IHevalStmtRT _ _ H13 H8); smack;
-  apply EvalCall with (n0:=n1) (pb:=pb0) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1)
-                      (s2:=((n, locals_section ++ params_section) :: s3)) 
+  apply EvalCall with (n:=n1)(n0:=n0) (pb:=pb0) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1)
+                      (s2:=((n1, locals_section ++ params_section) :: s3)) 
                       (locals_section:=locals_section) (params_section:=params_section) 
                       (s3:=s3); smack.
 - (* Sequence RTE *)
@@ -2079,14 +2079,14 @@ Proof.
   rewrite H in H9; smack;
   specialize (symbol_table_procedure_rel _ _ _ _ _ H2 H); smack;
   specialize (procedure_components_rel _ _ _ H5); smack;
-  apply EvalCallRT_Args_RTE with (n0:=n1) (pb:=x); smack;
+  apply EvalCallRT_Args_RTE with (n:=n1)(n0:=n0) (pb:=x); smack;
   specialize (copyInRT_completeness _ _ _ _ _ _ _ _ _ H0 H6 H11 H2); smack.
 - (* Procedure Call Decls RTE *)
   inversion H3; subst;
   rewrite H in H11; smack;
   specialize (symbol_table_procedure_rel _ _ _ _ _ H4 H); smack;
   specialize (procedure_components_rel _ _ _ H7); smack;
-  apply EvalCallRT_Decl_RTE with (n0:=n1) (pb:=x) (f:=f) (intact_s:=intact_s) (s1:=s1); smack.
+  apply EvalCallRT_Decl_RTE with (n:=n1)(n0:=n0) (pb:=x) (f:=f) (intact_s:=intact_s) (s1:=s1); smack.
   specialize (copyInRT_completeness _ _ _ _ _ _ _ _ _ H0 H8 H13 H4); smack.
   specialize (toDeclRT_completeness _ _ _ _ _ _ _ H2 H5 H4); smack.
 - (* Procedure Call Body RTE *)
@@ -2094,7 +2094,7 @@ Proof.
   rewrite H in H12; smack;
   specialize (symbol_table_procedure_rel _ _ _ _ _ H5 H); smack;
   specialize (procedure_components_rel _ _ _ H8); smack;
-  apply EvalCallRT_Body_RTE with (n0:=n1) (pb:=x) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1); smack.
+  apply EvalCallRT_Body_RTE with (n:=n1)(n0:=n0) (pb:=x) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1); smack.
   specialize (copyInRT_completeness _ _ _ _ _ _ _ _ _ H0 H9 H14 H5); smack.
   specialize (toDeclRT_completeness _ _ _ _ _ _ _ H2 H6 H5); smack.
 - (* Procedure Call *)
@@ -2103,8 +2103,8 @@ Proof.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H8 H); smack;
   specialize (procedure_components_rel _ _ _ H10); smack;
   specialize (IHevalStmt _ _ H13 H8); smack.
-  apply EvalCallRT with (n0:=n1) (pb:=x) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1)
-                        (s2:=((n, locals_section ++ params_section) :: s3)) 
+  apply EvalCallRT with (n:=n1)(n0:=n0) (pb:=x) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1)
+                        (s2:=((n1, locals_section ++ params_section) :: s3)) 
                         (locals_section:=locals_section) (params_section:=params_section) 
                         (s3:=s3); smack.
   specialize (copyInRT_completeness _ _ _ _ _ _ _ _ _ H0 H11 H17 H8); smack.
@@ -2149,7 +2149,7 @@ Proof.
   end;
   match goal with
   | [H: fetch_proc ?p ?st = Some (?n1, ?p1) |- _] => 
-      apply ToCall with (n0:=n1) (pb:=p1) (params:=procedure_parameter_profile p1); auto
+      apply ToCall with (n:=n)(n0:=n1) (pb:=p1) (params:=procedure_parameter_profile p1); auto
   end;
   match goal with
   | [H1: toProcBodyDeclRT _ _ _, H2: copyIn _ _ _ _ nil _ |- _] => 

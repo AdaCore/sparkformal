@@ -1630,7 +1630,7 @@ Proof.
   repeat progress match goal with
   | [H1: fetch_proc_rt _ _ = _, H2: fetch_proc_rt _ _ = _ |- _] => rewrite H2 in H1; inversion H1; subst
   end;
-  apply EvalCallRT_Args_RTE with (n0:=n0) (pb:=pb); auto.
+  apply EvalCallRT_Args_RTE with (n:=n)(n0:=n0) (pb:=pb); auto.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H1 H16); intro HZ1.
     destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H14 in HZ1; inversion HZ1; subst.
     inversion HZ2; subst.
@@ -1642,7 +1642,7 @@ Proof.
   repeat progress match goal with
   | [H1: fetch_proc_rt _ _ = _, H2: fetch_proc_rt _ _ = _ |- _] => rewrite H2 in H1; inversion H1; subst
   end;
-  apply EvalCallRT_Decl_RTE with (n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1); auto.
+  apply EvalCallRT_Decl_RTE with (n:=n)(n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1); auto.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H3 H18); intro HZ1.
     destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H16 in HZ1; inversion HZ1; subst.
     inversion HZ2; subst.
@@ -1654,7 +1654,7 @@ Proof.
   repeat progress match goal with
   | [H1: fetch_proc_rt _ _ = _, H2: fetch_proc_rt _ _ = _ |- _] => rewrite H2 in H1; inversion H1; subst
   end;
-  apply EvalCallRT_Body_RTE with (n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1); auto.
+  apply EvalCallRT_Body_RTE with (n:=n)(n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1); auto.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H4 H19); intro HZ1.
     destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H17 in HZ1; inversion HZ1; subst.
     inversion HZ2; subst.
@@ -1678,7 +1678,7 @@ Proof.
   repeat progress match goal with
   | [H1: fetch_proc_rt _ _ = _, H2: fetch_proc_rt _ _ = _ |- _] => rewrite H2 in H1; inversion H1; subst
   end;
-  apply EvalCallRT with (n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1)
+  apply EvalCallRT with (n:=n)(n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1)
                         (s2:=((n, locals_section ++ params_section) :: s3)) 
                         (locals_section:=locals_section) (params_section:=params_section) (s3:=s3); auto;
   inversion HZ3; subst.
@@ -2867,7 +2867,7 @@ Proof.
   repeat progress match goal with
   | [H1: fetch_proc_rt _ _ = _, H2: fetch_proc_rt _ _ = _ |- _] => rewrite H2 in H1; inversion H1; subst
   end;
-  apply EvalCallRT_Args_RTE with (n0:=n0) (pb:=pb); auto.
+  apply EvalCallRT_Args_RTE with (n0:=n0)(n:=n) (pb:=pb); auto.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H1 H13); intro HZ1.
     destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H15 in HZ1; inversion HZ1; subst.
     inversion HZ2; subst.
@@ -2879,7 +2879,7 @@ Proof.
   repeat progress match goal with
   | [H1: fetch_proc_rt _ _ = _, H2: fetch_proc_rt _ _ = _ |- _] => rewrite H2 in H1; inversion H1; subst
   end;
-  apply EvalCallRT_Decl_RTE with (n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1); auto.
+  apply EvalCallRT_Decl_RTE with (n0:=n0)(n:=n) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1); auto.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H3 H15); intro HZ1.
     destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H17 in HZ1; inversion HZ1; subst.
     inversion HZ2; subst.
@@ -2891,7 +2891,7 @@ Proof.
   repeat progress match goal with
   | [H1: fetch_proc_rt _ _ = _, H2: fetch_proc_rt _ _ = _ |- _] => rewrite H2 in H1; inversion H1; subst
   end;
-  apply EvalCallRT_Body_RTE with (n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1); auto.
+  apply EvalCallRT_Body_RTE with (n0:=n0)(n:=n) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1); auto.
   specialize (symbol_table_procedure_rel _ _ _ _ _ H4 H16); intro HZ1.
     destruct HZ1 as [pb' [HZ1 HZ2]]. rewrite H18 in HZ1; inversion HZ1; subst.
     inversion HZ2; subst.
@@ -2907,7 +2907,7 @@ Proof.
   repeat progress match goal with
   | [H1: fetch_proc_rt _ _ = _, H2: fetch_proc_rt _ _ = _ |- _] => rewrite H2 in H1; inversion H1; subst
   end;
-  apply EvalCallRT with (n0:=n0) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1)
+  apply EvalCallRT with (n0:=n0)(n:=n) (pb:=pb) (f:=f) (intact_s:=intact_s) (s1:=s1) (f1:=f1)
                         (s2:=((n, locals_section ++ params_section) :: s3)) 
                         (locals_section:=locals_section) (params_section:=params_section) (s3:=s3); auto;
   inversion HZ3; subst.

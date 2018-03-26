@@ -548,20 +548,20 @@ Inductive evalStmtRT: symTabRT -> state -> stmtRT -> Ret state -> Prop :=
     | EvalCallRT_Decl_RTE: forall p st n0 pb s args f intact_s s1 msg n pn,
         fetch_proc_rt p st = Some (n, pb) ->
         copyInRT st s (newFrame n) (procedure_parameter_profile_rt pb) args (OK f) ->
-        cutUntil s n intact_s s1 -> (* s = intact_s ++ s1 *)
+        cut_until s n intact_s s1 -> (* s = intact_s ++ s1 *)
         evalDeclRT st s1 f (procedure_declarative_part_rt pb) (RTE msg) ->
         evalStmtRT st s (CallRT n0 pn p args) (RTE msg)
     | EvalCallRT_Body_RTE: forall p st n0 pb s args f intact_s s1 f1 msg n pn,
         fetch_proc_rt p st = Some (n, pb) ->
         copyInRT st s (newFrame n) (procedure_parameter_profile_rt pb) args (OK f) ->
-        cutUntil s n intact_s s1 -> (* s = intact_s ++ s1 *)
+        cut_until s n intact_s s1 -> (* s = intact_s ++ s1 *)
         evalDeclRT st s1 f (procedure_declarative_part_rt pb) (OK f1) ->
         evalStmtRT st (f1 :: s1) (procedure_statements_rt pb) (RTE msg) ->
         evalStmtRT st s (CallRT n0 pn p args) (RTE msg)
     | EvalCallRT: forall p st n0 pb s args f intact_s s1 f1 s2 locals_section params_section s3 s4 n pn,
         fetch_proc_rt p st = Some (n, pb) ->
         copyInRT st s (newFrame n) (procedure_parameter_profile_rt pb) args (OK f) ->
-        cutUntil s n intact_s s1 -> (* s = intact_s ++ s1 *)
+        cut_until s n intact_s s1 -> (* s = intact_s ++ s1 *)
         evalDeclRT st s1 f (procedure_declarative_part_rt pb) (OK f1) ->          
         evalStmtRT st (f1 :: s1) (procedure_statements_rt pb) (OK s2) ->
         s2 = (n, locals_section ++ params_section) :: s3 -> (* extract parameters from local frame *)

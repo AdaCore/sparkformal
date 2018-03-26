@@ -478,37 +478,6 @@ Inductive copyOut: symTab -> state -> frame -> list paramSpec -> list exp -> Ret
 
 
 
-(** [cut_until s n s' s''] means cutting the stack s until to a frame 
-    whose corresponding procedure's nested declaration level is less 
-    than n, and s' is a stack with all its frame's corresponding procedure's 
-    nested declaration level greater or equal n, and s'' is a stack holds 
-    frames whose procedure's nested declaration levels are less than n, 
-    and s = s' ++ s'';
-*)
-Inductive cutUntil: state -> scope_level -> state -> state -> Prop :=
-    | CutUntil_Nil: forall n,
-        cutUntil nil n nil nil
-    | CutUntil_Head: forall f n s,
-        (level_of f) < n ->
-        cutUntil (f :: s) n nil (f :: s) 
-    | CutUntil_Tail: forall f n s s' s'',
-        ~ (level_of f < n) ->
-        cutUntil s n s' s'' -> 
-        cutUntil (f :: s) n (f :: s') s''.
-
-Lemma cut_until_uniqueness: forall s n intact_s' s' intact_s'' s'',
-  cutUntil s n intact_s' s' ->
-  cutUntil s n intact_s'' s'' ->
-  intact_s' = intact_s'' /\ s' = s''.
-Proof.
-  intros s n intact_s' s' intact_s'' s'' H; revert intact_s'' s''.
-  induction H; intros;
-  match goal with
-    | [H: cutUntil nil _ _ _ |- _] => inversion H
-    | [H: cutUntil (?f :: ?s) _ _ _ |- _] => inversion H
-  end; smack;
-  specialize (IHcutUntil _ _ H8); smack.
-Qed.
 
 (** in a statement evaluation, whenever a run time error is detected in
     the evaluation of its sub-statements or sub-component, the
@@ -616,20 +585,20 @@ Inductive evalStmt: symTab -> state -> stmt -> Ret state -> Prop :=
     | EvalCall_Decl_RTE: forall p st n0 pb s args f intact_s s1 msg n pn,
         fetch_proc p st = Some (n, pb) ->
         copyIn st s (newFrame n) (procedure_parameter_profile pb) args (OK f) ->
-        cutUntil s n intact_s s1 -> (* s = intact_s ++ s1 *)
+        cut_until s n intact_s s1 -> (* s = intact_s ++ s1 *)
         evalDecl st s1 f (procedure_declarative_part pb) (RTE msg) ->
         evalStmt st s (Call n0 pn p args) (RTE msg)
     | EvalCall_Body_RTE: forall p st n0 pb s args f intact_s s1 f1 msg n pn,
         fetch_proc p st = Some (n, pb) ->
         copyIn st s (newFrame n) (procedure_parameter_profile pb) args (OK f) ->
-        cutUntil s n intact_s s1 -> (* s = intact_s ++ s1 *)
+        cut_until s n intact_s s1 -> (* s = intact_s ++ s1 *)
         evalDecl st s1 f (procedure_declarative_part pb) (OK f1) ->
         evalStmt st (f1 :: s1) (procedure_statements pb) (RTE msg) ->
         evalStmt st s (Call n0 pn p args) (RTE msg)
     | EvalCall: forall p st n0 pb s args f intact_s s1 f1 s2 locals_section params_section s3 s4 n pn,
         fetch_proc p st = Some (n, pb) ->
         copyIn st s (newFrame n) (procedure_parameter_profile pb) args (OK f) ->
-        cutUntil s n intact_s s1 -> (* s = intact_s ++ s1 *)
+        cut_until s n intact_s s1 -> (* s = intact_s ++ s1 *)
         evalDecl st s1 f (procedure_declarative_part pb) (OK f1) ->          
         evalStmt st (f1 :: s1) (procedure_statements pb) (OK s2) ->
         s2 = (n, locals_section ++ params_section) :: s3 -> (* extract parameters from local frame *)
@@ -1082,7 +1051,7 @@ Function f_eval_stmt k (s: state) (c: statement) {struct k}: Return state :=
         | Some (Procedure pb) => 
           match copyIn s (procedure_parameter_profile pb) lexp with
             | Normal prefx => 
-              match cutUntil s pbname with
+              match cut_until s pbname with
                 | Some (s_forget, s_called) =>
                   match f_eval_decl s_called prefx (procedure_declarative_part pb) with
                     | Normal s2 =>
@@ -1128,7 +1097,7 @@ Ltac semantic_rename_hyp th :=
     | (fetchG _ _ = _) => fresh "heqfetchG"
     | (fetch _ _ = _) => fresh "heqfetch"
     | (copyIn _ _ _ _) => fresh "hcopyIn"
-    | (cutUntil _ _ _ _) => fresh "hcutUntil"
+    | (cut_until _ _ _ _) => fresh "hcut_until"
     | (f_evalExp _ _ = Run_Time_Error) => fresh "heqevalExp_rte"
     | (f_evalExp _ _ = _) => fresh "heqevalExp"
     | (f_eval_decl _ _ _ = _) => fresh "heqeval_decl"
@@ -1455,7 +1424,7 @@ Ltac apply_inv :=
     | H:fetchG _ _ = _ |- _ => rewrite H
     | H:split2 _ _ _ = _ |- _ => rewrite H
     | H:split1 _ _ _ = _ |- _ => rewrite H
-    | H:cutUntil _ _ = _ |- _ => rewrite H
+    | H:cut_until _ _ = _ |- _ => rewrite H
   end;subst;simpl;auto.
 
 Ltac invle := match goal with
@@ -1741,7 +1710,7 @@ Proof.
       reflexivity.
   - apply stack_eq_length_refl.
     reflexivity.
-  - generalize (cutUntil_def _ _ _ _ hcutUntil).
+  - generalize (cut_until_def _ _ _ _ hcut_until).
     intros hcutin.
     subst.
     specialize (IHeval_stmt ((slocal ++ prefix') :: s') eq_refl).
@@ -1892,7 +1861,7 @@ Proof.
     apply copy_out_correct in heq.
     (* ******* *)
     eapply eval_S_Proc with (s':=s') (prefix':=prefx')(prefix:=prefx)(slocal:=slocal);eauto.
-    + apply cutUntil_complete1.
+    + apply cut_until_complete1.
       assumption.
     + eapply eval_decl_store_length with (st:=s2) in heqeval_decl;auto.
       destruct heqeval_decl as [slocal' ?].
@@ -1963,7 +1932,7 @@ Proof.
       (pb:=pb);auto. 
     + apply copy_in_correct.
       assumption.
-    + apply cutUntil_complete1.
+    + apply cut_until_complete1.
       assumption.
     + apply f_eval_decl_correct.
       assumption.
@@ -1972,7 +1941,7 @@ Proof.
     ;eauto.
     + apply copy_in_correct.
       assumption.
-    + apply cutUntil_complete1.
+    + apply cut_until_complete1.
       assumption.
     + eapply f_eval_decl_correct2.
       assumption.
@@ -2033,9 +2002,9 @@ Ltac apply_rewrite :=
     | h: copy_in _ _ _ = _ |- _ => rewrite h
     | h: Copy_in _ _ _ Run_Time_Error |- _ => rewrite <- copy_in_correct2 in h;rewrite h
     | h: Copy_in _ _ _ (Normal _) |- _ => rewrite <- copy_in_correct in h;rewrite h
-    | h: cutUntil _ _ = Some(_, _) |- _ => rewrite h
-    | h: cutUntil _ _ = None |- _ => rewrite h
-    | h: cutUntil _ _ _ _ |- _ => apply cutUntil_correct in h;rewrite h
+    | h: cut_until _ _ = Some(_, _) |- _ => rewrite h
+    | h: cut_until _ _ = None |- _ => rewrite h
+    | h: cut_until _ _ _ _ |- _ => apply cut_until_correct in h;rewrite h
     end; auto.
 
 

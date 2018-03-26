@@ -54,38 +54,38 @@ Inductive exact_levelG:  state -> Prop :=
 
   Ltac rename_hyp1 h th :=
     match th with
-    | in_bound _ _ _ => fresh "h_inbound"
-    | updates ?sto ?x _ = _ => fresh "heq_updates_" sto "_" x
-    | updates ?sto ?x _ = _ => fresh "heq_updates_" sto
-    | updates ?sto ?x _ = _ => fresh "heq_updates_" x
-    | updates ?sto ?x _ = _ => fresh "heq_updates"
-    | update ?frm ?x _ = _ => fresh "heq_update_" frm "_" x
-    | update ?frm ?x _ = _ => fresh "heq_update_" frm
-    | update ?frm ?x _ = _ => fresh "heq_update_" x
-    | update ?frm ?x _ = _ => fresh "heq_update"
-    | updateG ?stk ?x _ = _ => fresh "heq_updateG_" stk "_" x
-    | updateG ?stk ?x _ = _ => fresh "heq_updateG_" stk
-    | updateG ?stk ?x _ = _ => fresh "heq_updateG_" x
-    | updateG ?stk ?x _ = _ => fresh "heq_updateG"
-    | fetchG ?x ?stk = _ => fresh "heq_SfetchG_" x "_" stk
-    | fetchG ?x ?stk = _ => fresh "heq_SfetchG_" stk
-    | fetchG ?x ?stk = _ => fresh "heq_SfetchG_" x
-    | fetchG ?x ?stk = _ => fresh "heq_SfetchG"
-    | fetch ?x ?frm = _ => fresh "heq_fetch_" x "_" frm
-    | fetch ?x ?frm = _ => fresh "heq_fetch_" frm
-    | fetch ?x ?frm = _ => fresh "heq_fetch_" x
-    | fetch ?x ?frm = _ => fresh "heq_fetch"
-    | fetches ?x ?sto = _ => fresh "heq_fetches_" x "_" sto
-    | fetches ?x ?sto = _ => fresh "heq_fetches_" sto
-    | fetches ?x ?sto = _ => fresh "heq_fetches_" x
-    | fetches ?x ?sto = _ => fresh "heq_fetches"
-    | cut_until ?st ?s ?fr ?paramsprf ?args (RTE ?er) => fresh "h_cut_until_RE"
-    | cut_until ?st ?s ?fr ?paramsprf ?args (OK ?fr') => fresh "h_cut_until_" fr "_" fr'
-    | cut_until ?st ?s ?fr ?paramsprf ?args ?fr' => fresh "h_cut_until_" fr "_" fr'
-    | cut_until ?st ?s ?fr ?paramsprf ?args _ => fresh "h_cut_until_" fr
-    | cut_until ?st ?s ?fr ?paramsprf ?args _ => fresh "h_cut_until"
-    | exact_levelG ?CE => fresh "h_exct_lvl_" CE
-    | exact_levelG ?CE => fresh "h_exct_lvl"
+    | in_bound _ _ _ => fresh "inbound"
+    | updates ?sto ?x _ = _ => fresh "eq_updates_" sto "_" x
+    | updates ?sto ?x _ = _ => fresh "eq_updates_" sto
+    | updates ?sto ?x _ = _ => fresh "eq_updates_" x
+    | updates ?sto ?x _ = _ => fresh "eq_updates"
+    | update ?frm ?x _ = _ => fresh "eq_update_" frm "_" x
+    | update ?frm ?x _ = _ => fresh "eq_update_" frm
+    | update ?frm ?x _ = _ => fresh "eq_update_" x
+    | update ?frm ?x _ = _ => fresh "eq_update"
+    | updateG ?stk ?x _ = _ => fresh "eq_updateG_" stk "_" x
+    | updateG ?stk ?x _ = _ => fresh "eq_updateG_" stk
+    | updateG ?stk ?x _ = _ => fresh "eq_updateG_" x
+    | updateG ?stk ?x _ = _ => fresh "eq_updateG"
+    | fetchG ?x ?stk = _ => fresh "eq_SfetchG_" x "_" stk
+    | fetchG ?x ?stk = _ => fresh "eq_SfetchG_" stk
+    | fetchG ?x ?stk = _ => fresh "eq_SfetchG_" x
+    | fetchG ?x ?stk = _ => fresh "eq_SfetchG"
+    | fetch ?x ?frm = _ => fresh "eq_fetch_" x "_" frm
+    | fetch ?x ?frm = _ => fresh "eq_fetch_" frm
+    | fetch ?x ?frm = _ => fresh "eq_fetch_" x
+    | fetch ?x ?frm = _ => fresh "eq_fetch"
+    | fetches ?x ?sto = _ => fresh "eq_fetches_" x "_" sto
+    | fetches ?x ?sto = _ => fresh "eq_fetches_" sto
+    | fetches ?x ?sto = _ => fresh "eq_fetches_" x
+    | fetches ?x ?sto = _ => fresh "eq_fetches"
+    | cut_until ?st ?s ?fr ?paramsprf ?args (RTE ?er) => fresh "cut_until_RE"
+    | cut_until ?st ?s ?fr ?paramsprf ?args (OK ?fr') => fresh "cut_until_" fr "_" fr'
+    | cut_until ?st ?s ?fr ?paramsprf ?args ?fr' => fresh "cut_until_" fr "_" fr'
+    | cut_until ?st ?s ?fr ?paramsprf ?args _ => fresh "cut_until_" fr
+    | cut_until ?st ?s ?fr ?paramsprf ?args _ => fresh "cut_until"
+    | exact_levelG ?CE => fresh "exct_lvl_" CE
+    | exact_levelG ?CE => fresh "exct_lvl"
     end.
 
 (*   Ltac rename_hyp ::= rename_hyp1. *)
@@ -817,6 +817,19 @@ Inductive exact_levelG:  state -> Prop :=
     - discriminate.
   Qed.
 
+  Lemma frameG_Some_fetchG_Some: forall id s fr,
+      frameG id s = Some fr ->
+      exists x, fetchG id s = Some x.
+  Proof.
+    intros id s.
+    functional induction fetchG id s;intros.
+    - simpl in *.
+      erewrite fetch_ok in *;eauto.
+    - cbn in *.
+      erewrite fetch_ok_none in *;eauto.
+    - discriminate.
+  Qed.
+
 
   Lemma exact_levelG_frameG_lt_lgth: forall s,
       exact_levelG s -> 
@@ -1117,6 +1130,96 @@ Proof.
   rewrite h.
   assumption.
 Qed.
+
+Lemma nodupG_frameG_cons: forall fr CE id fr',
+    NoDup_G (fr :: CE) ->
+    frameG id CE = Some fr' ->
+    frameG id (fr :: CE) = Some fr'.
+Proof.
+  simpl.
+  intros fr CE id fr' H H0. 
+  simpl.
+  erewrite nodup_G_cons;eauto.
+  apply frameG_resideG_1;eauto.
+Qed.
+
+Lemma nodupG_frameG_fetch_cons: forall fr CE id fr',
+    NoDup_G (fr :: CE) ->
+    frameG id CE = Some fr' ->
+    fetch id fr = None.
+Proof.
+  intros fr CE id fr' H H0. 
+  destruct (frameG_Some_fetchG_Some _ _ _ H0).
+  eapply nodupG_fetch_cons;eauto.
+Qed.
+
+Lemma nodupG_fetchG_app: forall id CE1 CE2 v,
+      NoDup_G (CE1 ++ CE2) ->
+      fetchG id CE2 = Some v ->
+      fetchG id (CE1 ++ CE2) = Some v.
+Proof.
+  induction CE1;intros;auto.
+  simpl List.app.
+  apply nodupG_fetchG_cons.
+  - apply H.
+  - eapply IHCE1;eauto.
+    eapply stack_NoDup_G_cons;eauto.
+Qed.
+
+Lemma nodupG_frameG_app: forall id CE1 CE2 v,
+      NoDup_G (CE1 ++ CE2) ->
+      frameG id CE2 = Some v ->
+      frameG id (CE1 ++ CE2) = Some v.
+Proof.
+  induction CE1;intros;auto.
+  simpl List.app.
+  apply nodupG_frameG_cons.
+  - apply H.
+  - eapply IHCE1;eauto.
+    eapply stack_NoDup_G_cons;eauto.
+Qed.
+
+Lemma nodupG_fetchG_app2: forall CE1 CE2 id δ,
+    NoDup_G (CE1 ++ CE2) ->
+    fetchG id CE2 = Some δ ->
+    fetchG id CE1 = None.
+Proof.
+  induction CE1;intros;auto.
+  assert (fetchG id CE1 = None). {
+    eapply IHCE1;eauto.
+    eapply stack_NoDup_G_cons;eauto.
+  }
+  simpl.
+  erewrite nodupG_fetch_cons;eauto.
+  match goal with
+  | |- ?l = _ => change l with (fetchG id (CE1 ++ CE2))
+  end.
+  eapply nodupG_fetchG_app;eauto.
+  eapply stack_NoDup_G_cons;eauto.
+Qed.
+
+Lemma nodupG_frameG_app2: forall CE1 CE2 id δ,
+    NoDup_G (CE1 ++ CE2) ->
+    frameG id CE2 = Some δ ->
+    frameG id CE1 = None.
+Proof.
+  induction CE1;intros;auto.
+  assert (frameG id CE1 = None). {
+    eapply IHCE1;eauto.
+    eapply stack_NoDup_G_cons;eauto.
+  }
+  simpl.
+  rewrite fetch_ok_none.
+  - assumption.
+  - edestruct frameG_Some_fetchG_Some;eauto.
+    erewrite nodupG_fetch_cons;eauto.
+    match goal with
+    | |- ?l = _ => change l with (fetchG id (CE1 ++ CE2))
+    end.
+    eapply nodupG_fetchG_app;eauto.
+    eapply stack_NoDup_G_cons;eauto.
+Qed.
+  
 
 Lemma updateG_ok_others_frameG: forall stk id v stk',
       updateG stk id v = Some stk' ->

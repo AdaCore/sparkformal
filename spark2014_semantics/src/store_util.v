@@ -67,6 +67,10 @@ Inductive exact_levelG:  state -> Prop :=
     | updateG ?stk ?x _ = _ => fresh "eq_updateG_" stk
     | updateG ?stk ?x _ = _ => fresh "eq_updateG_" x
     | updateG ?stk ?x _ = _ => fresh "eq_updateG"
+    | NoDup_G ?x => fresh "nodup_G_" x
+    | NoDup_G _ => fresh "nodup_G"
+    | NoDup ?x => fresh "nodup_" x
+    | NoDup _ => fresh "nodup"
     | fetchG ?x ?stk = _ => fresh "eq_SfetchG_" x "_" stk
     | fetchG ?x ?stk = _ => fresh "eq_SfetchG_" stk
     | fetchG ?x ?stk = _ => fresh "eq_SfetchG_" x
@@ -86,6 +90,14 @@ Inductive exact_levelG:  state -> Prop :=
     | cut_until ?st ?s ?fr ?paramsprf ?args _ => fresh "cut_until"
     | exact_levelG ?CE => fresh "exct_lvl_" CE
     | exact_levelG ?CE => fresh "exct_lvl"
+    | non_empty_intersection_list ?l1 ?l2 => fresh "nonempty_inters_" l1 "_" l2
+    | non_empty_intersection_list ?l1 ?l2 => fresh "nonempty_inters_" l1
+    | non_empty_intersection_list ?l1 ?l2 => fresh "nonempty_inters_" l2
+    | non_empty_intersection_list _ _ => fresh "nonempty_inters"
+    | non_empty_intersection_frame ?l1 ?l2 => fresh "nonempty_inters_fr_" l1 "_" l2
+    | non_empty_intersection_frame ?l1 ?l2 => fresh "nonempty_inters_fr_" l1
+    | non_empty_intersection_frame ?l1 ?l2 => fresh "nonempty_inters_fr_" l2
+    | non_empty_intersection_frame _ _ => fresh "nonempty_inters_fr"
     end.
 
 (*   Ltac rename_hyp ::= rename_hyp1. *)

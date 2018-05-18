@@ -864,6 +864,18 @@ Inductive exact_levelG:  state -> Prop :=
       now inversion H0.
   Qed.
 
+
+  Lemma exact_lvlG_lgth_none: forall CE,
+      exact_levelG CE ->
+      level_of_top CE = None ->
+      List.length CE = 0%nat.
+  Proof.
+    intros CE H H0.
+    destruct CE;cbn in *;try discriminate;auto.
+    destruct f;try discriminate.
+  Qed.
+
+
   Lemma exact_levelG_frameG_le_top:
     forall s lvl sto,
       exact_levelG ((lvl,sto)::s)

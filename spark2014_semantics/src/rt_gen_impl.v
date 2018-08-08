@@ -187,11 +187,11 @@ Function toObjDeclRTImpl (st: symTab) (o: objDecl): objDeclRT :=
   | mkobjDecl n x t None =>
       mkobjDeclRT n x t None
   | mkobjDecl n x t (Some e) => 
-      let eRT := toExpRTImpl st e in
+      (*let eRT := toExpRTImpl st e in*)
         if is_range_constrainted_type t then
-          mkobjDeclRT n x t (Some (update_exterior_checks_exp eRT (RangeCheck :: nil)))
+          mkobjDeclRT n x t (Some (update_exterior_checks_exp (toExpRTImpl st e) (RangeCheck :: nil)))
         else
-          mkobjDeclRT n x t (Some eRT)
+          mkobjDeclRT n x t (Some (toExpRTImpl st e))
   end.
 
 Function toObjDeclsRTImpl (st: symTab) (lo: list objDecl): list objDeclRT :=

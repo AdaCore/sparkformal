@@ -182,16 +182,29 @@ Function toTypeDeclRTImpl (t: typeDecl): typeDeclRT :=
       RecordTypeDeclRT n tn fs
   end.
 
+(* Fails due to a bug in Coq 8.8. *)
+Fail Function toObjDeclRTImpl (st: symTab) (o: objDecl): objDeclRT :=
+  match o with
+  | mkobjDecl n x t None =>
+      mkobjDeclRT n x t None
+  | mkobjDecl n x t (Some e) =>
+      let eRT := toExpRTImpl st e in
+        if is_range_constrainted_type t then
+          mkobjDeclRT n x t (Some (update_exterior_checks_exp eRT (RangeCheck :: nil)))
+        else
+          mkobjDeclRT n x t (Some eRT)
+  end.
+
+(* Temporary replacement for Coq 8.8. Remove when the original above ceases to fail. *)
 Function toObjDeclRTImpl (st: symTab) (o: objDecl): objDeclRT :=
   match o with
   | mkobjDecl n x t None =>
       mkobjDeclRT n x t None
-  | mkobjDecl n x t (Some e) => 
-      (*let eRT := toExpRTImpl st e in*)
-        if is_range_constrainted_type t then
-          mkobjDeclRT n x t (Some (update_exterior_checks_exp (toExpRTImpl st e) (RangeCheck :: nil)))
-        else
-          mkobjDeclRT n x t (Some (toExpRTImpl st e))
+  | mkobjDecl n x t (Some e) =>
+      if is_range_constrainted_type t then
+        mkobjDeclRT n x t (Some (update_exterior_checks_exp (toExpRTImpl st e) (RangeCheck :: nil)))
+      else
+        mkobjDeclRT n x t (Some (toExpRTImpl st e))
   end.
 
 Function toObjDeclsRTImpl (st: symTab) (lo: list objDecl): list objDeclRT :=

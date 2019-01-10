@@ -2076,7 +2076,7 @@ Ltac apply_eval_declaration_preserve_typed_store :=
 
 (** * cut_until_preserve_typed_stack *)
 Lemma cut_until_preserve_typed_stack: forall st s s' intact_s n,
-  cutUntil s n intact_s s' ->
+  cut_until s n intact_s s' ->
     well_typed_value_in_stack st s ->
       well_typed_value_in_stack st intact_s /\ well_typed_value_in_stack st s'.
 Proof.
@@ -2090,7 +2090,7 @@ Qed.
 
 Ltac apply_cut_until_preserve_typed_stack :=
   match goal with
-  | [H1: cutUntil ?s ?n ?intact_s ?s',
+  | [H1: cut_until ?s ?n ?intact_s ?s',
      H2: well_typed_value_in_stack ?st ?s |- _] =>
       specialize (cut_until_preserve_typed_stack _ _ _ _ _ H1 H2);
       let HZ := fresh "HZ" in 

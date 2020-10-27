@@ -207,7 +207,7 @@ Proof.
   - inversion H.
 Qed.
 
-Require Import Omega.
+Require Import Lia.
 
 Lemma split2_length_ok :
   forall A (l:list A) n m,
@@ -216,8 +216,8 @@ Lemma split2_length_ok :
 Proof.
   intros A l.
   induction l;simpl;intros n m h.
-  - assert (n=0) by omega.
-    assert (m=0) by omega.
+  - assert (n=0) by lia.
+    assert (m=0) by lia.
     subst.
     unfold split2.
     simpl.
@@ -228,7 +228,7 @@ Proof.
         simpl.
         discriminate.
       * intro abs.
-        assert (h':length l >= 0 + m) by omega.
+        assert (h':length l >= 0 + m) by lia.
         generalize (IHl 0 m h').
         intro IHl'.
         unfold split2 in abs,IHl'.
@@ -242,7 +242,7 @@ Proof.
             + destruct p.
               inversion abs.
             + contradiction. }
-    + assert (h':length l >= n + m) by omega.
+    + assert (h':length l >= n + m) by lia.
       generalize (IHl n m h').
       intro IHl'.
       unfold split2 in IHl'.
@@ -291,7 +291,7 @@ Proof.
   rewrite H0; auto.
   assert (H2: length l = length l').
   rewrite app_length in H1. rewrite app_length in H1.
-  rewrite H in H1; omega.
+  rewrite H in H1; lia.
   specialize (app_same_length_eq _ _ _ _ _ H2 H0); auto.
 Qed.
 
@@ -320,7 +320,7 @@ Proof.
   - destruct (split2_length_ok _ l n m).
     + rewrite H.
       repeat rewrite app_length.
-      omega.
+      lia.
     + assumption.
 Qed.
 

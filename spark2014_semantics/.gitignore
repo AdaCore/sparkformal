@@ -1,6 +1,10 @@
 *.vo
+*.vos
+*.vok
 *.glob
 *.v.d
 *.native
 *.cmx
 *.cmi
+.Makefile.d
+.lia.cache

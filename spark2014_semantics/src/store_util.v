@@ -792,7 +792,7 @@ Inductive exact_levelG:  state -> Prop :=
       resideG id sto = true -> 
       exists x, fetchG id sto = Some x.
   Proof.
-    intros until 0.
+    intros *.
     induction sto.
     - simpl.
       intro abs; discriminate.
@@ -922,16 +922,16 @@ Proof.
   revert pb_lvl s' s''.
   induction h_exactlvlG;simpl;intros ? ? ? h_lt h_cut.
   - inversion h_cut;subst;simpl in *.
-    omega.
+    lia.
   - inversion h_lt;subst.
     + clear h_lt.        
       inversion h_cut;subst.
       * reflexivity.
       * simpl in *.
-        exfalso;omega.
+        exfalso;lia.
     + simpl in *.
       inversion h_cut;subst;simpl in *.
-      * exfalso;omega.
+      * exfalso;lia.
       * eapply IHh_exactlvlG;eauto.
 Qed.
 
@@ -948,7 +948,7 @@ Proof.
     reflexivity.
   - intros H h_cut. inversion h_cut;simpl in *;subst.
     + reflexivity.
-    + exfalso;omega.
+    + exfalso;lia.
 Qed.
 
 Lemma exact_lvl_level_of_top:
@@ -1128,7 +1128,7 @@ Proof.
     inversion h_exct_lvl;subst.
     inversion H0.
     cbn.
-    omega.
+    lia.
 Qed.
 
 
@@ -1354,11 +1354,11 @@ Proof.
     functional inversion heq_frameG;functional inversion heq_frameG0;subst;auto.
     + exfalso.
       apply exact_levelG_frameG_lt_lgth in X.
-      * omega.
+      * lia.
       * assumption.
     + exfalso.
       apply  exact_levelG_frameG_lt_lgth in X.
-      * omega.
+      * lia.
       * assumption.
     + eapply IHh_exct_lvl_stk;eauto.
 Qed.
@@ -1440,7 +1440,7 @@ Proof.
       destruct h_ex as [top [heq_level_of_top h_le]].
       specialize exact_lvl_lvl_of_top with (1:=h_exct_lvl_stk2)(2:=heq_level_of_top);intro.
       inversion h_exct_lvl;subst.
-      omega.
+      lia.
   - intros stk2 lvl sto_id1 id sto_id2 h_exct_lvl heq_frameG.
     eapply IHstk1.
     + cbn in h_exct_lvl.
@@ -1460,8 +1460,8 @@ Proof.
         simpl Datatypes.length in *.
         rewrite app_length in h_exct_lvl.
         simpl Datatypes.length in *.
-        fold frame in *. (* omega fails to unify some terms otherwise *)
-        omega.
+        fold frame in *. (* lia fails to unify some terms otherwise *)
+        lia.
       * eauto.
 Qed.
 

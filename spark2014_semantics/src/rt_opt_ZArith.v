@@ -730,7 +730,7 @@ Lemma Le_Neg_Ge: forall x y,
 Proof.
   intros.
   apply Zplus_le_reg_l with (p := y). 
-  smack. (*omega*)
+  smack. (*lia*)
 Qed.
 
 Lemma Lt_Neg_Gt: forall x y,  
@@ -1146,7 +1146,7 @@ Lemma Zabs_ge_v: forall v,
 Proof.
   intros.
   destruct v; smack.
-  apply Zle_neg_pos; auto.
+  (* apply Zle_neg_pos; auto. *)
 Qed.
 
 Lemma Zabs_ge_neg_v: forall v,
@@ -1154,7 +1154,7 @@ Lemma Zabs_ge_neg_v: forall v,
 Proof.
   intros.
   destruct v; smack.
-  apply Zle_neg_pos; auto.
+  (* apply Zle_neg_pos; auto. *)
 Qed.
 
 Lemma Zquot_n1_opp: forall v,
@@ -1194,11 +1194,11 @@ Proof.
  - (*case 1*)
   apply Z.le_trans with (m:=l); auto.
   replace l with (--l)%Z; smack.
-  apply Le_Neg_Ge; smack.
+(*  apply Le_Neg_Ge; smack.
   replace (--l)%Z with l; smack.
   apply Z.le_trans with (m:=Z.abs l); auto.  
   apply Zabs_ge_neg_v; auto.
-  apply Z.le_max_l; auto.
+  apply Z.le_max_l; auto. *)
  - (*case 2*)  
   apply Z.le_trans with (m:=u); auto.
   apply Z.le_trans with (m:=Z.abs u); auto.
@@ -1412,7 +1412,7 @@ Proof.
   apply Zle_true_leb_true; auto.
  - (* case 2: v1 = 0, v2 > 0 *)
   assert(HA: (0 <= u2)%Z).
-    apply Zle_trans with (m:=Z.pos p); smack.
+    apply Z.le_trans with (m:=Z.pos p); smack.
   (* l1 <= v1 <= u1, 0 <= u2 ==> l1*u2 <= v1*u2 <= u1 * u2, here v1 is 0*)
   assert (HA1: (l1*u2 <= 0*u2)%Z).
     apply Zmult_le_compat_r; auto.
@@ -1428,7 +1428,7 @@ Proof.
   apply Zle_true_leb_true; auto.  
  - (* case 3: v1 = 0, v2 < 0 *)
   assert(HA: (l2 <= 0)%Z).
-    apply Zle_trans with (m:=Z.neg p); auto. 
+    apply Z.le_trans with (m:=Z.neg p); auto. 
     apply Pos2Z.neg_is_nonpos; auto.
   (* l2 <= 0, 0 <= u1 ==> l2*u1 <= 0*)
   assert (HA1: (u1 * l2 <= u1 * 0)%Z).
@@ -1445,7 +1445,7 @@ Proof.
   apply Zle_true_leb_true; auto.
  - (* case 4: v1 > 0, v2 = 0 *)
   assert(HA: (0 <= u1)%Z).
-    apply Zle_trans with (m:=Z.pos p); smack.
+    apply Z.le_trans with (m:=Z.pos p); smack.
   (* l2 <= 0 <= u2 ==> u1*l2 <= u1*0 <= u1*u2*)
   assert (HA1: (u1 * l2 <= u1 * 0)%Z).
     apply Zmult_le_compat_l; auto. 
@@ -1463,9 +1463,9 @@ Proof.
  - (* case 5: v1 > 0, v2 > 0 *)
   (* l1 <= v1 <= u1 ==> l1*u2 <= (v1*v2 <=) <= v1*u2 <= u1*u2; l1*l2<=v1*v2 *)
   assert(HA1a: (0 <= u1)%Z).
-    apply Zle_trans with (m:=Z.pos p); smack. 
+    apply Z.le_trans with (m:=Z.pos p); smack. 
   assert(HA1b: (0 <= u2)%Z).
-    apply Zle_trans with (m:=Z.pos p0); smack. 
+    apply Z.le_trans with (m:=Z.pos p0); smack. 
   assert (HA2: ((Z.pos p) * u2 <= u1 * u2)%Z).
     apply Zmult_le_compat_r; auto.
   assert (HA3: ((Z.pos p) * (Z.pos p0) <= (Z.pos p) * u2)%Z).
@@ -1516,9 +1516,9 @@ Proof.
   apply Zle_true_leb_true; auto.
  - (* case 6: v1 > 0, v2 < 0 *)
   assert(HA1a: (0 <= u1)%Z).
-    apply Zle_trans with (m:=Z.pos p); smack.
+    apply Z.le_trans with (m:=Z.pos p); smack.
   assert(HA1b: (l2 <= 0)%Z).
-    apply Zle_trans with (m:=Z.neg p0); auto.
+    apply Z.le_trans with (m:=Z.neg p0); auto.
     specialize (Zlt_neg_0 p0); intro HZ1. smack.
   assert(HA1c: ((Z.pos p)*(Z.neg p0) <= 0)%Z).
     apply Zmult_le_ge_l; auto.
@@ -1582,7 +1582,7 @@ Proof.
   apply Zle_true_leb_true; auto.
  - (* case 7: v1 < 0, v2 = 0 *)
   assert(HA: (l1 <= 0)%Z).
-    apply Zle_trans with (m:=Z.neg p); auto.
+    apply Z.le_trans with (m:=Z.neg p); auto.
     specialize (Zlt_neg_0 p); intro; smack.
   (* l1*u2 <= v1*v2 *)
   assert (HA1: (l1*u2 <= (Z.neg p)*0)%Z).
@@ -1602,9 +1602,9 @@ Proof.
   apply Zle_true_leb_true; auto.   
  - (* case 8: v1 < 0, v2 > 0 *)
   assert(HA1a: (0 <= u2)%Z).
-    apply Zle_trans with (m:=Z.pos p0); smack.
+    apply Z.le_trans with (m:=Z.pos p0); smack.
   assert(HA1b: (l1 <= 0)%Z).
-    apply Zle_trans with (m:=Z.neg p); auto.
+    apply Z.le_trans with (m:=Z.neg p); auto.
     specialize (Zlt_neg_0 p); intro HZ1. smack.
   assert(HA1c: ((Z.pos p)*(Z.neg p0) <= 0)%Z).
     apply Zmult_le_ge_l; auto. 
@@ -1670,10 +1670,10 @@ Proof.
  - (* case 9: v1 < 0, v2 < 0 *)
   (* v1*v2 <= l1*l2 *)
   assert(HA1a: (l1 <= 0)%Z).
-    apply Zle_trans with (m:=Z.neg p); auto. 
+    apply Z.le_trans with (m:=Z.neg p); auto. 
     specialize (Zlt_neg_0 p); intro; smack.
   assert(HA1b: (l2 <= 0)%Z).
-    apply Zle_trans with (m:=Z.neg p0); auto. 
+    apply Z.le_trans with (m:=Z.neg p0); auto. 
     specialize (Zlt_neg_0 p0); intro; smack.
   (* v1*l2 <= l1*l2 *)
   assert (HA2: ((Z.neg p) * l2 <= l1 * l2)%Z).

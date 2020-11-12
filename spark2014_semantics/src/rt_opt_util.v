@@ -26,7 +26,7 @@ Lemma In_Bound_Refl: forall v,
   in_bound v (Interval v v) true.
 Proof.
   intros; constructor;
-  specialize (Zle_refl v); intros H0.
+  specialize (Z.le_refl v). intros H0.
   specialize (Zle_imp_le_bool _ _ H0); 
     intros H1; rewrite H1; auto.
 Qed.
@@ -61,9 +61,9 @@ Proof.
   | [H: _ && _ = true |- _] => specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H); clear H; smack
   end;
   constructor; apply andb_true_iff; split.
-- specialize (Zle_trans _ _ _ H3 H0); intros HZ1;
+- specialize (Z.le_trans _ _ _ H3 H0); intros HZ1;
   specialize (Zle_imp_le_bool _ _ HZ1); auto.
-- specialize (Zle_trans _ _ _ H1 H5); intros HZ1;
+- specialize (Z.le_trans _ _ _ H1 H5); intros HZ1;
   specialize (Zle_imp_le_bool _ _ HZ1); auto.
 Qed.
 
@@ -252,12 +252,12 @@ Proof.
   end;
   constructor.
 - specialize (Zplus_le_compat _ _ _ _ H0 H3); intros HZ1.
-  specialize (Zle_lt_trans _ _ _ HZ1 H2); intros HZ2.
+  specialize (Z.le_lt_trans _ _ _ HZ1 H2); intros HZ2.
   left. constructor.
   apply andb_false_iff; left.
   apply Lt_Le_Bool_False; auto.
 - specialize (Zplus_le_compat _ _ _ _ H1 H4); intros HZ1.
-  specialize (Zlt_le_trans  _ _ _ H2 HZ1); intros HZ2.
+  specialize (Z.lt_le_trans  _ _ _ H2 HZ1); intros HZ2.
   right; constructor.
   apply andb_false_iff; right.
   apply Lt_Le_Bool_False; auto.
@@ -291,13 +291,13 @@ Proof.
   constructor.
 - specialize (Le_Neg_Ge _ _ H4); intros HZ1;
   specialize (Zplus_le_compat _ _ _ _ H0 HZ1); intros HZ2;
-  specialize (Zle_lt_trans _ _ _ HZ2 H2); intros HZ3;
+  specialize (Z.le_lt_trans _ _ _ HZ2 H2); intros HZ3;
   left; constructor;
   apply andb_false_iff; left;
   apply Lt_Le_Bool_False; auto.
 - specialize (Le_Neg_Ge _ _ H3); intros HZ1;
   specialize (Zplus_le_compat _ _ _ _ H1 HZ1); intros HZ2;
-  specialize (Zlt_le_trans  _ _ _ H2 HZ2); intros HZ3;
+  specialize (Z.lt_le_trans  _ _ _ H2 HZ2); intros HZ3;
   right; constructor;
   apply andb_false_iff; right;
   apply Lt_Le_Bool_False; auto.
@@ -332,11 +332,11 @@ Proof.
   constructor.
 - apply andb_false_iff; left;
   specialize (Le_Neg_Ge _ _ H2); intros HZ1;
-  specialize (Zle_lt_trans _ _ _ HZ1 H1); intros HZ2;
+  specialize (Z.le_lt_trans _ _ _ HZ1 H1); intros HZ2;
   apply Lt_Le_Bool_False; auto.
 - apply andb_false_iff; right;
   specialize (Le_Neg_Ge _ _ H0); intros HZ1;
-  specialize (Zlt_le_trans _ _ _ H1 HZ1); intros HZ2;
+  specialize (Z.lt_le_trans _ _ _ H1 HZ1); intros HZ2;
   apply Lt_Le_Bool_False; auto.
 Qed.
 
@@ -378,8 +378,8 @@ Proof.
   match goal with
   | [H: _ && _ = false |- _] => specialize (Zlele_Bool_Imp_LeLe_F _ _ _ H); clear H; smack
   end;
-  [ specialize (Zlt_le_trans _ _ _ H1 H0); intros HZ1 |
-    specialize (Zle_lt_trans _ _ _ H2 H1); intros HZ1
+  [ specialize (Z.lt_le_trans _ _ _ H1 H0); intros HZ1 |
+    specialize (Z.le_lt_trans _ _ _ H2 H1); intros HZ1
   ];
   unfold Zeq_bool; 
   destruct v; smack.

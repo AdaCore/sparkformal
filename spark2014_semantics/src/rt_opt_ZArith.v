@@ -1389,356 +1389,356 @@ Lemma multiply_in_bound: forall v1 v2 l1 l2 u1 u2,
   in_bound (v1*v2) (Interval (multiply_min_f l1 u1 l2 u2) (multiply_max_f l1 u1 l2 u2)) true.
 Proof.
   intros;
-  unfold multiply_min_f, multiply_max_f;
-  destruct v1, v2; smack;
-  repeat progress match goal with
-  | [H: in_bound ?v (Interval ?l ?u) true |- _] => inversion H; subst; clear H
-  end;
-  repeat progress apply_Zleb_true_le_true;
-  constructor; auto.
- - (* case 1: v1 = 0, v2 = 0 *)
-  (* l1 <= v1 <= u1, 0 <= u2 ==> l1*u2 <= v1*u2 <= u1 * u2, here v1 is 0*)
-  assert (HA1: (l1*u2 <= 0*u2)%Z).
-    apply Zmult_le_compat_r; auto.
-  assert (HA2: (0*u2 <= u1*u2)%Z).
-    apply Zmult_le_compat_r; auto.
-  clear - HA1 HA2. smack.
-  assert(HA3: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= 0)%Z).
-    apply Z.le_trans with (m:=(l1*u2)%Z); auto.
-  apply le_min_lr; auto.
-  assert(HA4: (0 <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(u1*u2)%Z); auto.
-  apply le_max_rr; auto.
-  apply Zle_true_leb_true; auto.
- - (* case 2: v1 = 0, v2 > 0 *)
-  assert(HA: (0 <= u2)%Z).
-    apply Z.le_trans with (m:=Z.pos p); smack.
-  (* l1 <= v1 <= u1, 0 <= u2 ==> l1*u2 <= v1*u2 <= u1 * u2, here v1 is 0*)
-  assert (HA1: (l1*u2 <= 0*u2)%Z).
-    apply Zmult_le_compat_r; auto.
-  assert (HA2: (0*u2 <= u1*u2)%Z).
-    apply Zmult_le_compat_r; auto.
-  clear - HA1 HA2. smack.
-  assert(HA3: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= 0)%Z).
-    apply Z.le_trans with (m:=(l1*u2)%Z); auto.
-  apply le_min_lr; auto. 
-  assert(HA4: (0 <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(u1*u2)%Z); auto.
-  apply le_max_rr; auto.
-  apply Zle_true_leb_true; auto.  
+    unfold multiply_min_f, multiply_max_f;
+    destruct v1, v2; smack;
+      repeat progress match goal with
+                      | [H: in_bound ?v (Interval ?l ?u) true |- _] => inversion H; subst; clear H
+                      end;
+      repeat progress apply_Zleb_true_le_true;
+      constructor; auto.
+  - (* case 1: v1 = 0, v2 = 0 *)
+    (* l1 <= v1 <= u1, 0 <= u2 ==> l1*u2 <= v1*u2 <= u1 * u2, here v1 is 0*)
+    assert (HA1: (l1*u2 <= 0*u2)%Z).
+    { apply Zmult_le_compat_r; auto. }
+    assert (HA2: (0*u2 <= u1*u2)%Z).
+    { apply Zmult_le_compat_r; auto. }
+    clear - HA1 HA2. (* smack. lia solves the goal directly with coq 8.13 *)
+    assert(HA3: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= 0)%Z).
+    { apply Z.le_trans with (m:=(l1*u2)%Z); auto.
+      apply le_min_lr; auto. }
+    assert(HA4: (0 <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
+    { apply Z.le_trans with (m:=(u1*u2)%Z); auto. 
+      apply le_max_rr; auto. }
+    apply Zle_true_leb_true; auto.
+  - (* case 2: v1 = 0, v2 > 0 *)
+    assert(HA: (0 <= u2)%Z).
+    { apply Z.le_trans with (m:=Z.pos p); smack. }
+    (* l1 <= v1 <= u1, 0 <= u2 ==> l1*u2 <= v1*u2 <= u1 * u2, here v1 is 0*)
+    assert (HA1: (l1*u2 <= 0*u2)%Z).
+    { apply Zmult_le_compat_r; auto. }
+    assert (HA2: (0*u2 <= u1*u2)%Z).
+    { apply Zmult_le_compat_r; auto. }
+    clear - HA1 HA2. (*smack. same: coq 8.13 solved this directly (lia) *)
+    assert(HA3: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= 0)%Z).
+    { apply Z.le_trans with (m:=(l1*u2)%Z); auto.
+      apply le_min_lr; auto. }
+    assert(HA4: (0 <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
+    { apply Z.le_trans with (m:=(u1*u2)%Z); auto.
+      apply le_max_rr; auto. }
+    apply Zle_true_leb_true; auto.  
  - (* case 3: v1 = 0, v2 < 0 *)
-  assert(HA: (l2 <= 0)%Z).
-    apply Z.le_trans with (m:=Z.neg p); auto. 
-    apply Pos2Z.neg_is_nonpos; auto.
-  (* l2 <= 0, 0 <= u1 ==> l2*u1 <= 0*)
-  assert (HA1: (u1 * l2 <= u1 * 0)%Z).
-    apply Zmult_le_compat_l; auto. 
-  rewrite (Z.mul_comm u1 0%Z) in HA1. smack.
+   assert(HA: (l2 <= 0)%Z).
+   { apply Z.le_trans with (m:=Z.neg p); auto.
+     apply Pos2Z.neg_is_nonpos; auto. }
+   (* l2 <= 0, 0 <= u1 ==> l2*u1 <= 0*)
+   assert (HA1: (u1 * l2 <= u1 * 0)%Z).
+   { apply Zmult_le_compat_l; auto. }
+   rewrite (Z.mul_comm u1 0%Z) in HA1. (*smack. same 8.13 solves *)
   assert (HA2: (0 <= l1 * l2)%Z).
-    apply Zmult_le_le; auto.
+  { apply Zmult_le_le; auto. }
   assert(HA3: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= 0)%Z).
-    apply Z.le_trans with (m:=(u1*l2)%Z); auto.
-  apply le_min_rl; auto.
+  { apply Z.le_trans with (m:=(u1*l2)%Z); auto. 
+    apply le_min_rl; auto. }
   assert(HA4: (0 <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(l1*l2)%Z); auto.
-    apply le_max_ll; auto.
+  { apply Z.le_trans with (m:=(l1*l2)%Z); auto.
+    apply le_max_ll; auto. }
   apply Zle_true_leb_true; auto.
  - (* case 4: v1 > 0, v2 = 0 *)
   assert(HA: (0 <= u1)%Z).
-    apply Z.le_trans with (m:=Z.pos p); smack.
+  { apply Z.le_trans with (m:=Z.pos p); smack. }
   (* l2 <= 0 <= u2 ==> u1*l2 <= u1*0 <= u1*u2*)
   assert (HA1: (u1 * l2 <= u1 * 0)%Z).
-    apply Zmult_le_compat_l; auto. 
-  rewrite (Z.mul_comm u1 0%Z) in HA1. smack.
+  { apply Zmult_le_compat_l; auto.  }
+  rewrite (Z.mul_comm u1 0%Z) in HA1. (* smack. same*)
   assert (HA2: (u1 * 0 <= u1 * u2)%Z).
-    apply Zmult_le_compat_l; auto.
-  rewrite (Z.mul_comm u1 0%Z) in HA2. smack.
+  { apply Zmult_le_compat_l; auto. }
+  rewrite (Z.mul_comm u1 0%Z) in HA2. (* smack. same *)
   assert(HA3: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= 0)%Z).
-    apply Z.le_trans with (m:=(u1*l2)%Z); auto.
-  apply le_min_rl; auto.
+  { apply Z.le_trans with (m:=(u1*l2)%Z); auto.
+    apply le_min_rl; auto. }
   assert(HA4: (0 <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(u1*u2)%Z); auto.
-    apply le_max_rr; auto.
+  { apply Z.le_trans with (m:=(u1*u2)%Z); auto.
+    apply le_max_rr; auto. }
   apply Zle_true_leb_true; auto.
  - (* case 5: v1 > 0, v2 > 0 *)
   (* l1 <= v1 <= u1 ==> l1*u2 <= (v1*v2 <=) <= v1*u2 <= u1*u2; l1*l2<=v1*v2 *)
   assert(HA1a: (0 <= u1)%Z).
-    apply Z.le_trans with (m:=Z.pos p); smack. 
+  {  apply Z.le_trans with (m:=Z.pos p); smack.  }
   assert(HA1b: (0 <= u2)%Z).
-    apply Z.le_trans with (m:=Z.pos p0); smack. 
+  {  apply Z.le_trans with (m:=Z.pos p0); smack. }
   assert (HA2: ((Z.pos p) * u2 <= u1 * u2)%Z).
-    apply Zmult_le_compat_r; auto.
+  {  apply Zmult_le_compat_r; auto. }
   assert (HA3: ((Z.pos p) * (Z.pos p0) <= (Z.pos p) * u2)%Z).
-    apply Zmult_le_compat_l; smack.
+  {  apply Zmult_le_compat_l; smack. }
   assert(HA4: (Z.pos p * Z.pos p0 <= u1 * u2)%Z).
-    apply Z.le_trans with (m:=(Z.pos p * u2)%Z); auto.
+  {  apply Z.le_trans with (m:=(Z.pos p * u2)%Z); auto. }
   assert(HZ1: ((Z.pos p) * (Z.pos p0) <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(u1*u2)%Z); auto.
-    apply le_max_rr; auto.
-
+  { apply Z.le_trans with (m:=(u1*u2)%Z); auto.
+    apply le_max_rr; auto. }
   destruct l1; subst.
   (* 1. l1 = 0 *)
-  assert(HZ2: (Z.min (Z.min (0 * l2) (0 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
-    apply Z.le_trans with (m:=(0*l2)%Z); auto.
-    apply le_min_lr; auto.
+  + assert(HZ2: (Z.min (Z.min (0 * l2) (0 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
+    { apply Z.le_trans with (m:=(0*l2)%Z); auto.
+      apply le_min_lr; auto. }
   apply Zle_true_leb_true; auto.  
   (* 2. l1 > 0 *)
-  destruct l2; subst.
-  (* - 2.1 l2 = 0 *)
-  assert(HZ2: (Z.min (Z.min (Z.pos p1 * 0) (Z.pos p1 * u2)) (Z.min (u1 * 0) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
-    apply Z.le_trans with (m:=(u1 * 0)%Z); auto.
-    apply le_min_rl; auto.
-    rewrite (Z.mul_comm u1 0%Z). smack.
-  apply Zle_true_leb_true; auto.  
-  (* - 2.2 l2 > 0 *)
-  assert(HZ2: (Z.min (Z.min (Z.pos p1 * Z.pos p2) (Z.pos p1 * u2)) (Z.min (u1 * Z.pos p2) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
-    apply Z.le_trans with (m:=((Z.pos p1) * (Z.pos p2))%Z); auto.
-    apply le_min_ll; auto.
-    apply Zmult_le_compat; smack.
-  apply Zle_true_leb_true; auto.    
-  (* - 2.3 l2 < 0 *)
-  assert(HA_1: (u1 * (Z.neg p2) <= u1 * 0)%Z).
-    apply Zmult_le_compat_l; smack.
-  rewrite (Z.mul_comm u1 0) in HA_1. rewrite (Z_eq_mult u1 0%Z) in HA_1; auto.
-  assert(HZ2: (Z.min (Z.min (Z.pos p1 * Z.neg p2) (Z.pos p1 * u2)) (Z.min (u1 * Z.neg p2) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
-    apply Z.le_trans with (m:=(u1 * (Z.neg p2))%Z); auto.
-    apply le_min_rl; auto.
-    apply Z.le_trans with (m:=0%Z); auto.
+  + destruct l2; subst.
+    (* - 2.1 l2 = 0 *)
+    * assert(HZ2: (Z.min (Z.min (Z.pos p1 * 0) (Z.pos p1 * u2)) (Z.min (u1 * 0) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
+      { apply Z.le_trans with (m:=(u1 * 0)%Z); auto.
+        apply le_min_rl; auto.
+        rewrite (Z.mul_comm u1 0%Z). smack. }
+      apply Zle_true_leb_true; auto.  
+      (* - 2.2 l2 > 0 *)
+    * assert(HZ2: (Z.min (Z.min (Z.pos p1 * Z.pos p2) (Z.pos p1 * u2)) (Z.min (u1 * Z.pos p2) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
+      { apply Z.le_trans with (m:=((Z.pos p1) * (Z.pos p2))%Z); auto. 
+        - apply le_min_ll; auto. 
+        - apply Zmult_le_compat; smack. }
+      apply Zle_true_leb_true; auto.    
+    (* - 2.3 l2 < 0 *)
+    * assert(HA_1: (u1 * (Z.neg p2) <= u1 * 0)%Z).
+      { apply Zmult_le_compat_l; smack. }
+      rewrite (Z.mul_comm u1 0) in HA_1.
+      rewrite (Z_eq_mult u1 0%Z) in HA_1; auto.
+      assert(HZ2: (Z.min (Z.min (Z.pos p1 * Z.neg p2) (Z.pos p1 * u2)) (Z.min (u1 * Z.neg p2) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
+      { apply Z.le_trans with (m:=(u1 * (Z.neg p2))%Z); auto.
+        apply le_min_rl; auto.
+        apply Z.le_trans with (m:=0%Z); auto. }
   apply Zle_true_leb_true; auto.
   (* 3. l1 < 0 *)
-  assert(HA_1: ((Z.neg p1) * u2 <= 0 * u2)%Z).
-    apply Zmult_le_compat_r; smack.
-  rewrite (Z_eq_mult u2 0%Z) in HA_1; auto.
-  assert(HZ2: (Z.min (Z.min (Z.neg p1 * l2) (Z.neg p1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
-    apply Z.le_trans with (m:=(Z.neg p1 * u2)%Z); auto.
-    apply le_min_lr; auto.
-    apply Z.le_trans with (m:=0%Z); auto.
-  apply Zle_true_leb_true; auto.
+  + assert(HA_1: ((Z.neg p1) * u2 <= 0 * u2)%Z).
+    { apply Zmult_le_compat_r; smack. }
+    rewrite (Z_eq_mult u2 0%Z) in HA_1; auto.
+    assert(HZ2: (Z.min (Z.min (Z.neg p1 * l2) (Z.neg p1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= (Z.pos p) * (Z.pos p0))%Z).
+    { apply Z.le_trans with (m:=(Z.neg p1 * u2)%Z); auto.
+      apply le_min_lr; auto.
+      apply Z.le_trans with (m:=0%Z); auto. }
+    apply Zle_true_leb_true; auto.
  - (* case 6: v1 > 0, v2 < 0 *)
   assert(HA1a: (0 <= u1)%Z).
-    apply Z.le_trans with (m:=Z.pos p); smack.
+  { apply Z.le_trans with (m:=Z.pos p); smack. }
   assert(HA1b: (l2 <= 0)%Z).
-    apply Z.le_trans with (m:=Z.neg p0); auto.
-    specialize (Zlt_neg_0 p0); intro HZ1. smack.
+  {  apply Z.le_trans with (m:=Z.neg p0); auto.
+    specialize (Zlt_neg_0 p0); intro HZ1. smack. }
   assert(HA1c: ((Z.pos p)*(Z.neg p0) <= 0)%Z).
-    apply Zmult_le_ge_l; auto.
+  {  apply Zmult_le_ge_l; auto.
       specialize (Zlt_neg_0 p0); intro; smack.
-    smack.
+    smack. }
 
   (* u1*l2 <= v1*v2 *)
   assert(HA2: (u1*l2 <= (Z.pos p)*(Z.neg p0))%Z).
-    (* l2 <= v2 and 0 <= u1, so u1*l2 <= u1*v2 *)
+  { (* l2 <= v2 and 0 <= u1, so u1*l2 <= u1*v2 *)
     assert(HA2a: (u1*l2 <= u1*(Z.neg p0))%Z).
-      apply Zmult_le_compat_l; smack.
+    { apply Zmult_le_compat_l; smack. }
     assert(HA2b: (u1*(Z.neg p0) <= (Z.pos p)*(Z.neg p0))%Z).
-      apply Zmult_le_rev_r; auto.
-    apply Z.le_trans with (m:=(u1 * Z.neg p0)%Z); auto.
+    { apply Zmult_le_rev_r; auto. }
+    apply Z.le_trans with (m:=(u1 * Z.neg p0)%Z); auto. }
 
   assert(HZ1: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= Z.neg (p * p0))%Z).
-    apply Z.le_trans with (m:=(u1 * l2)%Z); auto.
-    apply le_min_rl; auto.
+  { apply Z.le_trans with (m:=(u1 * l2)%Z); auto.
+    apply le_min_rl; auto. }
       
   destruct l1; subst.
   (* 1. l1 = 0 *)  
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (0 * l2) (0 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(0 * u2)%Z); auto.
-    apply le_max_lr; auto.
-  apply Zle_true_leb_true; auto.
+  + assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (0 * l2) (0 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
+    { apply Z.le_trans with (m:=(0 * u2)%Z); auto.
+      apply le_max_lr; auto. }
+    apply Zle_true_leb_true; auto.
   (* 2. l1 > 0 *)  
-  destruct u2; subst.
-  (* - 2.1. u2 = 0 *)
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (Z.pos p1 * l2) (Z.pos p1 * 0)) (Z.max (u1 * l2) (u1 * 0)))%Z).
-    apply Z.le_trans with (m:=(u1 * 0)%Z); auto.
-    rewrite (Z.mul_comm u1 0%Z); smack.
-    apply le_max_rr; auto.
-  apply Zle_true_leb_true; auto.
-  (* - 2.2. u2 > 0 *)
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (Z.pos p1 * l2) (Z.pos p1 * Z.pos p2)) (Z.max (u1 * l2) (u1 * Z.pos p2)))%Z).
-    apply Z.le_trans with (m:=(u1 * (Z.pos p2))%Z); auto.
-    apply Z.le_trans with (m:=(u1 * 0)%Z); smack.
-    apply le_max_rr; auto.
-  apply Zle_true_leb_true; auto.
-  (* - 2.3. u2 < 0 *)
-  (* v1*v2 <= l1*u2 *)
-  assert(HA3: ((Z.pos p)*(Z.neg p0) <= (Z.pos p1)*(Z.neg p2))%Z).
-    (* v1*v2 <= v1*u2 *)
-    assert(HA3a: ((Z.pos p)*(Z.neg p0) <= (Z.pos p)*(Z.neg p2))%Z).
-      apply Zmult_le_compat_l; smack.
-    (* v1*u2 <= l1*u2 *)
-    assert(HA3b: ((Z.pos p)*(Z.neg p2) <= (Z.pos p1)*(Z.neg p2))%Z).
-      apply Zmult_le_rev_r; smack.   
-    apply Z.le_trans with (m:=(Z.pos p * Z.neg p2)%Z); auto.
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (Z.pos p1 * l2) (Z.pos p1 * Z.neg p2)) (Z.max (u1 * l2) (u1 * Z.neg p2)))%Z).
-    apply Z.le_trans with (m:=((Z.pos p1)*(Z.neg p2))%Z); auto.
-    apply le_max_lr; auto.
-  apply Zle_true_leb_true; auto.
+  + destruct u2; subst.
+    (* - 2.1. u2 = 0 *)
+    * assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (Z.pos p1 * l2) (Z.pos p1 * 0)) (Z.max (u1 * l2) (u1 * 0)))%Z).
+      { apply Z.le_trans with (m:=(u1 * 0)%Z); auto.
+        rewrite (Z.mul_comm u1 0%Z); smack.
+        apply le_max_rr; auto. }
+      apply Zle_true_leb_true; auto.
+    (* - 2.2. u2 > 0 *)
+    * assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (Z.pos p1 * l2) (Z.pos p1 * Z.pos p2)) (Z.max (u1 * l2) (u1 * Z.pos p2)))%Z).
+      { apply Z.le_trans with (m:=(u1 * (Z.pos p2))%Z); auto.
+        apply Z.le_trans with (m:=(u1 * 0)%Z); smack.
+        apply le_max_rr; auto. }
+      apply Zle_true_leb_true; auto.
+    (* - 2.3. u2 < 0 *)
+    (* v1*v2 <= l1*u2 *)
+    * assert(HA3: ((Z.pos p)*(Z.neg p0) <= (Z.pos p1)*(Z.neg p2))%Z).
+      { (* v1*v2 <= v1*u2 *)
+        assert(HA3a: ((Z.pos p)*(Z.neg p0) <= (Z.pos p)*(Z.neg p2))%Z).
+        { apply Zmult_le_compat_l; smack. }
+        (* v1*u2 <= l1*u2 *)
+        assert(HA3b: ((Z.pos p)*(Z.neg p2) <= (Z.pos p1)*(Z.neg p2))%Z).
+        { apply Zmult_le_rev_r; smack. }
+        apply Z.le_trans with (m:=(Z.pos p * Z.neg p2)%Z); auto. }
+      assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (Z.pos p1 * l2) (Z.pos p1 * Z.neg p2)) (Z.max (u1 * l2) (u1 * Z.neg p2)))%Z).
+      { apply Z.le_trans with (m:=((Z.pos p1)*(Z.neg p2))%Z); auto.
+        apply le_max_lr; auto. }
+      apply Zle_true_leb_true; auto.
   (* 3. l1 < 0 *)  
   (* v1*v2 <= l1*l2 *)
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (Z.neg p1 * l2) (Z.neg p1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(0)%Z); auto.
-    apply Z.le_trans with (m:=(Z.neg p1 * l2)%Z); auto.
-    apply Zmult_le_le; auto.
-    apply le_max_ll; auto.
-  apply Zle_true_leb_true; auto.
+  + assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (Z.neg p1 * l2) (Z.neg p1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
+    { apply Z.le_trans with (m:=(0)%Z); auto. 
+      apply Z.le_trans with (m:=(Z.neg p1 * l2)%Z); auto.
+      - apply Zmult_le_le; auto.
+      - apply le_max_ll; auto. }
+    apply Zle_true_leb_true; auto.
  - (* case 7: v1 < 0, v2 = 0 *)
   assert(HA: (l1 <= 0)%Z).
-    apply Z.le_trans with (m:=Z.neg p); auto.
-    specialize (Zlt_neg_0 p); intro; smack.
+  { apply Z.le_trans with (m:=Z.neg p); auto.
+    specialize (Zlt_neg_0 p); intro; smack. }
   (* l1*u2 <= v1*v2 *)
   assert (HA1: (l1*u2 <= (Z.neg p)*0)%Z).
-    apply Zmult_le_ge_r; auto.
+  { apply Zmult_le_ge_r; auto. }
   (* v1*v2 <= l1*l2 *)
   assert (HA2: ((Z.neg p)*0 <= l1 * l2)%Z).
-    rewrite (Z.mul_comm (Z.neg p) 0). simpl.
-    apply Zmult_le_le; auto.
+  { rewrite (Z.mul_comm (Z.neg p) 0). simpl.
+    apply Zmult_le_le; auto. }
   rewrite (Z.mul_comm (Z.neg p) 0) in HA2; simpl in HA2.
 
   assert(HZ1: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= 0)%Z).
-    apply Z.le_trans with (m:=(l1*u2)%Z); auto.
-    apply le_min_lr; auto. 
+  { apply Z.le_trans with (m:=(l1*u2)%Z); auto.
+    apply le_min_lr; auto. }
   assert(HZ2: (0 <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(l1*l2)%Z); auto.
-    apply le_max_ll; auto.
+  { apply Z.le_trans with (m:=(l1*l2)%Z); auto.
+    apply le_max_ll; auto. }
   apply Zle_true_leb_true; auto.   
  - (* case 8: v1 < 0, v2 > 0 *)
   assert(HA1a: (0 <= u2)%Z).
-    apply Z.le_trans with (m:=Z.pos p0); smack.
+  { apply Z.le_trans with (m:=Z.pos p0); smack. }
   assert(HA1b: (l1 <= 0)%Z).
-    apply Z.le_trans with (m:=Z.neg p); auto.
-    specialize (Zlt_neg_0 p); intro HZ1. smack.
+  { apply Z.le_trans with (m:=Z.neg p); auto.
+    specialize (Zlt_neg_0 p); intro HZ1. smack. }
   assert(HA1c: ((Z.pos p)*(Z.neg p0) <= 0)%Z).
-    apply Zmult_le_ge_l; auto. 
-      specialize (Zlt_neg_0 p0); intro; smack.
-    smack.
+  { apply Zmult_le_ge_l; auto. 
+    specialize (Zlt_neg_0 p0); intro; smack.
+    smack. }
 
   (* l1*u2 <= v1*v2 *)
   assert(HA2: (l1*u2 <= (Z.neg p)*(Z.pos p0))%Z).
-    (* l1 <= v1 and 0 <= u2, so l1*u2 <= v1*u2 *)
+  { (* l1 <= v1 and 0 <= u2, so l1*u2 <= v1*u2 *)
     assert(HA2a: (l1*u2 <= (Z.neg p)*u2)%Z).
-      apply Zmult_le_compat_r; smack.
+    { apply Zmult_le_compat_r; smack. }
     assert(HA2b: ((Z.neg p)*u2 <= (Z.neg p)*(Z.pos p0))%Z).
-      apply Zmult_le_rev_l; auto.
-    apply Z.le_trans with (m:=((Z.neg p)*u2)%Z); auto.
+    { apply Zmult_le_rev_l; auto. }
+    apply Z.le_trans with (m:=((Z.neg p)*u2)%Z); auto. }
 
   assert(HZ1: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (u1 * l2) (u1 * u2)) <= Z.neg (p * p0))%Z).
-    apply Z.le_trans with (m:=(l1 * u2)%Z); auto.
-    apply le_min_lr; auto.
+  { apply Z.le_trans with (m:=(l1 * u2)%Z); auto.
+    apply le_min_lr; auto. }
       
   destruct l2; subst.
   (* 1. l2 = 0 *)  
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * 0) (l1 * u2)) (Z.max (u1 * 0) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(u1*0)%Z); auto.
-    rewrite (Z.mul_comm u1 0%Z); smack.
-    apply le_max_rl; auto.
-  apply Zle_true_leb_true; auto.
+  + assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * 0) (l1 * u2)) (Z.max (u1 * 0) (u1 * u2)))%Z).
+    { apply Z.le_trans with (m:=(u1*0)%Z); auto.
+      rewrite (Z.mul_comm u1 0%Z); smack.
+      apply le_max_rl; auto. }
+    apply Zle_true_leb_true; auto.
   (* 2. l2 > 0 *)  
-  destruct u1; subst.
+  + destruct u1; subst.
   (* - 2.1. u1 = 0 *)
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * Z.pos p1) (l1 * u2)) (Z.max (0 * Z.pos p1) (0 * u2)))%Z).
-    apply Z.le_trans with (m:=(0*u2)%Z); auto.
-    apply le_max_rr; auto.
-  apply Zle_true_leb_true; auto.
+    * assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * Z.pos p1) (l1 * u2)) (Z.max (0 * Z.pos p1) (0 * u2)))%Z).
+      { apply Z.le_trans with (m:=(0*u2)%Z); auto.
+        apply le_max_rr; auto. }
+      apply Zle_true_leb_true; auto.
   (* - 2.2. u1 > 0 *)
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * Z.pos p1) (l1 * u2)) (Z.max (Z.pos p2 * Z.pos p1) (Z.pos p2 * u2)))%Z).
-    apply Z.le_trans with (m:=((Z.pos p2)*u2)%Z); auto.
-    apply Z.le_trans with (m:=(0*u2)%Z); auto. 
-    apply Zmult_le_compat_r; smack.
-    apply le_max_rr; auto.
-  apply Zle_true_leb_true; auto.
+  * assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * Z.pos p1) (l1 * u2)) (Z.max (Z.pos p2 * Z.pos p1) (Z.pos p2 * u2)))%Z).
+    { apply Z.le_trans with (m:=((Z.pos p2)*u2)%Z); auto.
+      apply Z.le_trans with (m:=(0*u2)%Z); auto. 
+      apply Zmult_le_compat_r; smack.
+      apply le_max_rr; auto. }
+    apply Zle_true_leb_true; auto.
   (* - 2.3. u1 < 0 *)
   (* v1*v2 <= u1*l2 *)
-  assert(HA3: ((Z.neg p)*(Z.pos p0) <= (Z.neg p2)*(Z.pos p1))%Z).
+  * assert(HA3: ((Z.neg p)*(Z.pos p0) <= (Z.neg p2)*(Z.pos p1))%Z).
     (* v1*v2 <= u1*v2 *)
-    assert(HA3a: ((Z.neg p)*(Z.pos p0) <= (Z.neg p2)*(Z.pos p0))%Z).
-      apply Zmult_le_compat_r; auto.
+    { assert(HA3a: ((Z.neg p)*(Z.pos p0) <= (Z.neg p2)*(Z.pos p0))%Z).
+      { apply Zmult_le_compat_r; auto. }
     (* u1*v2 <= u1*l2 *)
-    assert(HA3b: ((Z.neg p2)*(Z.pos p0) <= (Z.neg p2)*(Z.pos p1))%Z).
-      apply Zmult_le_rev_l; smack.   
-    apply Z.le_trans with (m:=(Z.neg p2 * Z.pos p0)%Z); auto.
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * Z.pos p1) (l1 * u2)) (Z.max (Z.neg p2 * Z.pos p1) (Z.neg p2 * u2)))%Z).
-    apply Z.le_trans with (m:=((Z.neg p2)*(Z.pos p1))%Z); auto.
-    apply le_max_rl; auto.
-  apply Zle_true_leb_true; auto.
+      assert(HA3b: ((Z.neg p2)*(Z.pos p0) <= (Z.neg p2)*(Z.pos p1))%Z).
+      { apply Zmult_le_rev_l; smack. }
+      apply Z.le_trans with (m:=(Z.neg p2 * Z.pos p0)%Z); auto. }
+    assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * Z.pos p1) (l1 * u2)) (Z.max (Z.neg p2 * Z.pos p1) (Z.neg p2 * u2)))%Z).
+    { apply Z.le_trans with (m:=((Z.neg p2)*(Z.pos p1))%Z); auto.
+      apply le_max_rl; auto. }
+    apply Zle_true_leb_true; auto.
   (* 3. l2 < 0 *)  
   (* v1*v2 <= l1*l2 *)
-  assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * Z.neg p1) (l1 * u2)) (Z.max (u1 * Z.neg p1) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(0)%Z); auto.
-    apply Z.le_trans with (m:=(l1*Z.neg p1)%Z); auto.
-    apply Zmult_le_le; auto.
-    apply le_max_ll; auto.
+  + assert(HZ2: (Z.neg (p * p0) <= Z.max (Z.max (l1 * Z.neg p1) (l1 * u2)) (Z.max (u1 * Z.neg p1) (u1 * u2)))%Z).
+    { apply Z.le_trans with (m:=(0)%Z); auto.
+      apply Z.le_trans with (m:=(l1*Z.neg p1)%Z); auto.
+      - apply Zmult_le_le; auto.
+      - apply le_max_ll; auto. }
   apply Zle_true_leb_true; auto.
  - (* case 9: v1 < 0, v2 < 0 *)
   (* v1*v2 <= l1*l2 *)
-  assert(HA1a: (l1 <= 0)%Z).
-    apply Z.le_trans with (m:=Z.neg p); auto. 
-    specialize (Zlt_neg_0 p); intro; smack.
-  assert(HA1b: (l2 <= 0)%Z).
-    apply Z.le_trans with (m:=Z.neg p0); auto. 
-    specialize (Zlt_neg_0 p0); intro; smack.
+   assert(HA1a: (l1 <= 0)%Z).
+   {  apply Z.le_trans with (m:=Z.neg p); auto. 
+      specialize (Zlt_neg_0 p); intro; smack. }
+   assert(HA1b: (l2 <= 0)%Z).
+   { apply Z.le_trans with (m:=Z.neg p0); auto. 
+     specialize (Zlt_neg_0 p0); intro; smack. }
   (* v1*l2 <= l1*l2 *)
-  assert (HA2: ((Z.neg p) * l2 <= l1 * l2)%Z).
-    apply Zmult_le_rev_r; auto.
-  (* v1*v2 <= v1*l2 *)
-  assert (HA3: ((Z.neg p) * (Z.neg p0) <= (Z.neg p) * l2)%Z).
-    apply Zmult_le_rev_l; auto.
-    specialize (Zlt_neg_0 p); intro; smack.
+   assert (HA2: ((Z.neg p) * l2 <= l1 * l2)%Z).
+   { apply Zmult_le_rev_r; auto. }
+   (* v1*v2 <= v1*l2 *)
+   assert (HA3: ((Z.neg p) * (Z.neg p0) <= (Z.neg p) * l2)%Z).
+   { apply Zmult_le_rev_l; auto.
+     specialize (Zlt_neg_0 p); intro; smack. }
   (* v1*v2 <= l1*l2 *)
-  assert(HA4: (Z.neg p * Z.neg p0 <= l1 * l2)%Z).
-    apply Z.le_trans with (m:=(Z.neg p * l2)%Z); auto.
-  assert(HZ1: (Z.pos (p * p0) <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
-    apply Z.le_trans with (m:=(l1*l2)%Z); auto.
-    apply le_max_ll; auto.
+   assert(HA4: (Z.neg p * Z.neg p0 <= l1 * l2)%Z).
+   { apply Z.le_trans with (m:=(Z.neg p * l2)%Z); auto. }
+   assert(HZ1: (Z.pos (p * p0) <= Z.max (Z.max (l1 * l2) (l1 * u2)) (Z.max (u1 * l2) (u1 * u2)))%Z).
+   { apply Z.le_trans with (m:=(l1*l2)%Z); auto.
+     apply le_max_ll; auto. }
 
-  destruct u1; subst.
-  (* 1. u1 = 0 *)
-  assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (0 * l2) (0 * u2)) <= Z.pos (p * p0))%Z).
-    apply Z.le_trans with (m:=(0*l2)%Z); auto.
-    apply le_min_rl; auto.
-  apply Zle_true_leb_true; auto.  
-  (* 2. u1 > 0 *)
-  (* u1*l2 <= 0 <= v1*v2 *)
-  assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (Z.pos p1 * l2) (Z.pos p1 * u2)) <= Z.pos (p * p0))%Z).
-    apply Z.le_trans with (m:=((Z.pos p1)*l2)%Z); auto.
-    apply le_min_rl; auto.
-    (* u1*l2 <= v1*v2 *)
-    apply Z.le_trans with (m:=0%Z); auto.
-    (* u1*l2 <= 0 *)
-    apply Zmult_le_ge_l; auto.
-    (* 0 <= v1*v2 *)
-  apply Zle_true_leb_true; auto.
-  (* 3. u1 < 0 *)    
-  destruct u2; subst.
-  (* - 3.1 u2 = 0 *)
-  assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * 0)) (Z.min (Z.neg p1 * l2) (Z.neg p1 * 0)) <= Z.pos (p * p0))%Z).
-    apply Z.le_trans with (m:=(l1 * 0)%Z); auto.
-    apply le_min_lr; auto.
-    rewrite (Z.mul_comm l1 0%Z). smack.
-  apply Zle_true_leb_true; auto.  
-  (* - 3.2 u2 > 0 *)
-  (* u1*u2 <= 0 <= v1*v2 *)
-  assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * Z.pos p2)) (Z.min (Z.neg p1 * l2) (Z.neg p1 * Z.pos p2)) <= Z.pos (p * p0))%Z).
-    apply Z.le_trans with (m:=((Z.neg p1) * (Z.pos p2))%Z); auto.
-    apply le_min_rr; auto.
-  apply Zle_true_leb_true; auto.    
-  (* - 3.3 u2 < 0 *)
-  (* u1*u2 <= v1*v2 *)
-  (* step 1: u1*u2 <= v1*u2 *)
-  assert(HA_1: ((Z.neg p1) * (Z.neg p2) <= (Z.neg p) * (Z.neg p2))%Z).
-    apply Zmult_le_rev_r; auto.
-    specialize (Zlt_neg_0 p2); intro; smack.
-  (* step 2: v1*u2 <= v1*v2 *)
-  assert(HA_2: ((Z.neg p) * (Z.neg p2) <= (Z.neg p) * (Z.neg p0))%Z).
-    apply Zmult_le_rev_l; auto.
-    specialize (Zlt_neg_0 p); intro; smack.
-  (* final: u1*u2 <= v1*v2 *)
-  assert(HA_3: ((Z.neg p1) * (Z.neg p2) <= (Z.neg p) * (Z.neg p0))%Z).
-    apply Z.le_trans with (m:=((Z.neg p) * (Z.neg p2))%Z); auto.
+   destruct u1; subst.
+   (* 1. u1 = 0 *)
+   + assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (0 * l2) (0 * u2)) <= Z.pos (p * p0))%Z).
+     { apply Z.le_trans with (m:=(0*l2)%Z); auto.
+       apply le_min_rl; auto. }
+     apply Zle_true_leb_true; auto.  
+   (* 2. u1 > 0 *)
+   (* u1*l2 <= 0 <= v1*v2 *)
+   + assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * u2)) (Z.min (Z.pos p1 * l2) (Z.pos p1 * u2)) <= Z.pos (p * p0))%Z).
+     { apply Z.le_trans with (m:=((Z.pos p1)*l2)%Z); auto.
+       apply le_min_rl; auto.
+       (* u1*l2 <= v1*v2 *)
+       apply Z.le_trans with (m:=0%Z); auto.
+       (* u1*l2 <= 0 *)
+       apply Zmult_le_ge_l; auto. }
+     (* 0 <= v1*v2 *)
+     apply Zle_true_leb_true; auto.
+   (* 3. u1 < 0 *)    
+   + destruct u2; subst.
+     (* - 3.1 u2 = 0 *)
+     * assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * 0)) (Z.min (Z.neg p1 * l2) (Z.neg p1 * 0)) <= Z.pos (p * p0))%Z).
+       { apply Z.le_trans with (m:=(l1 * 0)%Z); auto.
+         apply le_min_lr; auto.
+         rewrite (Z.mul_comm l1 0%Z). smack. }
+       apply Zle_true_leb_true; auto.  
+     (* - 3.2 u2 > 0 *)
+     (* u1*u2 <= 0 <= v1*v2 *)
+     * assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * Z.pos p2)) (Z.min (Z.neg p1 * l2) (Z.neg p1 * Z.pos p2)) <= Z.pos (p * p0))%Z).
+       { apply Z.le_trans with (m:=((Z.neg p1) * (Z.pos p2))%Z); auto.
+         apply le_min_rr; auto. }
+       apply Zle_true_leb_true; auto.    
+     (* - 3.3 u2 < 0 *)
+     (* u1*u2 <= v1*v2 *)
+     (* step 1: u1*u2 <= v1*u2 *)
+     * assert(HA_1: ((Z.neg p1) * (Z.neg p2) <= (Z.neg p) * (Z.neg p2))%Z).
+       { apply Zmult_le_rev_r; auto.
+         specialize (Zlt_neg_0 p2); intro; smack. }
+       (* step 2: v1*u2 <= v1*v2 *)
+       assert(HA_2: ((Z.neg p) * (Z.neg p2) <= (Z.neg p) * (Z.neg p0))%Z).
+       { apply Zmult_le_rev_l; auto.
+         specialize (Zlt_neg_0 p); intro; smack. }
+       (* final: u1*u2 <= v1*v2 *)
+       assert(HA_3: ((Z.neg p1) * (Z.neg p2) <= (Z.neg p) * (Z.neg p0))%Z).
+       { apply Z.le_trans with (m:=((Z.neg p) * (Z.neg p2))%Z); auto. }
 
-  assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * Z.neg p2)) (Z.min (Z.neg p1 * l2) (Z.neg p1 * Z.neg p2)) <= 
-    Z.pos (p * p0))%Z).
-    apply Z.le_trans with (m:=((Z.neg p1) * (Z.neg p2))%Z); auto.
-    apply le_min_rr; auto.
-  apply Zle_true_leb_true; auto.
+       assert(HZ2: (Z.min (Z.min (l1 * l2) (l1 * Z.neg p2)) (Z.min (Z.neg p1 * l2) (Z.neg p1 * Z.neg p2)) <= 
+                    Z.pos (p * p0))%Z).
+       { apply Z.le_trans with (m:=((Z.neg p1) * (Z.neg p2))%Z); auto.
+         apply le_min_rr; auto. }
+       apply Zle_true_leb_true; auto.
 Qed.
 
 Ltac apply_multiply_in_bound := 

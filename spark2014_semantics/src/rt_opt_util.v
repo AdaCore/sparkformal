@@ -355,7 +355,9 @@ Proof.
   intros.
   inversion H; clear H; subst.
   constructor.
-  specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H2); smack.
+  (* smack or lia solves the goal here in v8.13 *)
+  specialize (Zlele_Bool_Imp_LeLe_T _ _ _ H2).
+  intuition.
   specialize (Le_Neg_Ge _ _ H0); intros HZ1.
   specialize (Le_Neg_Ge _ _ H1); intros HZ2.
   specialize (Zle_imp_le_bool  _ _ HZ1); intros HZ3.
